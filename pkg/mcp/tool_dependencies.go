@@ -1,0 +1,160 @@
+package mcp
+
+import (
+	"context"
+	"fmt"
+	"os"
+	"path/filepath"
+	"strconv"
+	"strings"
+
+	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/nidorx/orqen/pkg/project"
+)
+
+// ── orqen_dependencies ─────────────────────────────────────────────
+// Checks dependency status for the current work item.
+// Scans for DEP_XXX files and resolves them to actual work items.
+
+type DependenciesInput struct {
+	JobId *string `json:"job_id" jsonschema:"job id (auto-injected)"`
+}
+
+func (i *DependenciesInput) SetJobId(jobId string) {
+	i.JobId = &jobId
+}
+
+type DependencyInfo struct {
+	DepID    int    `json:"dep_id"`
+	ItemName string `json:"item_name,omitempty"`
+	Lane     string `json:"lane,omitempty"`
+	Module   string `json:"module,omitempty"`
+	Status   string `json:"status"` // "resolved", "in_progress", "missing"
+	Error    string `json:"error,omitempty"`
+}
+
+type DependenciesOutput struct {
+	ItemID       int              `json:"item_id"`
+	ItemName     string           `json:"item_name"`
+	Dependencies []DependencyInfo `json:"dependencies"`
+	Error        string           `json:"error,omitempty"`
+}
+
+const tnDependencies = "orqen_dependencies"
+
+func init() {
+	tools[tnDependencies] = &mcp.Tool{
+		Description: "Checks dependency status for the current work item. Scans for DEP_XXX files and resolves them to actual work items with their status.",
+	}
+}
+
+func DependenciesHandler(ctx context.Context, req *mcp.CallToolRequest, input *DependenciesInput, proj *project.Project) (*mcp.CallToolResult, DependenciesOutput, error) {
+	out := DependenciesOutput{}
+
+	if proj == nil {
+		out.Error = "project not available"
+		return nil, out, nil
+	}
+
+	if input.JobId == nil || *input.JobId == "" {
+		out.Error = "no job id provided"
+		return nil, out, nil
+	}
+
+	jobID := *input.JobId
+
+	// Find the current work item by JobID
+	var currentItem *project.WorkItem
+	var currentLane *project.Lane
+	var currentMod *project.Module
+
+	for _, mod := range proj.Modules {
+		for _, lane := range mod.Lanes {
+			for _, item := range lane.ListItems() {
+				if item.JobID == jobID {
+					currentItem = item
+					currentLane = lane
+					currentMod = mod
+					break
+				}
+			}
+			if currentItem != nil {
+				break
+			}
+		}
+		if currentItem != nil {
+			break
+		}
+	}
+
+	if currentItem == nil || currentLane == nil {
+		out.Error = fmt.Sprintf("work item with job id %q not found", jobID)
+		return nil, out, nil
+	}
+
+	out.ItemID = currentItem.ID
+	out.ItemName = currentItem.Name
+
+	// Build item directory path
+	itemDir := filepath.Join(currentLane.DirAbs, currentItem.Name)
+	entries, err := os.ReadDir(itemDir)
+	if err != nil {
+		out.Error = fmt.Sprintf("cannot read item directory: %v", err)
+		return nil, out, nil
+	}
+
+	// Scan for DEP_XXX files
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		if !strings.HasPrefix(entry.Name(), "DEP_") {
+			continue
+		}
+
+		depID := extractDepID(entry.Name())
+		if depID <= 0 {
+			continue
+		}
+
+		depInfo := DependencyInfo{DepID: depID}
+
+		// Try to find the dependency item across all lanes in the module
+		depItem := currentMod.FindItemByID(depID)
+		if depItem != nil {
+			depInfo.ItemName = depItem.Name
+			depInfo.Lane = depItem.Lane.Name
+			depInfo.Module = currentMod.Name
+
+			// Determine status based on lane
+			switch depItem.Lane.Name {
+			case "done", "archived":
+				depInfo.Status = "resolved"
+			case "doing":
+				depInfo.Status = "in_progress"
+			default:
+				depInfo.Status = "pending"
+			}
+		} else {
+			depInfo.Status = "missing"
+			depInfo.Error = fmt.Sprintf("no work item found with ID %d", depID)
+		}
+
+		out.Dependencies = append(out.Dependencies, depInfo)
+	}
+
+	return nil, out, nil
+}
+
+func extractDepID(name string) int {
+	trimmed := strings.TrimPrefix(name, "DEP_")
+	// Remove extension if present
+	if idx := strings.LastIndex(trimmed, "."); idx > 0 {
+		trimmed = trimmed[:idx]
+	}
+	id, err := strconv.Atoi(trimmed)
+	if err != nil {
+		return 0
+	}
+	return id
+}

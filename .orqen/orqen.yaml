@@ -1,0 +1,307 @@
+# Orqen Project Configuration
+#
+# Estrutura de um módulo:
+#   name        - Nome do módulo (task, adr, learning)
+#   dir         - Diretório raiz dos artefatos do módulo (relativo ao projeto)
+#   order       - Ordem de prioridade para escolha de trabalho (lanes que o orqen verifica primeiro)
+#   extra_prompt- Contexto adicional injetado no HEADER.md do módulo (não é passo a passo)
+#   lanes       - Lista de lanes da pipeline
+#
+# Estrutura de uma lane:
+#   name               - Nome da lane (o orqen gera o diretório como NN_nome automaticamente)
+#   purpose            - Descrição do propósito da lane, injetado no prompt
+#   max_agents         - Máximo de agents trabalhando simultaneamente nesta lane
+#   artifacts          - Tipos de artefatos que o agente PODE criar ao executar esta lane
+#                        (ex: SUMMARY, FAIL, REFINEMENT). O orqen usa isso para renderizar
+#                        as instruções de naming convention no HEADER.md
+#   user_action        - Rótulo curto da ação esperada do usuário (ex: "approve", "archive")
+#   agent_behavior     - Lista de PASSOS SEQUENCIAIS de ação. Cada item vira um passo numerado
+#                        no prompt final (1., 2., 3...). Descreva o que o agente faz, na ordem.
+#                        O agente JÁ RECEBE o item de trabalho (arquivo) como input — não precisa
+#                        descobrir ou escanear a lane. Foque no que fazer COM o item recebido.
+#   critical_rules     - Regras absolutas/impeditivas. Renderizadas em seção destacada separada
+#                        no prompt final. Use para regras que NUNCA podem ser ignoradas.
+#   ignore_if_exists   - Lista de lanes (nome ou module.lane). Se existir qualquer item nessas
+#                        lanes, o orqen PULA esta lane na escolha de trabalho. Ex: ["draft"]
+#                        significa "não trabalhe aqui se houver algo na lane draft".
+#   ignore_if_dependency - Lista de lanes. Se o item de trabalho tiver dependências (DEP_XXX)
+#                          apontando para itens nessas lanes, o orqen PULA este item.
+#   extra_prompt       - Contexto adicional injetado APÓS o agent_behavior no prompt da lane.
+#                        Use para conhecimento que NÃO é passo a passo: como consultar ADRs,
+#                        níveis de confiança, critérios de validação, trade-offs, etc.
+
+agents:
+  default: "qwen"
+  clients:
+    qwen:
+      command: ["qwen", "--yolo", "--acp"]
+
+execution:
+  max_agents: 10
+  sleep_interval_seconds: 60
+
+modules:                        # ira expor tools mcp para cada módulo
+  - name: task
+    dir: ".orqen/tasks"
+    order: ["doing", "learning", "review", "inbox", "prioritized", "ready"]
+    lanes:         
+
+      # ── 00_vision ──────────────────────────────────────────────
+      - name: "vision"
+        purpose: "User ideation and task conception — agent does NOT execute tasks from this lane"
+        user_action: "create ideas"              
+
+      # ── 01_inbox ───────────────────────────────────────────────
+      - name: "inbox"
+        purpose: "User ideas that are ready to be transformed into tasks by the agent"
+        artifacts: ["TASK"]
+        agent_behavior:
+          - >
+            Read the provided inbox file to understand the idea
+          - >
+            Analyze and decompose into one or more executable tasks — each 
+            task should deliver a single piece of value and be independently testable
+          - >
+            Create each task in the backlog lane using the TASK template 
+            (.orqen/tasks/prompts/TASK.md)
+          - >
+            Move the inbox file to the directory of the first task created 
+            from that idea — do not remove the file, just move it
+        critical_rules:
+          - Create ALL tasks from the inbox file in this single invocation
+
+      # ── 02_backlog ─────────────────────────────────────────────
+      - name: "backlog"
+        purpose: "All newly created tasks awaiting prioritization"
+        user_action: "prioritize"
+
+      # ── 03_prioritized ─────────────────────────────────────────
+      - name: "prioritized"
+        purpose: "Tasks selected by the user for detailed refinement before implementation"
+        ignore_if_exists: ["draft"]              # bloqueia se houver ADR em draft
+        ignore_if_dependency: ["inbox", "backlog", "prioritized"]  # DEP não resolvido nessas lanes
+        artifacts: ["REFINEMENT"]
+        agent_behavior:
+          - >
+            Read the provided task document and perform comprehensive refinement
+          - > 
+            Create the REFINEMENT artifact using the REFINEMENT template 
+            (.orqen/tasks/prompts/REFINEMENT.md)
+        extra_prompt: |
+          **Consult ADRs:** Before refining, scan the ADR module for accepted ADRs relevant to this task. 
+          Read full content of relevant accepted ADRs. Accepted ADRs act as constraints - the refinement 
+          MUST follow their decisions. Document which ADRs were consulted in the REFINEMENT 
+          artifact's "ADR Consultation" section.
+
+          **Consult Learnings:** Scan the learning module for relevant learnings 
+          (priority: high confidence → medium → low). Learnings inform the approach but are not hard 
+          constraints. Document which learnings were consulted in the REFINEMENT artifact's 
+          "Knowledge Consultation" section.
+
+          During refinement, analyze technical requirements, identify implementation 
+          approach (constrained by accepted ADRs, informed by learnings), define clear 
+          acceptance criteria, establish Definition of Done (DoD), and identify 
+          dependencies and risks.
+
+          If you encounter a decision that is NOT covered by any existing accepted ADR and 
+          meets the ADR criteria (reusable, non-obvious, binding, user-governed), draft a new 
+          ADR in the ADR draft lane using the ADR template (docs/adr/prompts/ADR.md). Note it 
+          in the refinement's "New ADR Proposals" section.
+
+      # ── 04_refined ─────────────────────────────────────────────
+      - name: "refined"
+        purpose: "Refined tasks awaiting user approval before implementation"
+        user_action: "approve"
+
+      # ── 05_ready ───────────────────────────────────────────────
+      - name: "ready"
+        purpose: "Approved tasks ready for autonomous implementation by the agent"
+        ignore_if_exists: ["doing", "draft"]     # não puxa se já tem doing ou ADR draft
+        ignore_if_dependency: ["doing"]           # DEP deve estar em done/archived, não em doing
+        agent_behavior:
+          - Read the provided task document and start implementation
+
+      # ── 06_blocked ─────────────────────────────────────────────
+      - name: "blocked"
+        purpose: "Tasks that cannot be completed due to blockers requiring user intervention"
+        user_action: "resolve blockers"
+        artifacts: ["FAIL"]
+
+      # ── 07_doing ───────────────────────────────────────────────
+      - name: "doing"
+        purpose: "Task currently being implemented by the agent"
+        artifacts: ["SUMMARY", "FAIL"]
+        agent_behavior:
+          - >
+            Read the provided task document and refinement document if available
+          - >
+            Check dependency files to ensure prerequisites are met
+          - >
+            Implement the task according to specifications, ensuring ALL 
+            acceptance criteria and DoD items are satisfied
+        extra_prompt: |
+          Upon successful completion, create the SUMMARY artifact using the SUMMARY 
+          template (.orqen/tasks/prompts/SUMMARY.md).
+
+          If implementation fails with a total blocker (cannot proceed), create the FAIL 
+          artifact using the FAIL template (.orqen/tasks/prompts/FAIL.md) and document the blocker in 
+          detail — include what was attempted, what is needed, and suggested next steps.
+
+      # ── 08_review ──────────────────────────────────────────────
+      - name: "review"
+        purpose: "Completed implementations awaiting quality review by the agent"
+        artifacts: ["FAIL"]
+        agent_behavior:
+          - >
+            Read the provided task document and its SUMMARY artifact
+          - >
+            Validate ALL acceptance criteria are met
+          - >
+            Validate ALL DoD items are satisfied
+          - >
+            Review code quality, security, and performance
+        extra_prompt: |
+          If validation PASSES, approve the task — no artifact is created.
+
+          If validation FAILS, create the FAIL artifact using the FAIL 
+          template (.orqen/tasks/prompts/FAIL.md). Document all rejection 
+          reasons with specific evidence — include expected vs actual results 
+          for each failure, severity, and recommended actions to fix.
+
+      # ── 09_learning ────────────────────────────────────────────
+      - name: "learning"
+        purpose: "Retrospective gate where the agent processes learnings from the completed implementation and evaluates ADR maintenance"
+        agent_behavior:
+          - >
+            Read the provided task's SUMMARY artifact and extract the Learning Proposal section
+          - >
+            Validate each proposed learning against the current codebase using grep/file reads
+          - >
+            Assign confidence level to each accepted learning: low (single task), medium 
+            (2+ tasks), high (3+ tasks with no contradictions)
+          - >
+            Write accepted learnings to the learning module directory using the LEARNING 
+            template (docs/learnings/prompts/LEARNING.md)
+        extra_prompt: |
+          Validation rules for each learning:
+          - Does the pattern still hold in the current codebase? If no, discard.
+          - Does it conflict with any accepted ADR? If yes, discard — ADR overrides learning.
+          - Does it conflict with any existing learning? Keep the more specific or more recent one.
+          - Is it specific enough to be actionable? If too vague, discard.
+
+          After writing learnings, review existing ADRs for maintenance: did this 
+          implementation contradict any accepted ADR? If yes, draft a superseding ADR 
+          in the ADR draft lane using the ADR template (docs/adr/prompts/ADR.md).
+
+      # ── 10_done ────────────────────────────────────────────────
+      - name: "done"
+        purpose: "Archive of successfully completed tasks"
+        user_action: "archive"
+
+      # ── 11_archived ────────────────────────────────────────────
+      - name: "archived"
+        purpose: "Long-term storage of completed tasks"
+        user_action: "cleanup"
+
+  # ── ADR Module ─────────────────────────────────────────────────
+  #
+  # ADRs (Architecture Decision Records) capture architecture decisions
+  # that govern how the system is built. The user makes all decisions;
+  # the agent only proposes ADRs during refinement.
+  #
+  - name: adr
+    dir: "docs/adr"
+    lanes:
+      # ── draft ────────────────────────────────────────────────────
+      - name: "draft"
+        purpose: "ADRs written by the agent, awaiting user review — BLOCKS all task work when any ADR exists here"
+        user_action: "review and accept/reject"
+        agent_behavior:
+          - >
+            Read the provided ADR file and refine it if needed
+        extra_prompt: |
+          When drafting a new ADR during task refinement, create it here using 
+          the ADR template (docs/adr/prompts/ADR.md). Include Context, Options 
+          Considered (with pros/cons), Decision, Rationale, and Consequences 
+          sections.
+        critical_rules:
+          - >
+            When any ADR exists in draft, the agent MUST respond with 
+            <promise>COMPLETE</promise> and perform NO task work
+
+      # ── accepted ─────────────────────────────────────────────────
+      - name: "accepted"
+        purpose: "User accepted ADRs — active decisions that constrain task refinement and implementation"
+        extra_prompt: |
+          Accepted ADRs act as constraints on task refinement and implementation. 
+          Future tasks MUST follow their decisions unless explicitly overridden by 
+          a newer ADR. If a new implementation contradicts an accepted ADR, draft a
+          superseding ADR in the draft lane.
+
+      # ── rejected ─────────────────────────────────────────────────
+      - name: "rejected"
+        purpose: "ADRs that were rejected by the user — closed proposals"
+
+      # ── superseded ───────────────────────────────────────────────
+      - name: "superseded"
+        purpose: "ADRs replaced by newer ADRs — contain reference to superseding ADR"
+        agent_behavior:
+          - >
+            When superseding an existing accepted ADR, move the old ADR here and 
+            update its Superseded by field to reference the new ADR
+
+      # ── deprecated ───────────────────────────────────────────────
+      - name: "deprecated"
+        purpose: "ADRs that are no longer recommended for new work — decision aged out"
+        agent_behavior:
+          - >
+            When an ADR's decision domain no longer exists, move it here with a 
+            deprecation note explaining why
+
+  # ── Learning Module ────────────────────────────────────────────
+  #
+  # The learning module captures pattern-level knowledge from task
+  # implementations — how-to knowledge, patterns, conventions, gotchas.
+  # Unlike ADRs (which capture decisions), learnings capture how-to knowledge.
+  # Learnings are organized in category subdirectories: architecture,
+  # conventions, implementations, gotchas, workflow.
+  #
+  - name: learning
+    dir: "docs/learnings"
+    lanes:
+      - name: "knowledge"
+        purpose: "Pattern-level knowledge from task implementations — how-to knowledge, patterns, conventions, gotchas"
+        agent_behavior:
+          - >
+            Read the provided learning proposal from the task SUMMARY artifact
+          - >
+            Validate each proposed learning against the current codebase using grep/file reads
+          - >
+            Assign confidence level: low (single task), medium (2+ tasks confirmed), 
+            high (3+ tasks with no contradictions)
+          - >
+            Write accepted learnings using the LEARNING template 
+            (docs/learnings/prompts/LEARNING.md) into the appropriate 
+            category subdirectory
+        extra_prompt: |
+          Learnings are organized in category subdirectories: architecture, 
+          conventions, implementations, gotchas, workflow. Each learning file uses 
+          the LEARNING template (docs/learnings/prompts/LEARNING.md).
+
+          Validation rules:
+          - Does the pattern still hold in the current codebase? If no, discard.
+          - Does it conflict with any accepted ADR? If yes, discard — ADR overrides learning.
+          - Does it conflict with any existing learning? Keep the more specific or more recent one.
+          - Is it specific enough to be actionable? If too vague, discard.
+
+          Confidence levels:
+          - **low**: First-time learning based on a single task — read as a hint, 
+          verify applicability before applying
+          - **medium**: Pattern confirmed across 2+ prior tasks — consider as guidance, 
+          may deviate if context warrants
+          - **high**: Pattern confirmed across 3+ tasks with no contradictions — follow as 
+          default, deviate only with explicit justification
+
+          After writing learnings, review existing ADRs for maintenance: did this 
+          implementation contradict any accepted ADR? If yes, draft a superseding 
+          ADR in the ADR draft lane.
