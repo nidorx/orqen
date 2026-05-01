@@ -160,7 +160,8 @@ func Printf(messages Messages, key string, args ...any) {
 
 	text, ok := msgMap[key]
 	if !ok {
-		fmt.Printf("%s<unknown message key: %s>\n", Prefix, key)
+		// "\033[36m"+banner+"\033[0m"
+		fmt.Printf("\033[36m%s\033[0m<unknown message key: %s>\n", Prefix, key)
 		return
 	}
 
@@ -185,7 +186,7 @@ func stream(text string) {
 	lines := strings.Split(text, "\n")
 	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
 
-	fmt.Printf("\r%s", Prefix)
+	fmt.Printf("\r\033[36m%s\033[0m", Prefix)
 
 	for li, line := range lines {
 		if li > 0 {

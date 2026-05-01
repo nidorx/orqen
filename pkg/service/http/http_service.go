@@ -6,10 +6,20 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/nidorx/orqen/pkg/cli"
 	"github.com/nidorx/orqen/pkg/conf"
 	"github.com/nidorx/orqen/pkg/mcp"
 	"github.com/nidorx/orqen/pkg/project"
 )
+
+var messages = cli.Messages{
+	"pt-BR": {
+		"listening": "O serviço de integração HTTP está disponível em http://%s:%d",
+	},
+	"en": {
+		"listening": "The HTTP integration service is available at http://%s:%d",
+	},
+}
 
 type Service struct {
 	server *http.Server
@@ -22,17 +32,14 @@ func (s *Service) Name() string {
 func (s *Service) OnStart() error {
 
 	go func() { _ = s.server.ListenAndServe() }()
-	print(s.String())
+
+	cfg := conf.GetHttpServer()
+	cli.Printf(messages, "listening", cfg.IP, cfg.Port)
 	return nil
 }
 
 func (s *Service) OnStop() error {
 	return s.server.Shutdown(context.Background())
-}
-
-func (s *Service) String() string {
-	cfg := conf.GetHttpServer()
-	return fmt.Sprintf("listen on http://%s:%d\n", cfg.IP, cfg.Port)
 }
 
 func New() *Service {

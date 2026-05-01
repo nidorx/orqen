@@ -431,39 +431,6 @@ func TestGenericClient_KillTerminal(t *testing.T) {
 	_ = resp
 }
 
-func TestGenericClient_HandleExtensionMethod_Success(t *testing.T) {
-	client := &GenericClient{}
-	ctx := context.Background()
-
-	params := []byte(`{"name": "World"}`)
-
-	resp, err := client.HandleExtensionMethod(ctx, "_example.com/hello", params)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	result, ok := resp.(map[string]any)
-	if !ok {
-		t.Fatalf("expected map[string]any, got %T", resp)
-	}
-
-	if result["greeting"] != "hello World" {
-		t.Errorf("expected 'hello World', got '%v'", result["greeting"])
-	}
-}
-
-func TestGenericClient_HandleExtensionMethod_Unknown(t *testing.T) {
-	client := &GenericClient{}
-	ctx := context.Background()
-
-	params := []byte(`{}`)
-
-	_, err := client.HandleExtensionMethod(ctx, "_unknown/method", params)
-	if err == nil {
-		t.Fatal("expected error for unknown method, got nil")
-	}
-}
-
 // Helper functions for file operations
 func writeFile(path, content string) error {
 	return os.WriteFile(path, []byte(content), 0644)

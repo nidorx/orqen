@@ -9,22 +9,40 @@ import (
 	"os/exec"
 
 	"github.com/coder/acp-go-sdk"
+	"github.com/nidorx/orqen/pkg/cli"
 )
 
-func Exec(cwd string, prompt string, command []string, mcps []acp.McpServer) error {
+var messages = cli.Messages{
+	"pt-BR": {
+		"stdin_pipe_error": "stdin pipe error: %v",
+	},
+	"en": {
+		"stdin_pipe_error": "stdin pipe error: %v",
+	},
+}
 
-	// peerInput io.Writer, peerOutput io.Reader
+func Exec(
+	jobName string,
+	laneName string,
+	cwd string,
+	prompt string,
+	command []string,
+	mcps []acp.McpServer,
+) error {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	agent := command[0]
 
+	logger := newLogger(agent, laneName, jobName)
+
 	cmd := exec.CommandContext(ctx, agent, command[1:]...)
 	cmd.Stderr = os.Stderr
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
-		return fmt.Errorf("[%s] stdin pipe error: %v", agent, err)
+		logger.Log(cli.Sprintf(messages, "stdin_pipe_error", err))
+		return err
 	}
 
 	stdout, err := cmd.StdoutPipe()
@@ -37,7 +55,10 @@ func Exec(cwd string, prompt string, command []string, mcps []acp.McpServer) err
 	}
 	defer cmd.Process.Kill()
 
-	client := &GenericClient{autoApprove: true}
+	client := &GenericClient{
+		autoApprove: true,
+		logger:      logger,
+	}
 	conn := acp.NewClientSideConnection(client, stdin, stdout)
 	conn.SetLogger(slog.Default())
 
@@ -63,7 +84,7 @@ func Exec(cwd string, prompt string, command []string, mcps []acp.McpServer) err
 			return fmt.Errorf("[%s] initialize error: %v", agent, err)
 		}
 	}
-	fmt.Printf("[%s] connected (protocol v%v)\n", agent, initResp.ProtocolVersion)
+	logger.Log("connected (protocol v%v)\n", initResp.ProtocolVersion)
 
 	// New session
 	newSess, err := conn.NewSession(ctx, acp.NewSessionRequest{
@@ -81,7 +102,7 @@ func Exec(cwd string, prompt string, command []string, mcps []acp.McpServer) err
 			return fmt.Errorf("[%s] newSession error: %v", agent, err)
 		}
 	}
-	fmt.Printf("[%s] created session: %s\n", agent, newSess.SessionId)
+	logger.Log("session created: %s\n", newSess.SessionId)
 
 	// Send prompt and wait for completion while streaming updates are printed via SessionUpdate
 	_, err = conn.Prompt(ctx, acp.PromptRequest{
@@ -101,17 +122,7 @@ func Exec(cwd string, prompt string, command []string, mcps []acp.McpServer) err
 		}
 	}
 
-	// fmt.Print("\n\n")
-
-	fmt.Printf("\n\n[%s] prompt finished\n", agent)
+	logger.Log("finished\n")
 
 	return nil
 }
-
-// func mustCwd() string {
-// 	wd, err := os.Getwd()
-// 	if err != nil {
-// 		return "."
-// 	}
-// 	return wd
-// }

@@ -13,48 +13,48 @@
 
 ---
 
-Orqen orchestrates tasks, agents, and decisions into deterministic systems. No prompts chaos. Just structured execution.
+Oi 🙂 Orqen é o sistema que organiza seu trabalho com IA de forma estruturada. Ele transforma processos repetitivos em pipelines claros, com memória persistente e execução determinística.
 
-## What is Orqen?
+## O Que é Orqen?
 
-Orqen is an open-source workflow orchestration engine that turns repetitive processes into structured, agent-driven pipelines. Inspired by Kanban, it serves not only software development but **any workflow** you want to automate — content creation, marketing, operations, and beyond.
+Orqen é um motor de orquestração de workflows open-source. Inspirado no Kanban, ele serve não apenas ao desenvolvimento de software, mas **qualquer fluxo** que você queira automatizar — criação de conteúdo, marketing, operações e além.
 
-**Key differentiator:** Orqen works with **any agent that uses the Agent Client Protocol (ACP)**, giving you freedom of choice over AI providers.
+**Diferencial principal:** Orqen funciona com **qualquer agente que use o Agent Client Protocol (ACP)**, dando a você liberdade para escolher provedores de IA.
 
-### Use Cases
+### Casos de Uso
 
-- **Software Development** — Scrum-like workflows (backlog, implementation, review, retrospective)
-- **Content Creation** — Ideation → script writing → review → publication
-- **Marketing Pipelines** — Campaign planning, approval flows, A/B test orchestration
-- **Any Repeatable Process** — If your team does it repeatedly, Orqen can structure it
+- **Desenvolvimento de Software** — Fluxos estilo Scrum (backlog, implementação, revisão, retrospectiva)
+- **Criação de Conteúdo** — Ideação → roteiro → revisão → publicação
+- **Pipelines de Marketing** — Planejamento de campanhas, fluxos de aprovação, testes A/B
+- **Qualquer Processo Repetitivo** — Se você faz repetidamente, Orqen estrutura
 
-## The Problem
+## O Problema
 
-AI-powered development tools today operate as **stateless prompt machines**. Users must manually iterate, track context in their heads, and manage decisions across conversations. There is no structured system for deterministic execution, persistent memory, or multi-project orchestration.
+Ferramentas de IA hoje operam como **máquinas de prompt sem estado**. Você precisa iterar manualmente, manter contexto na cabeça e gerenciar decisões entre conversas. Não existe um sistema estruturado para execução determinística, memória persistente ou orquestração multi-projeto.
 
-## The Solution
+## A Solução
 
-Orqen provides a **structured execution layer** that:
+Orqen fornece uma **camada de execução estruturada** que:
 
-1. **Orchestrates AI agents** through defined workflows (lanes)
-2. **Persists state** via filesystem-first design (tasks, decisions, learnings)
-3. **Supports multiple projects** with independent configurations
-4. **Works with any ACP-compatible agent** (Qwen, Claude, custom)
+1. **Orquestra agentes de IA** através de fluxos definidos (lanes)
+2. **Persiste estado** via design filesystem-first (tarefas, decisões, aprendizados)
+3. **Suporta múltiplos projetos** com configurações independentes
+4. **Funciona com qualquer agente ACP** (Qwen, Claude, custom)
 
-> **Not another AI tool. Infrastructure for AI execution.**
+> **Não é mais uma ferramenta de IA. É infraestrutura para execução de IA.**
 
-| Typical AI Tools | Orqen |
-|------------------|-------|
-| Prompt-based | State-driven |
-| Stateless | Persistent memory |
-| Manual iteration | Autonomous execution loops |
-| Single project | Multi-project orchestration |
+| Ferramentas de IA Típicas | Orqen |
+|---------------------------|-------|
+| Baseadas em prompt | Baseadas em estado |
+| Sem estado | Memória persistente |
+| Iteração manual | Loops de execução autônomos |
+| Projeto único | Orquestração multi-projeto |
 
-## How It Works
+## Como Funciona
 
-Orqen is a **terminal-based orchestrator** driven by a single configuration file (`.orqen/orqen.yaml`).
+Orqen é um **orquestrador de terminal** controlado por um único arquivo de configuração (`.orqen/orqen.yaml`).
 
-### Configuration
+### Configuração
 
 ```yaml
 modules:
@@ -62,34 +62,34 @@ modules:
     dir: ".orqen/tasks"
     lanes:
       - name: "inbox"
-        purpose: "User ideas ready for task creation"
+        purpose: "Ideias do usuário prontas para criação de tarefas"
         agent_behavior:
-          - "Read the inbox file"
-          - "Decompose into executable tasks"
-          - "Create tasks in the backlog lane"
+          - "Lê o arquivo inbox"
+          - "Decompõe em tarefas executáveis"
+          - "Cria tarefas na lane backlog"
 
       - name: "doing"
-        purpose: "Task being implemented"
+        purpose: "Tarefa sendo implementada"
         agent_behavior:
-          - "Read task and refinement documents"
-          - "Implement according to specifications"
-          - "Create SUMMARY artifact on completion"
+          - "Lê documentos da tarefa e refinamentos"
+          - "Implementa conforme especificações"
+          - "Cria artefato SUMMARY ao concluir"
 
       - name: "review"
-        purpose: "Implementation awaiting quality review"
+        purpose: "Implementação aguardando revisão"
         agent_behavior:
-          - "Validate acceptance criteria"
-          - "Review code quality and security"
+          - "Valida critérios de aceitação"
+          - "Revisa qualidade e segurança do código"
 ```
 
-### Execution Flow
+### Fluxo de Execução
 
 ```
 .orqen/
-├── orqen.yaml              # Workflow definition
-└── tasks/                  # Module artifacts
-    ├── prompts/            # Agent prompt templates
-    ├── 01_inbox/           # Lane directories
+├── orqen.yaml              # Definição do workflow
+└── tasks/                  # Artefatos do módulo
+    ├── prompts/            # Templates de prompt
+    ├── 01_inbox/           # Diretórios das lanes
     │   └── idea.md
     ├── 02_backlog/
     │   └── TASK-0001-...
@@ -97,22 +97,22 @@ modules:
     └── ...
 ```
 
-1. **Load** — Orqen reads `.orqen/orqen.yaml` to understand the workflow
-2. **Scan** — The engine checks lanes in priority order for available work
-3. **Invoke** — An ACP agent receives a synthesized prompt (context + lane definition + work item)
-4. **Execute** — The agent acts on the work item, creates artifacts, moves it to the next lane
-5. **Loop** — The cycle repeats at a configurable interval
+1. **Carrega** — Orqen lê `.orqen/orqen.yaml` para entender o workflow
+2. **Escaneia** — O motor verifica lanes em ordem de prioridade por trabalho disponível
+3. **Invoca** — Um agente ACP recebe um prompt sintetizado (contexto + definição da lane + item de trabalho)
+4. **Executa** — O agente age no item, cria artefatos, move para a próxima lane
+5. **Repete** — O ciclo se repete em intervalo configurável
 
-Each agent invocation is **stateless** — all context comes from the filesystem. The agent uses MCP tools (`orqen_status`, `orqen_create_item`, `orqen_move_item`, etc.) to interact with the workflow.
+Cada invocação do agente é **stateless** — todo contexto vem do filesystem. O agente usa ferramentas MCP (`orqen_status`, `orqen_create_item`, `orqen_move_item`, etc.) para interagir com o workflow.
 
-## Quick Start
+## Início Rápido
 
-### Prerequisites
+### Pré-requisitos
 
 - Go 1.21+
-- An ACP-compatible agent (e.g., Qwen Code, Claude Code)
+- Um agente ACP compatível (ex: Qwen Code, Claude Code)
 
-### Run Locally
+### Rodar Localmente
 
 ```bash
 git clone https://github.com/orqen/orqen.git
@@ -121,54 +121,54 @@ go build -o orqen ./main.go
 ./orqen
 ```
 
-The CLI will prompt for a project directory containing `.orqen/orqen.yaml`.
+O CLI vai solicitar um diretório de projeto contendo `.orqen/orqen.yaml`.
 
-### Create a Custom Workflow
+### Criar um Workflow Customizado
 
-Use the built-in skill at `.orqen/SKILL.md` — an agent will interview you about your workflow needs and generate a complete `orqen.yaml` configuration.
+Use o skill embutido em `.orqen/SKILL.md` — um agente vai entrevistar você sobre suas necessidades de workflow e gerar uma configuração completa `orqen.yaml`.
 
-## Features
+## Funcionalidades
 
-- **Customizable Lanes** — Define your own workflow stages (Kanban, Scrum, or anything else)
-- **ACP Agent Support** — Works with any ACP-compatible agent (Qwen, Claude, etc.)
-- **MCP Tool Server** — Agents interact via standardized tools (create, move, list, scan items)
-- **Architecture Decision Records** — Structured decision tracking that governs future work
-- **Learning System** — Auto-capture and apply pattern-level knowledge across tasks
-- **Deterministic Execution** — No hidden state. Everything is explicit and auditable
-- **Multi-Project** — Run multiple projects simultaneously, each with its own configuration
-- **Open Source** — MIT License
+- **Lanes Customizáveis** — Defina estágios do seu fluxo (Kanban, Scrum ou outro)
+- **Suporte a Agente ACP** — Funciona com qualquer agente ACP (Qwen, Claude, etc.)
+- **Servidor de Ferramentas MCP** — Agentes interagem via ferramentas padronizadas (criar, mover, listar itens)
+- **Registros de Decisão de Arquitetura** — Rastreamento estruturado de decisões que governam trabalho futuro
+- **Sistema de Aprendizado** — Captura e aplica padrões de conhecimento automaticamente entre tarefas
+- **Execução Determinística** — Sem estado oculto. Tudo é explícito e auditável
+- **Multi-Projeto** — Execute múltiplos projetos simultaneamente, cada um com sua configuração
+- **Open Source** — Licença MIT
 
-## Documentation
+## Documentação
 
-| Document | Purpose |
-|----------|---------|
-| [Architecture](docs/ARCHITECTURE.md) | System design for developers and AI agents |
-| [Branding](docs/BRANDING.md) | Visual identity, colors, typography, tone |
-| [Contributing](CONTRIBUTING.md) | How to contribute to Orqen |
+| Documento | Propósito |
+|-----------|-----------|
+| [Arquitetura](docs/ARCHITECTURE.md) | Design do sistema para desenvolvedores e agentes de IA |
+| [Branding](docs/BRANDING.md) | Identidade visual, cores, tipografia, tom |
+| [Contribuindo](CONTRIBUTING.md) | Como contribuir com Orqen |
 
 ## Roadmap
 
-- [x] Core concept and design system
-- [x] Autopilot (shell script version) — proof of concept
-- [x] Go backend with ACP protocol
-- [x] Terminal-first CLI with MCP tool server
-- [ ] Custom workflow creation via interactive skill
-- [ ] ADR and Learning system integration
-- [ ] Agent marketplace
-- [ ] Template library for common workflows
-- [ ] REST APIs for external integrations
-- [ ] Web interface
+- [x] Conceito central e design system
+- [x] Autopilot (versão shell script) — prova de conceito
+- [x] Backend Go com protocolo ACP
+- [x] CLI terminal-first com servidor de ferramentas MCP
+- [ ] Criação custom de workflow via skill interativo
+- [ ] Integração ADR e sistema de aprendizado
+- [ ] Marketplace de agentes
+- [ ] Biblioteca de templates para workflows comuns
+- [ ] APIs REST para integrações externas
+- [ ] Interface web
 
-## License
+## Licença
 
-Orqen is open source under the [MIT License](LICENSE).
+Orqen é open source sob a [Licença MIT](LICENSE).
 
-## Community
+## Comunidade
 
 - **GitHub:** [github.com/orqen/orqen](https://github.com/orqen/orqen)
-- **Issues:** Report bugs and request features via GitHub Issues
-- **Contributing:** See [CONTRIBUTING.md](CONTRIBUTING.md)
+- **Issues:** Reporte bugs e solicite funcionalidades via GitHub Issues
+- **Contribuindo:** Veja [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ---
 
-**Orqen © 2026 — Execution layer for AI workflows**
+**Orqen © 2026 — Camada de execução para workflows de IA**

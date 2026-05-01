@@ -27,16 +27,18 @@ const banner = `
 
 `
 
-// startupMessages defines all i18n messages used during CLI startup.
+// messages defines all i18n messages used during CLI startup.
 // Consumers (main, services) reference keys from this map.
-var startupMessages = cli.Messages{
+var messages = cli.Messages{
 	"pt-BR": {
 		"what_is_orqen":   "Oi 🙂 tudo bem com você? Eu sou a Orqen. Vou organizar e executar seus fluxos de trabalho com AI, passo a passo.",
 		"starting_engine": "Perfeito. Vou iniciar a execução agora. Se quiser interromper, é só fechar a janela ou usar Ctrl+C.",
+		"shutting_down":   "Entendido. Vou encerrar tudo com calma. Quando quiser recomeçar, é só me chamar de novo 😉.",
 	},
 	"en": {
 		"what_is_orqen":   "Hi 🙂 how are you doing? I'm Orqen. I'll organize and run your workflows with AI, step by step.",
 		"starting_engine": "Alright. I'll start the execution now. If you need to stop, just close the window or use Ctrl+C.",
+		"shutting_down":   "Got it. I'll wrap everything up nicely. When you're ready to start again, just call me back 😉.",
 	},
 }
 
@@ -59,9 +61,9 @@ func main() {
 		panic("invalid args")
 	}
 
-	fmt.Printf(banner, conf.GetVersion().Value)
+	fmt.Printf("\033[36m"+banner+"\033[0m", conf.GetVersion().Value)
 	time.Sleep(1000 * time.Millisecond)
-	cli.Printf(startupMessages, "what_is_orqen")
+	cli.Printf(messages, "what_is_orqen")
 	time.Sleep(500 * time.Millisecond)
 
 	orqenPort, err := getOrqenPort()
@@ -89,9 +91,10 @@ func main() {
 		// kill -9 is syscall.SIGKILL but can't be catch, so don't need add it
 		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 		<-quit
-		fmt.Print("\nshutting down server...\n\n")
+		cli.Printf(messages, "shutting_down")
 
 		service.Stop()
+		time.Sleep(500 * time.Millisecond)
 	})
 	wg.Wait()
 }

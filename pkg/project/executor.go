@@ -2,7 +2,6 @@ package project
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"time"
 )
@@ -172,7 +171,8 @@ func (e *Executor) invokeItem(module *Module, lane *Lane, item *WorkItem) error 
 	handle, err := e.invoker(e.project, module, lane, item)
 	if err != nil {
 		item.InProgress = false
-		return fmt.Errorf("failed to invoke agent for item %s: %w", item.Name, err)
+		// fmt.Errorf("failed to invoke agent for item %s: %w", item.Name, err)
+		return err
 	}
 
 	// Track the invocation
