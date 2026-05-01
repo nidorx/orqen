@@ -155,8 +155,8 @@ func (e *Executor) shouldIgnoreItem(module *Module, lane *Lane, item *WorkItem) 
 		}
 	}
 
-	// só inicia item se foi modificado a mais de 1 minuto
-	if item.ModTime.After(time.Now().Add(-60 * time.Second)) {
+	// ignore if recently updated
+	if item.ModTime.After(time.Now().Add(-30 * time.Second)) {
 		return true
 	}
 

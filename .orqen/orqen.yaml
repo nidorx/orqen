@@ -42,7 +42,7 @@ execution:
 
 modules:                        # ira expor tools mcp para cada módulo
   - name: task
-    dir: ".orqen/tasks"
+    dir: "tasks"
     order: ["doing", "learning", "review", "inbox", "prioritized", "ready"]
     lanes:         
 

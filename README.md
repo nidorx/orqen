@@ -1,6 +1,17 @@
-# Orqen
+<br>
+<div align="center">
+    <img src="./docs/logo.svg" />
+    <p align="center">
+        Execution layer for AI workflows
+    </p>
 
-> **Execution layer for AI workflows.**
+[![Go Version](https://img.shields.io/github/go-mod/go-version/nidorx/orqen?label=Go)](https://go.dev/)
+[![GoDoc](https://pkg.go.dev/badge/github.com/nidorx/orqen.svg)](https://pkg.go.dev/github.com/nidorx/orqen)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
+</div>
+
+---
 
 Orqen orchestrates tasks, agents, and decisions into deterministic systems. No prompts chaos. Just structured execution.
 

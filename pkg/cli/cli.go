@@ -182,39 +182,40 @@ func Printf(messages Messages, key string, args ...any) {
 //   - After punctuation (. ! ? ...): longer pause of 300-600ms
 //   - Every ~8-12 words: no delay at all (simulating a chunk of text arriving at once)
 func stream(text string) {
-	words := strings.Fields(text)
-	fmt.Printf("\r%s", Prefix)
-
-	// Seed once per call — good enough for this use case
+	lines := strings.Split(text, "\n")
 	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
 
-	// Track words since last chunk burst
-	wordsSinceChunk := rng.Intn(5) + 8 // 8-12
+	fmt.Printf("\r%s", Prefix)
 
-	for i, word := range words {
-		// Decide if this word gets zero delay (chunk burst)
-		wordsSinceChunk--
-		if wordsSinceChunk <= 0 {
-			// Burst: no delay, print immediately
-			wordsSinceChunk = rng.Intn(5) + 8 // reset for next burst
-		} else {
-			// Check if previous word ended with sentence punctuation
-			prevWord := ""
-			if i > 0 {
-				prevWord = words[i-1]
-			}
-			if endsSentence(prevWord) {
-				time.Sleep(time.Duration(rng.Intn(300)+300) * time.Millisecond)
-			} else {
-				// Normal variable delay: 60-200ms
-				time.Sleep(time.Duration(rng.Intn(140)+60) * time.Millisecond)
-			}
+	for li, line := range lines {
+		if li > 0 {
+			fmt.Println()
 		}
 
-		if i == 0 {
-			fmt.Print(word)
-		} else {
-			fmt.Print(" " + word)
+		words := strings.Fields(line)
+		wordsSinceChunk := rng.Intn(5) + 8
+
+		for i, word := range words {
+			wordsSinceChunk--
+			if wordsSinceChunk <= 0 {
+				wordsSinceChunk = rng.Intn(5) + 8
+			} else {
+				prevWord := ""
+				if i > 0 {
+					prevWord = words[i-1]
+				}
+				if endsSentence(prevWord) {
+					time.Sleep(time.Duration(rng.Intn(300)+300) * time.Millisecond)
+				} else {
+					time.Sleep(time.Duration(rng.Intn(140)+60) * time.Millisecond)
+				}
+			}
+
+			if i == 0 {
+				fmt.Print(word)
+			} else {
+				fmt.Print(" " + word)
+			}
 		}
 	}
 	time.Sleep(time.Duration(rng.Intn(300)+300) * time.Millisecond)
