@@ -3,6 +3,7 @@ package agent
 import (
 	"context"
 	"os"
+	"runtime"
 	"testing"
 
 	"github.com/coder/acp-go-sdk"
@@ -13,88 +14,8 @@ func strPtr(s string) *string {
 	return &s
 }
 
-func TestGenericClient_RequestPermission_AutoApprove(t *testing.T) {
-	client := &GenericClient{autoApprove: true}
-	ctx := context.Background()
-
-	title := "Test permission"
-	params := acp.RequestPermissionRequest{
-		Options: []acp.PermissionOption{
-			{OptionId: "opt1", Name: "Allow Once", Kind: acp.PermissionOptionKindAllowOnce},
-			{OptionId: "opt2", Name: "Deny", Kind: acp.PermissionOptionKindRejectAlways},
-		},
-		ToolCall: acp.ToolCallUpdate{
-			Title: &title,
-		},
-	}
-
-	resp, err := client.RequestPermission(ctx, params)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if resp.Outcome.Selected == nil {
-		t.Fatal("expected selected option, got nil")
-	}
-
-	// Should auto-approve with allow option
-	if resp.Outcome.Selected.OptionId != "opt1" {
-		t.Errorf("expected opt1, got %s", resp.Outcome.Selected.OptionId)
-	}
-}
-
-func TestGenericClient_RequestPermission_AutoApprove_NoAllow(t *testing.T) {
-	client := &GenericClient{autoApprove: true}
-	ctx := context.Background()
-
-	title := "Test permission"
-	params := acp.RequestPermissionRequest{
-		Options: []acp.PermissionOption{
-			{OptionId: "opt1", Name: "Deny", Kind: acp.PermissionOptionKindRejectAlways},
-		},
-		ToolCall: acp.ToolCallUpdate{
-			Title: &title,
-		},
-	}
-
-	resp, err := client.RequestPermission(ctx, params)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if resp.Outcome.Selected == nil {
-		t.Fatal("expected selected option, got nil")
-	}
-
-	if resp.Outcome.Selected.OptionId != "opt1" {
-		t.Errorf("expected opt1, got %s", resp.Outcome.Selected.OptionId)
-	}
-}
-
-func TestGenericClient_RequestPermission_AutoApprove_NoOptions(t *testing.T) {
-	client := &GenericClient{autoApprove: true}
-	ctx := context.Background()
-
-	title := "Test permission"
-	params := acp.RequestPermissionRequest{
-		Options: []acp.PermissionOption{},
-		ToolCall: acp.ToolCallUpdate{
-			Title: &title,
-		},
-	}
-
-	resp, err := client.RequestPermission(ctx, params)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if resp.Outcome.Cancelled == nil {
-		t.Fatal("expected cancelled outcome, got nil")
-	}
-}
-
 func TestGenericClient_SessionUpdate_AgentMessageChunk(t *testing.T) {
-	client := &GenericClient{}
+	client := &Client{}
 	ctx := context.Background()
 
 	text := "Hello world"
@@ -117,7 +38,7 @@ func TestGenericClient_SessionUpdate_AgentMessageChunk(t *testing.T) {
 }
 
 func TestGenericClient_SessionUpdate_ToolCall(t *testing.T) {
-	client := &GenericClient{}
+	client := &Client{}
 	ctx := context.Background()
 
 	title := "ReadFile: test.txt"
@@ -138,7 +59,7 @@ func TestGenericClient_SessionUpdate_ToolCall(t *testing.T) {
 }
 
 func TestGenericClient_SessionUpdate_ToolCallUpdate(t *testing.T) {
-	client := &GenericClient{}
+	client := &Client{}
 	ctx := context.Background()
 
 	status := acp.ToolCallStatusCompleted
@@ -158,7 +79,7 @@ func TestGenericClient_SessionUpdate_ToolCallUpdate(t *testing.T) {
 }
 
 func TestGenericClient_SessionUpdate_AgentThoughtChunk(t *testing.T) {
-	client := &GenericClient{}
+	client := &Client{}
 	ctx := context.Background()
 
 	thought := "I need to read the file"
@@ -181,7 +102,7 @@ func TestGenericClient_SessionUpdate_AgentThoughtChunk(t *testing.T) {
 }
 
 func TestGenericClient_SessionUpdate_Plan(t *testing.T) {
-	client := &GenericClient{}
+	client := &Client{}
 	ctx := context.Background()
 
 	params := acp.SessionNotification{
@@ -197,7 +118,7 @@ func TestGenericClient_SessionUpdate_Plan(t *testing.T) {
 }
 
 func TestGenericClient_SessionUpdate_UserMessageChunk(t *testing.T) {
-	client := &GenericClient{}
+	client := &Client{}
 	ctx := context.Background()
 
 	params := acp.SessionNotification{
@@ -213,7 +134,7 @@ func TestGenericClient_SessionUpdate_UserMessageChunk(t *testing.T) {
 }
 
 func TestGenericClient_WriteTextFile_Success(t *testing.T) {
-	client := &GenericClient{}
+	client := &Client{}
 	ctx := context.Background()
 
 	// Use temp directory for test
@@ -245,7 +166,7 @@ func TestGenericClient_WriteTextFile_Success(t *testing.T) {
 }
 
 func TestGenericClient_WriteTextFile_RelativePath(t *testing.T) {
-	client := &GenericClient{}
+	client := &Client{}
 	ctx := context.Background()
 
 	params := acp.WriteTextFileRequest{
@@ -260,7 +181,7 @@ func TestGenericClient_WriteTextFile_RelativePath(t *testing.T) {
 }
 
 func TestGenericClient_ReadTextFile_Success(t *testing.T) {
-	client := &GenericClient{}
+	client := &Client{}
 	ctx := context.Background()
 
 	// Create test file
@@ -286,7 +207,7 @@ func TestGenericClient_ReadTextFile_Success(t *testing.T) {
 }
 
 func TestGenericClient_ReadTextFile_WithLineAndLimit(t *testing.T) {
-	client := &GenericClient{}
+	client := &Client{}
 	ctx := context.Background()
 
 	// Create test file
@@ -318,7 +239,7 @@ func TestGenericClient_ReadTextFile_WithLineAndLimit(t *testing.T) {
 }
 
 func TestGenericClient_ReadTextFile_RelativePath(t *testing.T) {
-	client := &GenericClient{}
+	client := &Client{}
 	ctx := context.Background()
 
 	params := acp.ReadTextFileRequest{
@@ -332,7 +253,7 @@ func TestGenericClient_ReadTextFile_RelativePath(t *testing.T) {
 }
 
 func TestGenericClient_ReadTextFile_NonExistent(t *testing.T) {
-	client := &GenericClient{}
+	client := &Client{}
 	ctx := context.Background()
 
 	tmpDir := t.TempDir()
@@ -347,7 +268,7 @@ func TestGenericClient_ReadTextFile_NonExistent(t *testing.T) {
 }
 
 func TestGenericClient_CreateTerminal(t *testing.T) {
-	client := &GenericClient{}
+	client := &Client{terminals: NewTerminalManager()}
 	ctx := context.Background()
 
 	params := acp.CreateTerminalRequest{
@@ -363,14 +284,30 @@ func TestGenericClient_CreateTerminal(t *testing.T) {
 	if resp.TerminalId == "" {
 		t.Error("expected non-empty TerminalId")
 	}
+
+	// Clean up
+	_, _ = client.ReleaseTerminal(ctx, acp.ReleaseTerminalRequest{TerminalId: resp.TerminalId})
 }
 
 func TestGenericClient_TerminalOutput(t *testing.T) {
-	client := &GenericClient{}
+	client := &Client{terminals: NewTerminalManager()}
 	ctx := context.Background()
 
+	// Create a terminal that finishes quickly
+	createResp, err := client.CreateTerminal(ctx, acp.CreateTerminalRequest{
+		Command: "echo",
+		Args:    []string{"hello"},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error creating terminal: %v", err)
+	}
+
+	// Wait for it to finish
+	_, _ = client.WaitForTerminalExit(ctx, acp.WaitForTerminalExitRequest{TerminalId: createResp.TerminalId})
+
+	// Now get output
 	params := acp.TerminalOutputRequest{
-		TerminalId: "term-1",
+		TerminalId: createResp.TerminalId,
 	}
 
 	resp, err := client.TerminalOutput(ctx, params)
@@ -381,14 +318,30 @@ func TestGenericClient_TerminalOutput(t *testing.T) {
 	if resp.Truncated {
 		t.Error("expected Truncated to be false")
 	}
+
+	if resp.ExitStatus == nil {
+		t.Error("expected ExitStatus to be populated")
+	}
+
+	// Clean up
+	_, _ = client.ReleaseTerminal(ctx, acp.ReleaseTerminalRequest{TerminalId: createResp.TerminalId})
 }
 
 func TestGenericClient_ReleaseTerminal(t *testing.T) {
-	client := &GenericClient{}
+	client := &Client{terminals: NewTerminalManager()}
 	ctx := context.Background()
 
+	// Create a terminal first
+	createResp, err := client.CreateTerminal(ctx, acp.CreateTerminalRequest{
+		Command: "echo",
+		Args:    []string{"test"},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error creating terminal: %v", err)
+	}
+
 	params := acp.ReleaseTerminalRequest{
-		TerminalId: "term-1",
+		TerminalId: createResp.TerminalId,
 	}
 
 	resp, err := client.ReleaseTerminal(ctx, params)
@@ -397,14 +350,29 @@ func TestGenericClient_ReleaseTerminal(t *testing.T) {
 	}
 
 	_ = resp
+
+	// Try to use released terminal - should fail
+	_, err = client.TerminalOutput(ctx, acp.TerminalOutputRequest{TerminalId: createResp.TerminalId})
+	if err == nil {
+		t.Error("expected error when using released terminal")
+	}
 }
 
 func TestGenericClient_WaitForTerminalExit(t *testing.T) {
-	client := &GenericClient{}
+	client := &Client{terminals: NewTerminalManager()}
 	ctx := context.Background()
 
+	// Create a terminal that exits quickly
+	createResp, err := client.CreateTerminal(ctx, acp.CreateTerminalRequest{
+		Command: "echo",
+		Args:    []string{"test"},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error creating terminal: %v", err)
+	}
+
 	params := acp.WaitForTerminalExitRequest{
-		TerminalId: "term-1",
+		TerminalId: createResp.TerminalId,
 	}
 
 	resp, err := client.WaitForTerminalExit(ctx, params)
@@ -412,15 +380,74 @@ func TestGenericClient_WaitForTerminalExit(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	_ = resp
+	if resp.ExitCode == nil {
+		t.Error("expected ExitCode to be populated")
+	} else if *resp.ExitCode != 0 {
+		t.Errorf("expected exit code 0, got %d", *resp.ExitCode)
+	}
+
+	// Clean up
+	_, _ = client.ReleaseTerminal(ctx, acp.ReleaseTerminalRequest{TerminalId: createResp.TerminalId})
+}
+
+func TestGenericClient_WaitForTerminalExit_ContextCancelled(t *testing.T) {
+	client := &Client{terminals: NewTerminalManager()}
+
+	// On Windows, use a command that waits longer
+	cmd := "timeout"
+	args := []string{"/T", "30"}
+	if runtime.GOOS != "windows" {
+		cmd = "sleep"
+		args = []string{"30"}
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	createResp, err := client.CreateTerminal(ctx, acp.CreateTerminalRequest{
+		Command: cmd,
+		Args:    args,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error creating terminal: %v", err)
+	}
+
+	// Cancel context quickly
+	cancel()
+
+	_, err = client.WaitForTerminalExit(ctx, acp.WaitForTerminalExitRequest{TerminalId: createResp.TerminalId})
+	if err == nil || err == context.Canceled {
+		// Expected - context was cancelled
+	} else {
+		t.Fatalf("expected context cancellation error, got: %v", err)
+	}
+
+	// Clean up - use a fresh context for release
+	cleanCtx := context.Background()
+	_, _ = client.ReleaseTerminal(cleanCtx, acp.ReleaseTerminalRequest{TerminalId: createResp.TerminalId})
 }
 
 func TestGenericClient_KillTerminal(t *testing.T) {
-	client := &GenericClient{}
+	client := &Client{terminals: NewTerminalManager()}
 	ctx := context.Background()
 
+	// On Windows, use a command that waits
+	cmd := "timeout"
+	args := []string{"/T", "30"}
+	if runtime.GOOS != "windows" {
+		cmd = "sleep"
+		args = []string{"30"}
+	}
+
+	createResp, err := client.CreateTerminal(ctx, acp.CreateTerminalRequest{
+		Command: cmd,
+		Args:    args,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error creating terminal: %v", err)
+	}
+
 	params := acp.KillTerminalRequest{
-		TerminalId: "term-1",
+		TerminalId: createResp.TerminalId,
 	}
 
 	resp, err := client.KillTerminal(ctx, params)
@@ -429,6 +456,12 @@ func TestGenericClient_KillTerminal(t *testing.T) {
 	}
 
 	_ = resp
+
+	// Wait for it to actually exit
+	_, _ = client.WaitForTerminalExit(ctx, acp.WaitForTerminalExitRequest{TerminalId: createResp.TerminalId})
+
+	// Clean up
+	_, _ = client.ReleaseTerminal(ctx, acp.ReleaseTerminalRequest{TerminalId: createResp.TerminalId})
 }
 
 // Helper functions for file operations

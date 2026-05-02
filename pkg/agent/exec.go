@@ -22,8 +22,7 @@ var messages = cli.Messages{
 }
 
 func Exec(
-	jobName string,
-	laneName string,
+	name string,
 	cwd string,
 	prompt string,
 	command []string,
@@ -35,7 +34,7 @@ func Exec(
 
 	agent := command[0]
 
-	logger := newLogger(agent, laneName, jobName)
+	logger := newLogger(agent, name)
 
 	cmd := exec.CommandContext(ctx, agent, command[1:]...)
 	cmd.Stderr = os.Stderr
@@ -55,9 +54,13 @@ func Exec(
 	}
 	defer cmd.Process.Kill()
 
-	client := &GenericClient{
-		autoApprove: true,
-		logger:      logger,
+	client := &Client{
+		logger:       logger,
+		terminals:    NewTerminalManager(),
+		toolCallById: make(map[acp.ToolCallId]*acp.SessionUpdateToolCall),
+		agentChunk:   &Chunk{logger: logger},
+		userChunk:    &Chunk{logger: logger, prefix: "User"},
+		thoughtChunk: &Chunk{logger: logger, prefix: "Thinking"},
 	}
 	conn := acp.NewClientSideConnection(client, stdin, stdout)
 	conn.SetLogger(slog.Default())

@@ -39,7 +39,7 @@ func Load(projectDir string) (*Project, error) {
 	}
 
 	// Validate directory structure
-	if err := validateDir(projectDir); err != nil {
+	if err := ValidateDir(projectDir); err != nil {
 		return nil, fmt.Errorf("Invalid project directory: %v\n", err)
 	}
 
@@ -74,9 +74,11 @@ func Load(projectDir string) (*Project, error) {
 	return &proj, nil
 }
 
-// validateDir checks if the given directory contains a valid .orqen/orqen.yaml file.
+// ValidateDir checks if the given directory contains a valid .orqen/orqen.yaml file.
 // Returns an error if the directory doesn't exist, doesn't contain .orqen, or the config file is missing.
-func validateDir(projectDir string) error {
+func ValidateDir(projectDir string) error {
+	projectDir = filepath.Clean(projectDir)
+
 	// Check if directory exists
 	info, err := os.Stat(projectDir)
 	if err != nil {

@@ -1,25 +1,28 @@
 package agent
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/coder/acp-go-sdk"
 )
 
-type GenericClient struct {
-	autoApprove    bool
-	thoughtStarted bool
-	thoughtParts   []string
-	thoughtLastMsg time.Time
-	logger         Logger
+// Client implements the ACP client interface, providing tool execution,
+// file operations, and terminal management capabilities.
+type Client struct {
+	logger       Logger
+	agentChunk   *Chunk
+	userChunk    *Chunk
+	thoughtChunk *Chunk
+	terminals    *TerminalManager
+	toolCallById map[acp.ToolCallId]*acp.SessionUpdateToolCall
 }
 
-func (c *GenericClient) RequestPermission(ctx context.Context, params acp.RequestPermissionRequest) (acp.RequestPermissionResponse, error) {
+func (c *Client) RequestPermission(ctx context.Context, params acp.RequestPermissionRequest) (acp.RequestPermissionResponse, error) {
 	// Prefer an allow option if present; otherwise choose the first option.
 	for _, o := range params.Options {
 		if o.Kind == acp.PermissionOptionKindAllowOnce || o.Kind == acp.PermissionOptionKindAllowAlways {
@@ -46,150 +49,245 @@ func (c *GenericClient) RequestPermission(ctx context.Context, params acp.Reques
 			Cancelled: &acp.RequestPermissionOutcomeCancelled{},
 		},
 	}, nil
-
 }
 
-func (c *GenericClient) SessionUpdate(ctx context.Context, params acp.SessionNotification) error {
+func (c *Client) SessionUpdate(ctx context.Context, params acp.SessionNotification) error {
 	u := params.Update
 
 	switch {
 	case u.AgentThoughtChunk != nil:
 		// A chunk of the agent's internal reasoning being streamed.
 
-		thought := u.AgentThoughtChunk.Content
-		if thought.Text != nil {
-			if !c.thoughtStarted {
-				c.logger.Log("\033[90mThinking ...\033[0m\n")
-				c.thoughtStarted = true
-				c.thoughtLastMsg = time.Now()
-				c.thoughtParts = append(c.thoughtParts, thought.Text.Text)
-			} else {
-				c.thoughtParts = append(c.thoughtParts, thought.Text.Text)
-				c.checkThough()
-			}
+		c.userChunk.stop()
+		c.agentChunk.stop()
+
+		content := u.AgentThoughtChunk.Content
+		if content.Text != nil {
+			c.thoughtChunk.add(content.Text.Text)
 		}
 
 	case u.UserMessageChunk != nil:
 		// A chunk of the user's message being streamed.
 
-		c.thoughtStarted = false
-		c.checkThough()
+		c.agentChunk.stop()
+		c.thoughtChunk.stop()
 
 		content := u.UserMessageChunk.Content
 		if content.Text != nil {
-			c.logger.Log("\n👤 %s\n", content.Text.Text)
+			c.userChunk.add(content.Text.Text)
 		}
 
 	case u.AgentMessageChunk != nil:
 		// A chunk of the agent's response being streamed.
 
-		c.thoughtStarted = false
-		c.checkThough()
+		c.userChunk.stop()
+		c.thoughtChunk.stop()
 
 		content := u.AgentMessageChunk.Content
 		if content.Text != nil {
-			fmt.Printf("%s", content.Text.Text)
+			c.agentChunk.add(content.Text.Text)
 		}
 
 	case u.ToolCall != nil:
 		// Notification that a new tool call has been initiated.
 
-		c.thoughtStarted = false
-		c.checkThough()
+		c.userChunk.stop()
+		c.agentChunk.stop()
+		c.thoughtChunk.stop()
 
-		c.logger.Log("%s \033[90m(%s)\033[0m\n", u.ToolCall.Title, u.ToolCall.Status)
+		c.logger.Log("\033[90m(Tool call %s)\033[0m %s\n", u.ToolCall.Status, u.ToolCall.Title)
+
+		c.toolCallById[u.ToolCall.ToolCallId] = u.ToolCall
 
 	case u.ToolCallUpdate != nil:
 		// Update on the status or results of a tool call.
 
-		c.thoughtStarted = false
-		c.checkThough()
+		c.userChunk.stop()
+		c.agentChunk.stop()
+		c.thoughtChunk.stop()
+
+		uToolCall := u.ToolCallUpdate
+		sToolCall, exists := c.toolCallById[uToolCall.ToolCallId]
 
 		title := ""
-		if u.ToolCallUpdate.Title != nil {
-			title = *u.ToolCallUpdate.Title
+		if uToolCall.Title != nil {
+			title = *uToolCall.Title
 		}
 		status := ""
-		if u.ToolCallUpdate.Status != nil {
-			status = string(*u.ToolCallUpdate.Status)
+		if uToolCall.Status != nil {
+			status = string(*uToolCall.Status)
 		}
+
+		if exists && (status == string(acp.ToolCallStatusCompleted) || status == string(acp.ToolCallStatusFailed)) {
+			delete(c.toolCallById, uToolCall.ToolCallId)
+		}
+
+		statusP := fmt.Sprintf("%-11s", status)
+
 		if title != "" {
-			c.logger.Log("%s [%s]\n", title, status)
+			c.logger.Log("\033[90m(Tool call %s)\033[0m %s\n", statusP, title)
 		} else {
-			c.logger.Log("Tool call `%s` [%s]\n", u.ToolCallUpdate.ToolCallId, status)
+
+			switch v := uToolCall.RawOutput.(type) {
+			case string:
+				if v == "" {
+					if exists {
+						c.logger.Log("\033[90m(Tool call %s)\033[0m %s\n", statusP, sToolCall.Title)
+					}
+				} else {
+					c.logger.Log("\033[90m(Tool call %s)\033[0m %s\n", statusP, v)
+				}
+			default:
+				if exists {
+					c.logger.Log("\033[90m(Tool call %s)\033[0m %s\n", statusP, sToolCall.Title)
+				} else {
+					c.logger.Log("\033[90m(Tool call %s)\033[0m %s\n", statusP, v)
+				}
+			}
 		}
 
 	case u.Plan != nil:
 		// The agent's execution plan for complex tasks.
 		// See protocol docs: [Agent Plan](https://agentclientprotocol.com/protocol/agent-plan)
 
-		c.thoughtStarted = false
-		c.checkThough()
+		c.userChunk.stop()
+		c.agentChunk.stop()
+		c.thoughtChunk.stop()
 
 		c.logger.Log("Plan updated\n")
 
+	case u.AvailableCommandsUpdate != nil:
+		// Available commands are ready or have changed
+
+		c.logger.Log("AvailableCommandsUpdate\n")
+
+	case u.CurrentModeUpdate != nil:
+		// The current mode of the session has changed
+		//
+		// See protocol docs: [Session Modes](https://agentclientprotocol.com/protocol/session-modes)
+
+		c.logger.Log("CurrentModeUpdate\n")
+
+	case u.ConfigOptionUpdate != nil:
+		// Session configuration options have been updated.
+
+		c.logger.Log("ConfigOptionUpdate\n")
+
+	case u.SessionInfoUpdate != nil:
+		// Session metadata has been updated (title, timestamps, custom metadata)
+		c.logger.Log("SessionInfoUpdate\n")
+
+	case u.UsageUpdate != nil:
+		// **UNSTABLE**
+		//
+		// This capability is not part of the spec yet, and may be removed or changed at any point.
+		//
+		// Context window and cost update for the session.
+
+		c.logger.Log("UsageUpdate\n")
 	}
 
-	// // Available commands are ready or have changed
-	// AvailableCommandsUpdate *SessionAvailableCommandsUpdate `json:"-"`
-	// // The current mode of the session has changed
-	// //
-	// // See protocol docs: [Session Modes](https://agentclientprotocol.com/protocol/session-modes)
-	// CurrentModeUpdate *SessionCurrentModeUpdate `json:"-"`
-	// // Session configuration options have been updated.
-	// ConfigOptionUpdate *SessionConfigOptionUpdate `json:"-"`
-	// // Session metadata has been updated (title, timestamps, custom metadata)
-	// SessionInfoUpdate *SessionSessionInfoUpdate `json:"-"`
-	// // **UNSTABLE**
-	// //
-	// // This capability is not part of the spec yet, and may be removed or changed at any point.
-	// //
-	// // Context window and cost update for the session.
-	// UsageUpdate *SessionUsageUpdate `json:"-"`
 	return nil
 }
 
-func (c *GenericClient) checkThough() {
-	if !c.thoughtStarted {
-		if len(c.thoughtParts) > 0 {
-			c.logger.Log("Thinking: %s\n", strings.TrimSpace(strings.Join(c.thoughtParts, "")))
-			c.thoughtParts = nil
-		}
-	} else {
-		if c.thoughtLastMsg.Before(time.Now().Add(-10 * time.Second)) {
-			c.logger.Log("\033[90mThinking ...\033[0m\n")
-			c.thoughtLastMsg = time.Now()
-		}
-	}
-}
+// func (c *Client) checkThough() {
+// 	if !c.thoughtStarted {
+// 		if len(c.thoughtParts) > 0 {
+// 			c.logger.Log(
+// 				"\033[90m(Thinking) %s\033[0m\n",
+// 				strings.TrimSpace(strings.Join(c.thoughtParts, "")),
+// 			)
+// 			c.thoughtParts = nil
+// 		}
+// 	} else {
+// 		if c.thoughtLastMsg.Before(time.Now().Add(-thinkingTimeMsg)) {
+// 			c.logger.Log("\033[90mThinking ...\033[0m\n")
+// 			c.thoughtLastMsg = time.Now()
+// 		}
+// 	}
+// }
 
-func (c *GenericClient) ReadTextFile(ctx context.Context, params acp.ReadTextFileRequest) (acp.ReadTextFileResponse, error) {
+// ReadTextFile reads text file content with optional line-based pagination.
+//
+// This implementation uses bufio.Scanner for memory-efficient line-by-line reading,
+// avoiding loading the entire file into memory. It supports the ACP protocol's
+// line/limit parameters for targeted partial reads:
+//   - Line: 1-based starting line number (optional)
+//   - Limit: maximum number of lines to return (optional)
+//
+// Performance characteristics:
+//   - Memory: O(L) where L = number of requested lines, not file size
+//   - I/O: Sequential read with early exit once limit is reached
+//   - Suitable for files of any size, including multi-gigabyte log files
+//
+// Edge cases:
+//   - If Line exceeds total lines: returns empty content
+//   - If Limit exceeds remaining lines: returns available lines
+//   - If Line/Limit not specified: returns entire file
+//
+// See protocol docs: [Read Text File](https://agentclientprotocol.com/protocol/file-system#reading-files)
+func (c *Client) ReadTextFile(ctx context.Context, params acp.ReadTextFileRequest) (acp.ReadTextFileResponse, error) {
 	if !filepath.IsAbs(params.Path) {
 		return acp.ReadTextFileResponse{}, fmt.Errorf("path must be absolute: %s", params.Path)
 	}
-	b, err := os.ReadFile(params.Path)
+
+	file, err := os.Open(params.Path)
 	if err != nil {
+		return acp.ReadTextFileResponse{}, fmt.Errorf("open %s: %w", params.Path, err)
+	}
+	defer file.Close()
+
+	// Calculate start line (1-based) and limit
+	startLine := 1
+	if params.Line != nil && *params.Line > 0 {
+		startLine = *params.Line
+	}
+
+	limit := 0 // 0 means no limit
+	if params.Limit != nil && *params.Limit > 0 {
+		limit = *params.Limit
+	}
+
+	// Configure scanner with larger buffer for better performance
+	scanner := bufio.NewScanner(file)
+	scanner.Buffer(make([]byte, 0, 64*1024), 1024*1024) // 64KB initial, 1MB max
+
+	var result strings.Builder
+	currentLine := 0
+	linesCollected := 0
+
+	for scanner.Scan() {
+		currentLine++
+
+		// Skip lines before start
+		if currentLine < startLine {
+			continue
+		}
+
+		// Stop if we've collected enough lines
+		if limit > 0 && linesCollected >= limit {
+			break
+		}
+
+		// Add newline separator between lines
+		if linesCollected > 0 {
+			result.WriteByte('\n')
+		}
+		result.WriteString(scanner.Text())
+		linesCollected++
+	}
+
+	if err := scanner.Err(); err != nil {
 		return acp.ReadTextFileResponse{}, fmt.Errorf("read %s: %w", params.Path, err)
 	}
-	content := string(b)
-	if params.Line != nil || params.Limit != nil {
-		lines := strings.Split(content, "\n")
-		start := 0
-		if params.Line != nil && *params.Line > 0 {
-			start = min(max(*params.Line-1, 0), len(lines))
-		}
-		end := len(lines)
-		if params.Limit != nil && *params.Limit > 0 {
-			if start+*params.Limit < end {
-				end = start + *params.Limit
-			}
-		}
-		content = strings.Join(lines[start:end], "\n")
-	}
-	return acp.ReadTextFileResponse{Content: content}, nil
+
+	return acp.ReadTextFileResponse{Content: result.String()}, nil
 }
 
-func (c *GenericClient) WriteTextFile(ctx context.Context, params acp.WriteTextFileRequest) (acp.WriteTextFileResponse, error) {
+// WriteTextFile Request to write content to a text file.
+//
+// Only available if the client supports the 'fs.writeTextFile' capability.
+func (c *Client) WriteTextFile(ctx context.Context, params acp.WriteTextFileRequest) (acp.WriteTextFileResponse, error) {
 	if !filepath.IsAbs(params.Path) {
 		return acp.WriteTextFileResponse{}, fmt.Errorf("path must be absolute: %s", params.Path)
 	}
@@ -205,24 +303,104 @@ func (c *GenericClient) WriteTextFile(ctx context.Context, params acp.WriteTextF
 	return acp.WriteTextFileResponse{}, nil
 }
 
-// Optional/UNSTABLE terminal methods: implement as no-ops for example
-func (c *GenericClient) CreateTerminal(ctx context.Context, params acp.CreateTerminalRequest) (acp.CreateTerminalResponse, error) {
-	return acp.CreateTerminalResponse{TerminalId: "term-1"}, nil
+// CreateTerminal creates a new terminal session and starts the specified command.
+// The command runs in the background with stdout/stderr captured in memory buffers;
+// output never leaks to the parent process's terminal.
+//
+// See protocol docs: [Terminal Create](https://agentclientprotocol.com/protocol/terminals)
+func (c *Client) CreateTerminal(ctx context.Context, params acp.CreateTerminalRequest) (acp.CreateTerminalResponse, error) {
+	// Convert env from ACP format to internal format
+	env := make([]struct{ Name, Value string }, 0, len(params.Env))
+	for _, e := range params.Env {
+		env = append(env, struct{ Name, Value string }{Name: e.Name, Value: e.Value})
+	}
+
+	cwd := ""
+	if params.Cwd != nil {
+		cwd = *params.Cwd
+	}
+
+	terminalID, err := c.terminals.createSession(
+		ctx,
+		params.Command,
+		params.Args,
+		env,
+		cwd,
+		params.OutputByteLimit,
+	)
+	if err != nil {
+		return acp.CreateTerminalResponse{}, fmt.Errorf("create terminal: %w", err)
+	}
+
+	return acp.CreateTerminalResponse{TerminalId: terminalID}, nil
 }
 
-func (c *GenericClient) TerminalOutput(ctx context.Context, params acp.TerminalOutputRequest) (acp.TerminalOutputResponse, error) {
-	return acp.TerminalOutputResponse{Output: "", Truncated: false}, nil
+// TerminalOutput polls the captured output of a terminal session.
+// If the command has finished, ExitStatus is populated with the exit code
+// and/or signal. Output is truncated from the beginning if it exceeds the
+// configured byte limit.
+//
+// See protocol docs: [Terminal Output](https://agentclientprotocol.com/protocol/terminals)
+func (c *Client) TerminalOutput(ctx context.Context, params acp.TerminalOutputRequest) (acp.TerminalOutputResponse, error) {
+	output, truncated, exitStatusInternal, err := c.terminals.terminalOutput(params.TerminalId)
+	if err != nil {
+		return acp.TerminalOutputResponse{}, err
+	}
+
+	resp := acp.TerminalOutputResponse{
+		Output:    output,
+		Truncated: truncated,
+	}
+
+	if exitStatusInternal != nil {
+		resp.ExitStatus = &acp.TerminalExitStatus{
+			ExitCode: exitStatusInternal.ExitCode,
+			Signal:   exitStatusInternal.Signal,
+		}
+	}
+
+	return resp, nil
 }
 
-func (c *GenericClient) ReleaseTerminal(ctx context.Context, params acp.ReleaseTerminalRequest) (acp.ReleaseTerminalResponse, error) {
+// ReleaseTerminal kills the running process (if active), frees all resources,
+// and permanently invalidates the terminal ID. If the terminal is embedded in
+// a tool call, the client should continue displaying its output visually.
+//
+// See protocol docs: [Terminal Release](https://agentclientprotocol.com/protocol/terminals)
+func (c *Client) ReleaseTerminal(ctx context.Context, params acp.ReleaseTerminalRequest) (acp.ReleaseTerminalResponse, error) {
+	if err := c.terminals.releaseTerminal(params.TerminalId); err != nil {
+		return acp.ReleaseTerminalResponse{}, err
+	}
 	return acp.ReleaseTerminalResponse{}, nil
 }
 
-func (c *GenericClient) WaitForTerminalExit(ctx context.Context, params acp.WaitForTerminalExitRequest) (acp.WaitForTerminalExitResponse, error) {
-	return acp.WaitForTerminalExitResponse{}, nil
+// WaitForTerminalExit blocks until the terminal command completes or the
+// context is cancelled. It returns the exit code and signal that terminated
+// the process. This method does not block the parent execution — it uses a
+// context-aware select to respect cancellation.
+//
+// See protocol docs: [Terminal Wait For Exit](https://agentclientprotocol.com/protocol/terminals)
+func (c *Client) WaitForTerminalExit(ctx context.Context, params acp.WaitForTerminalExitRequest) (acp.WaitForTerminalExitResponse, error) {
+	exitCode, signal, err := c.terminals.waitForExit(ctx, params.TerminalId)
+	if err != nil {
+		return acp.WaitForTerminalExitResponse{}, err
+	}
+
+	return acp.WaitForTerminalExitResponse{
+		ExitCode: exitCode,
+		Signal:   signal,
+	}, nil
 }
 
-// KillTerminal implements acp.Client.
-func (c *GenericClient) KillTerminal(ctx context.Context, params acp.KillTerminalRequest) (acp.KillTerminalResponse, error) {
+// KillTerminal sends a termination signal to the running process. On Unix-like
+// systems it sends SIGINT with a grace period before SIGKILL; on Windows it
+// calls Process.Kill() directly. The terminal ID remains valid after kill —
+// call ReleaseTerminal afterward to free resources.
+//
+// See protocol docs: [Terminal Kill](https://agentclientprotocol.com/protocol/terminals)
+func (c *Client) KillTerminal(ctx context.Context, params acp.KillTerminalRequest) (acp.KillTerminalResponse, error) {
+	if err := c.terminals.killTerminal(params.TerminalId); err != nil {
+		return acp.KillTerminalResponse{}, err
+	}
 	return acp.KillTerminalResponse{}, nil
 }

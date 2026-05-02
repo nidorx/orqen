@@ -23,7 +23,7 @@ const banner = `
 ██║   ██║██╔══██╗██║▄▄ ██║██╔══╝  ██║╚██╗██║
 ╚██████╔╝██║  ██║╚██████╔╝███████╗██║ ╚████║
  ╚═════╝ ╚═╝  ╚═╝ ╚══▀▀═╝ ╚══════╝╚═╝  ╚═══╝
-%s - https://orqen.ai.br
+%s - %s
 
 `
 
@@ -44,7 +44,10 @@ var messages = cli.Messages{
 
 func main() {
 
-	conf.SetVersion(conf.Version{Value: "v0.0.1"})
+	conf.SetInfo(conf.Info{
+		Version: "v0.0.1",
+		Website: "https://github.com/nidorx/orqen", // https://orqen.ai.br
+	})
 
 	isMCP := flag.Bool("mcp", false, "Run as a MCP Stdio")
 	mcpPort := flag.String("port", "8080", "Orqen port (MCP Stdio)")
@@ -53,6 +56,7 @@ func main() {
 	flag.Parse()
 
 	if *isMCP {
+		// mcp.DEBUG_STDIO = true
 		mcp.StartStdio(*mcpPort, *mcpProjectId, *mcpJobId)
 		return
 	}
@@ -61,7 +65,7 @@ func main() {
 		panic("invalid args")
 	}
 
-	fmt.Printf("\033[36m"+banner+"\033[0m", conf.GetVersion().Value)
+	fmt.Printf("\033[36m"+banner+"\033[0m", conf.GetInfo().Version, conf.GetInfo().Website)
 	time.Sleep(1000 * time.Millisecond)
 	cli.Printf(messages, "what_is_orqen")
 	time.Sleep(500 * time.Millisecond)

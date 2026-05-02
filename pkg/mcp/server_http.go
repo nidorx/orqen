@@ -33,3 +33,7 @@ func ServerHttp(proj *project.Project) http.Handler {
 	// 	mcpHandler.ServeHTTP(w, req)
 	// }
 }
+
+func addTool[In, Out any](s *mcp.Server, tool string, h ToolProjectHandler[In, Out], proj *project.Project) {
+	mcp.AddTool(s, tools[tool], projectHandler2MCP(proj, h))
+}

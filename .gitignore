@@ -36,3 +36,6 @@ go.work.sum
 docs/adr
 .ignore/
 tasks
+
+# debug files
+mcp_stdio_debug.txt
