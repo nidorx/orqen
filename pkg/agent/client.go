@@ -14,12 +14,8 @@ import (
 // Client implements the ACP client interface, providing tool execution,
 // file operations, and terminal management capabilities.
 type Client struct {
-	logger       Logger
-	agentChunk   *Chunk
-	userChunk    *Chunk
-	thoughtChunk *Chunk
-	terminals    *TerminalManager
-	toolCallById map[acp.ToolCallId]*acp.SessionUpdateToolCall
+	logger    Logger
+	terminals *TerminalManager
 }
 
 func (c *Client) RequestPermission(ctx context.Context, params acp.RequestPermissionRequest) (acp.RequestPermissionResponse, error) {
@@ -53,113 +49,25 @@ func (c *Client) RequestPermission(ctx context.Context, params acp.RequestPermis
 
 func (c *Client) SessionUpdate(ctx context.Context, params acp.SessionNotification) error {
 	u := params.Update
+	cs := sessionGetClient(params.SessionId)
 
 	switch {
 	case u.AgentThoughtChunk != nil:
-		// A chunk of the agent's internal reasoning being streamed.
-
-		c.userChunk.stop()
-		c.agentChunk.stop()
-
-		content := u.AgentThoughtChunk.Content
-		if content.Text != nil {
-			c.thoughtChunk.add(content.Text.Text)
-		}
-
+		cs.SessionUpdate(ctx, params)
 	case u.UserMessageChunk != nil:
-		// A chunk of the user's message being streamed.
-
-		c.agentChunk.stop()
-		c.thoughtChunk.stop()
-
-		content := u.UserMessageChunk.Content
-		if content.Text != nil {
-			c.userChunk.add(content.Text.Text)
-		}
-
+		cs.SessionUpdate(ctx, params)
 	case u.AgentMessageChunk != nil:
-		// A chunk of the agent's response being streamed.
-
-		c.userChunk.stop()
-		c.thoughtChunk.stop()
-
-		content := u.AgentMessageChunk.Content
-		if content.Text != nil {
-			c.agentChunk.add(content.Text.Text)
-		}
-
+		cs.SessionUpdate(ctx, params)
 	case u.ToolCall != nil:
-		// Notification that a new tool call has been initiated.
-
-		c.userChunk.stop()
-		c.agentChunk.stop()
-		c.thoughtChunk.stop()
-
-		c.logger.Log("\033[90m(Tool call %s)\033[0m %s\n", u.ToolCall.Status, u.ToolCall.Title)
-
-		c.toolCallById[u.ToolCall.ToolCallId] = u.ToolCall
-
+		cs.SessionUpdate(ctx, params)
 	case u.ToolCallUpdate != nil:
-		// Update on the status or results of a tool call.
-
-		c.userChunk.stop()
-		c.agentChunk.stop()
-		c.thoughtChunk.stop()
-
-		uToolCall := u.ToolCallUpdate
-		sToolCall, exists := c.toolCallById[uToolCall.ToolCallId]
-
-		title := ""
-		if uToolCall.Title != nil {
-			title = *uToolCall.Title
-		}
-		status := ""
-		if uToolCall.Status != nil {
-			status = string(*uToolCall.Status)
-		}
-
-		if exists && (status == string(acp.ToolCallStatusCompleted) || status == string(acp.ToolCallStatusFailed)) {
-			delete(c.toolCallById, uToolCall.ToolCallId)
-		}
-
-		statusP := fmt.Sprintf("%-11s", status)
-
-		if title != "" {
-			c.logger.Log("\033[90m(Tool call %s)\033[0m %s\n", statusP, title)
-		} else {
-
-			switch v := uToolCall.RawOutput.(type) {
-			case string:
-				if v == "" {
-					if exists {
-						c.logger.Log("\033[90m(Tool call %s)\033[0m %s\n", statusP, sToolCall.Title)
-					}
-				} else {
-					c.logger.Log("\033[90m(Tool call %s)\033[0m %s\n", statusP, v)
-				}
-			default:
-				if exists {
-					c.logger.Log("\033[90m(Tool call %s)\033[0m %s\n", statusP, sToolCall.Title)
-				} else {
-					c.logger.Log("\033[90m(Tool call %s)\033[0m %s\n", statusP, v)
-				}
-			}
-		}
-
+		cs.SessionUpdate(ctx, params)
+	case u.SessionInfoUpdate != nil:
+		cs.SessionUpdate(ctx, params)
 	case u.Plan != nil:
-		// The agent's execution plan for complex tasks.
-		// See protocol docs: [Agent Plan](https://agentclientprotocol.com/protocol/agent-plan)
-
-		c.userChunk.stop()
-		c.agentChunk.stop()
-		c.thoughtChunk.stop()
-
-		c.logger.Log("Plan updated\n")
-
+		cs.SessionUpdate(ctx, params)
 	case u.AvailableCommandsUpdate != nil:
-		// Available commands are ready or have changed
-
-		c.logger.Log("AvailableCommandsUpdate\n")
+		cs.SessionUpdate(ctx, params)
 
 	case u.CurrentModeUpdate != nil:
 		// The current mode of the session has changed
@@ -173,10 +81,6 @@ func (c *Client) SessionUpdate(ctx context.Context, params acp.SessionNotificati
 
 		c.logger.Log("ConfigOptionUpdate\n")
 
-	case u.SessionInfoUpdate != nil:
-		// Session metadata has been updated (title, timestamps, custom metadata)
-		c.logger.Log("SessionInfoUpdate\n")
-
 	case u.UsageUpdate != nil:
 		// **UNSTABLE**
 		//
@@ -189,23 +93,6 @@ func (c *Client) SessionUpdate(ctx context.Context, params acp.SessionNotificati
 
 	return nil
 }
-
-// func (c *Client) checkThough() {
-// 	if !c.thoughtStarted {
-// 		if len(c.thoughtParts) > 0 {
-// 			c.logger.Log(
-// 				"\033[90m(Thinking) %s\033[0m\n",
-// 				strings.TrimSpace(strings.Join(c.thoughtParts, "")),
-// 			)
-// 			c.thoughtParts = nil
-// 		}
-// 	} else {
-// 		if c.thoughtLastMsg.Before(time.Now().Add(-thinkingTimeMsg)) {
-// 			c.logger.Log("\033[90mThinking ...\033[0m\n")
-// 			c.thoughtLastMsg = time.Now()
-// 		}
-// 	}
-// }
 
 // ReadTextFile reads text file content with optional line-based pagination.
 //

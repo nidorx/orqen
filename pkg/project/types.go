@@ -10,16 +10,24 @@ var embedPromptsFS embed.FS
 
 const (
 
-	// ProjectConfigDir is the name of the directory containing project configuration.
-	ProjectConfigDir = ".orqen"
-	// ProjectConfigFilename is the name of the project configuration file.
-	ProjectConfigFilename = "orqen.yaml"
+	// projectConfigDir is the name of the directory containing project configuration.
+	projectConfigDir = ".orqen"
+	// projectConfigFile is the name of the project configuration file.
+	projectConfigFile = "orqen.yaml"
 )
 
 // Agent holds project-level agent settings.
 type Agent struct {
 	Default string                 `yaml:"default"`
 	Clients map[string]AgentClient `yaml:"clients"`
+}
+
+func (a *Agent) GetName(agent string) string {
+	if agent == "" {
+		agent = a.Default
+	}
+
+	return agent
 }
 
 func (a *Agent) GetCommand(agent string) []string {

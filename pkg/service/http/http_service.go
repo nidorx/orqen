@@ -58,7 +58,7 @@ func New() *Service {
 						mcpServersMu.Unlock()
 						http.Error(w, "internal server error", http.StatusInternalServerError)
 					}
-					server := mcp.ServerHttp(proj)
+					server = mcp.ServerHttp(proj)
 					mcpServers[proj] = server
 				}
 				mcpServersMu.Unlock()

@@ -11,6 +11,7 @@ import (
 	"sync"
 
 	"github.com/goccy/go-yaml"
+	"github.com/nidorx/orqen/pkg/utils"
 )
 
 var (
@@ -30,7 +31,7 @@ func Load(projectDir string) (*Project, error) {
 
 	projectDir = filepath.Clean(projectDir)
 
-	id := hashXxh64([]byte(projectDir))
+	id := utils.HashXxh64([]byte(projectDir))
 
 	projectsMu.Lock()
 	defer projectsMu.Unlock()
@@ -43,7 +44,7 @@ func Load(projectDir string) (*Project, error) {
 		return nil, fmt.Errorf("Invalid project directory: %v\n", err)
 	}
 
-	configPath := filepath.Join(projectDir, ProjectConfigDir, ProjectConfigFilename)
+	configPath := filepath.Join(projectDir, projectConfigDir, projectConfigFile)
 
 	data, err := os.ReadFile(configPath)
 	if err != nil {
@@ -93,24 +94,24 @@ func ValidateDir(projectDir string) error {
 	}
 
 	// Check if .orqen directory exists
-	orqenDir := filepath.Join(projectDir, ProjectConfigDir)
+	orqenDir := filepath.Join(projectDir, projectConfigDir)
 	orqenInfo, err := os.Stat(orqenDir)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return fmt.Errorf("directory %s does not contain a %s subdirectory", projectDir, ProjectConfigDir)
+			return fmt.Errorf("directory %s does not contain a %s subdirectory", projectDir, projectConfigDir)
 		}
-		return fmt.Errorf("error accessing %s subdirectory: %w", ProjectConfigDir, err)
+		return fmt.Errorf("error accessing %s subdirectory: %w", projectConfigDir, err)
 	}
 
 	if !orqenInfo.IsDir() {
-		return fmt.Errorf("%s exists but is not a directory", ProjectConfigDir)
+		return fmt.Errorf("%s exists but is not a directory", projectConfigDir)
 	}
 
 	// Check if orqen.yaml exists
-	configPath := filepath.Join(orqenDir, ProjectConfigFilename)
+	configPath := filepath.Join(orqenDir, projectConfigFile)
 	if _, err := os.Stat(configPath); err != nil {
 		if os.IsNotExist(err) {
-			return fmt.Errorf("%s subdirectory does not contain %s", ProjectConfigDir, ProjectConfigFilename)
+			return fmt.Errorf("%s subdirectory does not contain %s", projectConfigDir, projectConfigFile)
 		}
 		return fmt.Errorf("error accessing config file %s: %w", configPath, err)
 	}
@@ -133,12 +134,14 @@ func applyDefaults(proj *Project) {
 	for _, mod := range proj.Modules {
 		mod.Project = proj
 
+		mod.Name = strings.ReplaceAll(strings.ReplaceAll(strings.ToLower(mod.Name), " ", ""), " ", "_")
+
 		if mod.Dir == "" {
 			mod.Dir = "."
 		}
 
-		mod.DirAbs = filepath.Clean(path.Join(proj.DirAbs, mod.Dir))
-		mod.DirPrompts = filepath.Clean(path.Join(mod.DirAbs, "prompts"))
+		mod.DirAbs = filepath.Clean(filepath.Join(proj.DirAbs, mod.Dir))
+		mod.DirPrompts = filepath.Clean(filepath.Join(proj.DirAbs, projectConfigDir, mod.Name, "prompts", "generated"))
 
 		modType := strings.ToUpper(mod.Name)
 
@@ -171,8 +174,8 @@ func applyDefaults(proj *Project) {
 				fmt.Sprintf("Analyze and decompose into %s (see `%s/%s.md`)", modType, path.Join(mod.Dir, "prompts"), modType),
 				fmt.Sprintf("An idea may result in one or more %s - the agent should make appropriate judgment", modType),
 				fmt.Sprintf(
-					"Create %s using `orqen` MCP tool `create_%s`, following the template structure (`%s/%s.md`)",
-					modType, modType, path.Join(mod.Dir, "prompts"), modType,
+					"Create %s using orqen_create_item (orqen MCP Server), following the template structure (`%s/%s.md`)",
+					modType, path.Join(mod.Dir, "prompts"), modType,
 				),
 				"**Terminate execution** after processing the inbox file",
 			}
@@ -257,15 +260,15 @@ func initialize(proj *Project) error {
 								artifacts = append(artifacts, artifact)
 								artifactsExamples = append(
 									artifactsExamples,
-									fmt.Sprintf("- `$MOD_TYPE-%04d-%s.md`", i+1, artifact),
+									fmt.Sprintf("- `_$_MOD_TYPE_$_-%04d-%s.md`", i+1, artifact),
 								)
 								artifactsExamples = append(
 									artifactsExamples,
-									fmt.Sprintf("- `$MOD_TYPE-%04d-%s-02.md`", i+2, artifact),
+									fmt.Sprintf("- `_$_MOD_TYPE_$_-%04d-%s-02.md`", i+2, artifact),
 								)
 								artifactsExamples = append(
 									artifactsExamples,
-									fmt.Sprintf("- `$MOD_TYPE-%04d-%s-03.md`", i+3, artifact),
+									fmt.Sprintf("- `_$_MOD_TYPE_$_-%04d-%s-03.md`", i+3, artifact),
 								)
 							}
 						}
@@ -274,8 +277,8 @@ func initialize(proj *Project) error {
 
 				if len(artifacts) > 0 {
 					artifactsInstructions := append([]string{
-						"### $MOD_TYPE Artifacts",
-						"Pattern: `$MOD_TYPE-${SEQUENCE}-${ARTIFACT}[-{ARTIFACT_SEQUENCE}].md`",
+						"### _$_MOD_TYPE_$_ Artifacts",
+						"Pattern: `_$_MOD_TYPE_$_-${SEQUENCE}-${ARTIFACT}[-{ARTIFACT_SEQUENCE}].md`",
 						"",
 						fmt.Sprintf("- `${ARTIFACT}`: %s", strings.Join(artifacts, ", ")),
 						"- `${ARTIFACT_SEQUENCE}`: Optional 2-digit sequence number",
@@ -283,13 +286,15 @@ func initialize(proj *Project) error {
 						"**Examples:**",
 					}, artifactsExamples...)
 
-					prompt = strings.Replace(prompt, "$ARTIFACTS_INSTRUCTIONS", strings.Join(artifactsInstructions, "\n"), 1)
+					prompt = strings.Replace(prompt, "_$_ARTIFACTS_INSTRUCTIONS_$_", strings.Join(artifactsInstructions, "\n"), 1)
+				} else {
+					prompt = strings.Replace(prompt, "_$_ARTIFACTS_INSTRUCTIONS_$_", "", 1)
 				}
-				prompt = prompt + strings.TrimSpace(mod.ExtraPrompt)
-				prompt = strings.ReplaceAll(prompt, "$MOD_TYPE", modType)
+				prompt = prompt + "\n\n" + strings.TrimSpace(mod.ExtraPrompt)
+				prompt = strings.ReplaceAll(prompt, "_$_MOD_TYPE_$_", modType)
 				mod.Prompt = prompt
 			} else {
-				prompt = strings.ReplaceAll(prompt, "$MOD_TYPE", modType)
+				prompt = strings.ReplaceAll(prompt, "_$_MOD_TYPE_$_", modType)
 			}
 
 			// Create the destination file on the OS

@@ -1,12 +1,11 @@
 package project
 
 import (
-	"encoding/base64"
 	"fmt"
 	"strings"
 	"sync"
 
-	"github.com/cespare/xxhash/v2"
+	"github.com/nidorx/orqen/pkg/utils"
 )
 
 // Project represents the top-level project configuration (.orqen/orqen.yaml).
@@ -112,14 +111,14 @@ func (p *Project) IsRunning() bool {
 
 // agentInvoker is a default invoker that does nothing
 // Invoke implements AgentInvoker for the noop invoker
-func agentInvoker(prj *Project, mod *Module, lan *Lane, itm *WorkItem) (InvocationHandle, error) {
+func agentInvoker(proj *Project, mod *Module, lane *Lane, item *WorkItem) (InvocationHandle, error) {
 	handle := InvocationHandle{
-		ID:   hashXxh64([]byte(fmt.Sprintf("%d-%s", itm.ID, itm.Name))),
-		Item: itm,
+		ID:   utils.HashXxh64([]byte(fmt.Sprintf("%d-%s", item.ID, item.Name))),
+		Item: item,
 		Done: make(chan struct{}),
 	}
 
-	itm.JobID = handle.ID
+	item.JobID = handle.ID
 
 	go func() {
 
@@ -127,41 +126,29 @@ func agentInvoker(prj *Project, mod *Module, lan *Lane, itm *WorkItem) (Invocati
 
 		prompt.WriteString(mod.Prompt)
 		prompt.WriteString("\n")
-		prompt.WriteString(lan.Prompt)
+		prompt.WriteString(lane.Prompt)
 		prompt.WriteString("\n\n")
 
-		prompt.WriteString("========================================\n")
-		prompt.WriteString("PRE-EXECUTION CONTEXT (Auto-Gathered)\n")
-		prompt.WriteString("========================================\n\n")
-
-		prompt.WriteString("**RECOMMENDED ACTION (auto-determined):**\n")
-		prompt.WriteString(fmt.Sprintf("   → Start %s from %s\n\n", itm.Name, lan.Dir))
-
-		prompt.WriteString("**RELATED RESOURCES:**\n")
-		for _, v := range itm.Files {
-			prompt.WriteString(fmt.Sprintf("- `%v`\n", v))
+		prompt.WriteString("# EXECUTION CONTEXT (Auto-Gathered)\n")
+		prompt.WriteString("**REQUIRED ACTION:** Work on item bellow\n")
+		prompt.WriteString(fmt.Sprintf("- lane_name: %s\n", lane.Name))
+		prompt.WriteString(fmt.Sprintf("- lane_dir: %s\n", lane.Dir))
+		if item.ID == 0 {
+			prompt.WriteString("- item_id: NOT CREATED (0), see tool orqen_create_item from orqen MCP Server\n")
+		} else {
+			prompt.WriteString(fmt.Sprintf("- item_id: %d\n", item.ID))
 		}
-		prompt.WriteString("\n")
+		prompt.WriteString(fmt.Sprintf("- item_name: %s\n", item.Name))
+		prompt.WriteString(fmt.Sprintf("- item_last_update: %v\n", item.ModTime))
 
-		prompt.WriteString("========================================\n")
-		prompt.WriteString("END OF PRE-EXECUTION CONTEXT\n")
-		prompt.WriteString("========================================\n")
+		prompt.WriteString("- item_files:\n")
+		for _, v := range item.Files {
+			prompt.WriteString(fmt.Sprintf("    - `%v`\n", v))
+		}
 
-		handle.err = prj.invoker(
-			prompt.String(),
-			itm,
-		)
+		handle.err = proj.invoker(prompt.String(), item)
 
 		close(handle.Done)
 	}()
 	return handle, nil
-}
-
-// Xxh64 return a base64-encoded checksum of a resource using Xxh64 algorithm
-//
-// Encoded using Base64 URLSafe
-func hashXxh64(content []byte) string {
-	h := xxhash.New()
-	h.Write(content)
-	return base64.RawURLEncoding.EncodeToString(h.Sum(nil))
 }

@@ -83,7 +83,7 @@ func (l *Lane) ListItems() []*WorkItem {
 					modTime = info.ModTime()
 				}
 
-				rel, err := filepath.Rel(l.Module.Project.DirAbs, filepath.Clean(path.Join(l.DirAbs, name)))
+				rel, err := filepath.Rel(l.Module.Project.DirAbs, filepath.Clean(filepath.Join(l.DirAbs, name)))
 				if err != nil {
 					fmt.Printf("%s", err.Error())
 					continue

@@ -2,7 +2,6 @@ package project
 
 import (
 	"bufio"
-	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -56,19 +55,21 @@ func (s *Service) OnStart() error {
 
 	// Prompt user for proj directory and load configuration
 	proj := loadProject()
-	proj.WithInvoker(func(prompt string, itm *project.WorkItem) error {
+	proj.WithInvoker(func(prompt string, item *project.WorkItem) error {
 		cwd := proj.DirAbs
-		lane := itm.Lane
-		command := proj.Agents.GetCommand(lane.Agent)
+		lane := item.Lane
 
 		// @TODO: sent context item.Files
 
 		// initialize agent (ACP)
 		return agent.Exec(
-			fmt.Sprintf("[%s] [%s]", lane.Name, itm.Name),
+			proj.Id,
+			proj.Agents.GetName(lane.Agent),
+			lane.Name,
+			item.Name,
 			cwd,
 			prompt,
-			command,
+			proj.Agents.GetCommand(lane.Agent),
 			[]acp.McpServer{
 				{
 					// disponibiliza acesso ao mcp do próprio orqen
@@ -79,7 +80,7 @@ func (s *Service) OnStart() error {
 							"--mcp",
 							"--port=" + strconv.Itoa(orqenPort),
 							"--project=" + proj.Id,
-							"--job=" + itm.JobID,
+							"--job=" + item.JobID,
 						},
 						Env: make([]acp.EnvVariable, 0),
 					},
