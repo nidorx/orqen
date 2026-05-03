@@ -53,14 +53,15 @@ type Execution struct {
 
 // WorkItem representa uma tarefa que está disponível em uma Lane
 type WorkItem struct {
-	ID           int         // unique identifier for this work item
-	JobID        string      // InvocationHandle ID
+	ID           string      // unique identifier for this work item hash(Seq+Name)
+	Seq          int         // unique sequential id for this work item
 	Name         string      // directory/file name (e.g., TASK-001-create-project)
 	Files        []string    // files in directory (e.g., TASK-001.md, TASK-001-SUmMARY.md)
 	Lane         *Lane       // the lane this item belongs to
 	InProgress   bool        // indica que um agente está executando a tarefa
 	ModTime      time.Time   // atualização mais recente do item
 	Dependencies []*WorkItem // todas as dependencias desse WorkItem
+	// @TODO: Attributes
 }
 
 // AgentInvoker defines the function for invoking agent executions
@@ -74,7 +75,6 @@ type WorkItemInvoker func(project *Project, module *Module, lane *Lane, item *Wo
 
 // InvocationHandle represents a running agent invocation
 type InvocationHandle struct {
-	ID   string        // unique identifier for this invocation
 	Item *WorkItem     // the work item being processed
 	Done chan struct{} // closed when the invocation completes
 	err  error         // error from the invocation (if any)

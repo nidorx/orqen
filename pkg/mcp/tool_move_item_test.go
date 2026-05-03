@@ -16,7 +16,7 @@ func TestMoveItemHandler(t *testing.T) {
 	t.Run("move task from backlog to doing", func(t *testing.T) {
 		input := &MoveItemInput{
 			Module:   ptr("task"),
-			ItemID:   1,
+			ItemSeq:  1,
 			FromLane: "backlog",
 			ToLane:   "doing",
 		}
@@ -36,10 +36,9 @@ func TestMoveItemHandler(t *testing.T) {
 
 		// Verify the item was actually moved
 		doing := proj.GetModule("task").GetLane("doing")
-		items := doing.ListItems()
 		found := false
-		for _, item := range items {
-			if item.ID == 1 {
+		for item := range doing.WorkItems() {
+			if item.Seq == 1 {
 				found = true
 				break
 			}
@@ -52,7 +51,7 @@ func TestMoveItemHandler(t *testing.T) {
 	t.Run("move nonexistent item", func(t *testing.T) {
 		input := &MoveItemInput{
 			Module:   ptr("task"),
-			ItemID:   9999,
+			ItemSeq:  9999,
 			FromLane: "backlog",
 			ToLane:   "doing",
 		}
@@ -66,7 +65,7 @@ func TestMoveItemHandler(t *testing.T) {
 	t.Run("missing to_lane", func(t *testing.T) {
 		input := &MoveItemInput{
 			Module:   ptr("task"),
-			ItemID:   1,
+			ItemSeq:  1,
 			FromLane: "backlog",
 		}
 		out := callHandler(t, MoveItemHandler, input, proj)
@@ -79,7 +78,7 @@ func TestMoveItemHandler(t *testing.T) {
 	t.Run("from lane not found", func(t *testing.T) {
 		input := &MoveItemInput{
 			Module:   ptr("task"),
-			ItemID:   1,
+			ItemSeq:  1,
 			FromLane: "nonexistent",
 			ToLane:   "doing",
 		}
@@ -93,7 +92,7 @@ func TestMoveItemHandler(t *testing.T) {
 	t.Run("to lane not found", func(t *testing.T) {
 		input := &MoveItemInput{
 			Module:   ptr("task"),
-			ItemID:   1,
+			ItemSeq:  1,
 			FromLane: "backlog",
 			ToLane:   "nonexistent",
 		}
@@ -107,7 +106,7 @@ func TestMoveItemHandler(t *testing.T) {
 	t.Run("nil project", func(t *testing.T) {
 		input := &MoveItemInput{
 			Module:   ptr("task"),
-			ItemID:   1,
+			ItemSeq:  1,
 			FromLane: "backlog",
 			ToLane:   "doing",
 		}

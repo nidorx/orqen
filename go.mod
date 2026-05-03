@@ -12,6 +12,7 @@ require (
 )
 
 require (
+	github.com/fsnotify/fsnotify v1.10.0
 	github.com/google/jsonschema-go v0.4.2 // indirect
 	github.com/segmentio/asm v1.1.3 // indirect
 	github.com/segmentio/encoding v0.5.4 // indirect

@@ -14,12 +14,12 @@ import (
 // (domains) across all markdown files in a module.
 
 type SchemaInput struct {
-	JobId  *string `json:"job_id,omitempty" jsonschema:"job id (auto-injected)"`
-	Module *string `json:"module,omitempty" jsonschema:"module name (omit for current module)"`
+	WorkItemID *string `json:"workitem_id" jsonschema:"Work Item ID (auto-injected)"`
+	Module     *string `json:"module,omitempty" jsonschema:"module name (omit for current module)"`
 }
 
-func (i *SchemaInput) SetJobId(jobId string) {
-	i.JobId = &jobId
+func (i *SchemaInput) SetWorkItemID(workItemID string) {
+	i.WorkItemID = &workItemID
 }
 
 type SchemaFieldInfo struct {
@@ -59,9 +59,9 @@ func SchemaHandler(ctx context.Context, req *mcp.CallToolRequest, input *SchemaI
 			return nil, out, nil
 		}
 	} else {
-		// Try to resolve current module from JobId
-		if input.JobId != nil && *input.JobId != "" {
-			targetModule = findModuleByJobID(proj, *input.JobId)
+		// Try to resolve current module from WorkItemID
+		if input.WorkItemID != nil && *input.WorkItemID != "" {
+			targetModule = findModuleByWorkItemID(proj, *input.WorkItemID)
 		}
 		if targetModule == nil && len(proj.Modules) == 1 {
 			targetModule = proj.Modules[0]
@@ -69,7 +69,7 @@ func SchemaHandler(ctx context.Context, req *mcp.CallToolRequest, input *SchemaI
 	}
 
 	if targetModule == nil {
-		out.Error = "could not resolve target module — specify module parameter or ensure job_id is set"
+		out.Error = "could not resolve target module — specify module parameter or ensure workitem_id is set"
 		return nil, out, nil
 	}
 

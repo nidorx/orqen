@@ -15,15 +15,15 @@ import (
 // Updates internal state to reflect the new lane position.
 
 type MoveItemInput struct {
-	JobId    *string `json:"job_id,omitempty" jsonschema:"job id (auto-injected)"`
-	Module   *string `json:"module,omitempty" jsonschema:"module name (omit for current module)"`
-	ItemID   int     `json:"item_id" jsonschema:"numeric ID of the work item to move"`
-	FromLane string  `json:"from_lane" jsonschema:"current lane name"`
-	ToLane   string  `json:"to_lane" jsonschema:"destination lane name"`
+	WorkItemID *string `json:"workitem_id" jsonschema:"Work Item ID (auto-injected)"`
+	Module     *string `json:"module,omitempty" jsonschema:"module name (omit for current module)"`
+	ItemSeq    int     `json:"item_seq" jsonschema:"sequential ID of the work item to move"`
+	FromLane   string  `json:"from_lane" jsonschema:"current lane name"`
+	ToLane     string  `json:"to_lane" jsonschema:"destination lane name"`
 }
 
-func (i *MoveItemInput) SetJobId(jobId string) {
-	i.JobId = &jobId
+func (i *MoveItemInput) SetWorkItemID(workItemID string) {
+	i.WorkItemID = &workItemID
 }
 
 type MoveItemOutput struct {
@@ -62,9 +62,9 @@ func MoveItemHandler(ctx context.Context, req *mcp.CallToolRequest, input *MoveI
 			return nil, out, nil
 		}
 	} else {
-		// Try to resolve current module from JobId
-		if input.JobId != nil && *input.JobId != "" {
-			targetModule = findModuleByJobID(proj, *input.JobId)
+		// Try to resolve current module from WorkItemID
+		if input.WorkItemID != nil && *input.WorkItemID != "" {
+			targetModule = findModuleByWorkItemID(proj, *input.WorkItemID)
 		}
 		if targetModule == nil && len(proj.Modules) == 1 {
 			targetModule = proj.Modules[0]
@@ -72,7 +72,7 @@ func MoveItemHandler(ctx context.Context, req *mcp.CallToolRequest, input *MoveI
 	}
 
 	if targetModule == nil {
-		out.Error = "could not resolve target module — specify module parameter or ensure job_id is set"
+		out.Error = "could not resolve target module — specify module parameter or ensure workitem_id is set"
 		return nil, out, nil
 	}
 
@@ -92,27 +92,17 @@ func MoveItemHandler(ctx context.Context, req *mcp.CallToolRequest, input *MoveI
 
 	// Find the work item
 	var item *project.WorkItem
-	if input.ItemID > 0 {
-		item = targetModule.FindItemByID(input.ItemID)
+	if input.ItemSeq > 0 {
+		item = targetModule.GetWorkItemBySeq(input.ItemSeq)
 	}
 
-	// Fallback: try to find by JobId
-	if item == nil && input.JobId != nil && *input.JobId != "" {
-		for _, lane := range targetModule.Lanes {
-			for _, it := range lane.ListItems() {
-				if it.JobID == *input.JobId {
-					item = it
-					break
-				}
-			}
-			if item != nil {
-				break
-			}
-		}
+	// Fallback: try to find by WorkItemID
+	if item == nil && input.WorkItemID != nil && *input.WorkItemID != "" {
+		item = targetModule.GetWorkItemById(*input.WorkItemID)
 	}
 
 	if item == nil {
-		out.Error = fmt.Sprintf("work item not found (id=%d)", input.ItemID)
+		out.Error = fmt.Sprintf("work item not found (id=%d)", input.ItemSeq)
 		return nil, out, nil
 	}
 
@@ -137,11 +127,6 @@ func MoveItemHandler(ctx context.Context, req *mcp.CallToolRequest, input *MoveI
 		out.Error = fmt.Sprintf("failed to move item directory: %v", err)
 		return nil, out, nil
 	}
-
-	// Update internal state: refresh lane caches
-	// Re-scan both lanes to update their item caches
-	fromLane.ListItems()
-	toLane.ListItems()
 
 	out.Success = true
 	out.From = fromLane.Dir

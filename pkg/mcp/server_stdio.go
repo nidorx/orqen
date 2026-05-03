@@ -11,8 +11,8 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-type InputWithJobId interface {
-	SetJobId(jobId string)
+type InputWithWorkItemID interface {
+	SetWorkItemID(id string)
 }
 
 var (
@@ -20,7 +20,7 @@ var (
 	dFile       *os.File
 )
 
-func StartStdio(orqenPort string, projectId string, jobId string) {
+func StartStdio(orqenPort string, projectId string, workItemID string) {
 
 	if DEBUG_STDIO {
 		if r := recover(); r != nil {
@@ -33,7 +33,7 @@ func StartStdio(orqenPort string, projectId string, jobId string) {
 		}()
 
 		var openErr error
-		dFile, openErr = os.OpenFile(fmt.Sprintf("./debug_mcp_stdio_%s.txt", jobId), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		dFile, openErr = os.OpenFile(fmt.Sprintf("./debug_mcp_stdio_%s.txt", workItemID), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if openErr != nil {
 			panic(openErr)
 		}
@@ -69,17 +69,17 @@ func StartStdio(orqenPort string, projectId string, jobId string) {
 		debugAny("MCP_SESSION_CONNECTED", time.Now())
 	}
 
-	// Tools that need jobId (auto-injected)
-	addToolProxy(server, tnStatus, StatusHandler, session, jobId)
-	addToolProxy(server, tnListItems, ListItemsHandler, session, jobId)
-	addToolProxy(server, tnScanModule, ScanModuleHandler, session, jobId)
-	addToolProxy(server, tnSchema, SchemaHandler, session, jobId)
-	addToolProxy(server, tnMoveItem, MoveItemHandler, session, jobId)
-	addToolProxy(server, tnDependencies, DependenciesHandler, session, jobId)
-	addToolProxy(server, tnProjectInfo, ProjectInfoHandler, session, jobId)
-	addToolProxy(server, tnCreateItem, CreateItemHandler, session, jobId)
-	addToolProxy(server, tnNextSequence, NextSequenceHandler, session, jobId)
-	addToolProxy(server, tnListLanes, ListLanesHandler, session, jobId)
+	// Tools that need workItemID (auto-injected)
+	addToolProxy(server, tnStatus, StatusHandler, session, workItemID)
+	addToolProxy(server, tnListItems, ListItemsHandler, session, workItemID)
+	addToolProxy(server, tnScanModule, ScanModuleHandler, session, workItemID)
+	addToolProxy(server, tnSchema, SchemaHandler, session, workItemID)
+	addToolProxy(server, tnMoveItem, MoveItemHandler, session, workItemID)
+	addToolProxy(server, tnDependencies, DependenciesHandler, session, workItemID)
+	addToolProxy(server, tnProjectInfo, ProjectInfoHandler, session, workItemID)
+	addToolProxy(server, tnCreateItem, CreateItemHandler, session, workItemID)
+	addToolProxy(server, tnNextSequence, NextSequenceHandler, session, workItemID)
+	addToolProxy(server, tnListLanes, ListLanesHandler, session, workItemID)
 	if DEBUG_STDIO {
 		debugAny("MCP_TOOLS_ADDED", time.Now())
 	}
@@ -90,13 +90,17 @@ func StartStdio(orqenPort string, projectId string, jobId string) {
 	}
 }
 
-func addToolProxy[In InputWithJobId, Out any](s *mcp.Server, tool string, h ToolProjectHandler[In, Out], cs *mcp.ClientSession, jobId string) {
-	mcp.AddTool(s, tools[tool], sseProxy(tool, projectHandler2MCP(nil, h), cs, jobId))
+func addToolProxy[In InputWithWorkItemID, Out any](
+	s *mcp.Server, tool string, h ToolProjectHandler[In, Out], cs *mcp.ClientSession, workItemID string,
+) {
+	mcp.AddTool(s, tools[tool], sseProxy(tool, projectHandler2MCP(nil, h), cs, workItemID))
 }
 
-func sseProxy[In InputWithJobId, Out any](tool string, _ mcp.ToolHandlerFor[In, Out], cs *mcp.ClientSession, jobId string) mcp.ToolHandlerFor[In, Out] {
+func sseProxy[In InputWithWorkItemID, Out any](
+	tool string, _ mcp.ToolHandlerFor[In, Out], cs *mcp.ClientSession, workItemID string,
+) mcp.ToolHandlerFor[In, Out] {
 	return func(ctx context.Context, req *mcp.CallToolRequest, input In) (result *mcp.CallToolResult, output Out, err error) {
-		input.SetJobId(jobId)
+		input.SetWorkItemID(workItemID)
 
 		if DEBUG_STDIO {
 			debugAny("CALL_TOOL_REQUEST", req)

@@ -31,7 +31,7 @@ import (
 )
 
 // DefaultWordDelay is the default delay between each word when streaming a message.
-const DefaultWordDelay = 40 * time.Millisecond
+const DefaultWordDelay = 100
 
 // Prefix is the visual indicator prepended to every message, giving the
 // impression of a charismatic AI assistant.
@@ -206,9 +206,9 @@ func stream(text string) {
 					prevWord = words[i-1]
 				}
 				if endsSentence(prevWord) {
-					time.Sleep(time.Duration(rng.Intn(300)+300) * time.Millisecond)
+					time.Sleep(time.Duration(rng.Intn(200)+200) * time.Millisecond)
 				} else {
-					time.Sleep(time.Duration(rng.Intn(140)+60) * time.Millisecond)
+					time.Sleep(time.Duration(rng.Intn(60)+40) * time.Millisecond)
 				}
 			}
 
@@ -219,7 +219,7 @@ func stream(text string) {
 			}
 		}
 	}
-	time.Sleep(time.Duration(rng.Intn(300)+300) * time.Millisecond)
+	time.Sleep(time.Duration(rng.Intn(200)+200) * time.Millisecond)
 	fmt.Println()
 }
 

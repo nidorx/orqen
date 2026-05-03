@@ -17,19 +17,19 @@ import (
 // Creates the directory and an empty .md file following the naming convention.
 
 type CreateItemInput struct {
-	JobId      *string `json:"job_id,omitempty" jsonschema:"job id (auto-injected)"`
+	WorkItemID *string `json:"workitem_id,omitempty" jsonschema:"job id (auto-injected)"`
 	Module     *string `json:"module" jsonschema:"module name (e.g., task, adr, learning)"`
 	Lane       string  `json:"lane" jsonschema:"destination lane name"`
 	SimpleName string  `json:"simple_name" jsonschema:"kebab-case descriptive name for the item"`
 }
 
-func (i *CreateItemInput) SetJobId(jobId string) {
-	i.JobId = &jobId
+func (i *CreateItemInput) SetWorkItemID(workItemID string) {
+	i.WorkItemID = &workItemID
 }
 
 type CreateItemOutput struct {
 	Success    bool   `json:"success"`
-	ItemID     int    `json:"item_id"`
+	ItemSeq    int    `json:"item_seq"`
 	ItemName   string `json:"item_name"`
 	DirPath    string `json:"dir_path"`
 	FilePath   string `json:"file_path"`
@@ -81,9 +81,9 @@ func CreateItemHandler(ctx context.Context, req *mcp.CallToolRequest, input *Cre
 			return nil, out, nil
 		}
 	} else {
-		// Try to resolve current module from JobId
-		if input.JobId != nil && *input.JobId != "" {
-			targetModule = findModuleByJobID(proj, *input.JobId)
+		// Try to resolve current module from WorkItemID
+		if input.WorkItemID != nil && *input.WorkItemID != "" {
+			targetModule = findModuleByWorkItemID(proj, *input.WorkItemID)
 		}
 		if targetModule == nil && len(proj.Modules) == 1 {
 			targetModule = proj.Modules[0]
@@ -91,7 +91,7 @@ func CreateItemHandler(ctx context.Context, req *mcp.CallToolRequest, input *Cre
 	}
 
 	if targetModule == nil {
-		out.Error = "could not resolve target module — specify module parameter or ensure job_id is set"
+		out.Error = "could not resolve target module — specify module parameter or ensure workitem_id is set"
 		return nil, out, nil
 	}
 
@@ -121,17 +121,16 @@ func CreateItemHandler(ctx context.Context, req *mcp.CallToolRequest, input *Cre
 	}
 
 	// Create empty .md file
+	// @TODO: Remover
 	filePath := filepath.Join(dirPath, fileName)
 	if err := os.WriteFile(filePath, []byte{}, 0644); err != nil {
 		out.Error = fmt.Sprintf("failed to create file: %v", err)
 		return nil, out, nil
 	}
 
-	// Refresh lane cache
-	lane.ListItems()
-
 	out.Success = true
-	out.ItemID = nextSeq
+	// @TODO: item id
+	out.ItemSeq = nextSeq
 	out.ItemName = dirName
 
 	// Relative paths

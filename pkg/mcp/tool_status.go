@@ -10,14 +10,14 @@ import (
 
 // ── orqen_status ───────────────────────────────────────────────────
 // Returns the current work item, lane, module, and project context
-// for the running agent job. Requires jobId.
+// for the running agent job. Requires workItemID.
 
 type StatusInput struct {
-	JobId *string `json:"job_id,omitempty" jsonschema:"job id (auto-injected)"`
+	WorkItemID *string `json:"workitem_id,omitempty" jsonschema:"job id (auto-injected)"`
 }
 
-func (i *StatusInput) SetJobId(jobId string) {
-	i.JobId = &jobId
+func (i *StatusInput) SetWorkItemID(workItemID string) {
+	i.WorkItemID = &workItemID
 }
 
 type StatusLaneInfo struct {
@@ -54,36 +54,32 @@ func StatusHandler(ctx context.Context, req *mcp.CallToolRequest, input *StatusI
 		return nil, out, nil
 	}
 
-	if input.JobId == nil || *input.JobId == "" {
+	if input.WorkItemID == nil || *input.WorkItemID == "" {
 		out.Error = "no job id provided"
 		return nil, out, nil
 	}
 
-	jobID := *input.JobId
+	workItemID := *input.WorkItemID
 
-	// Scan all modules and lanes to find the work item with this JobID
+	// Scan all modules and lanes to find the work item with this WorkItemID
 	for _, mod := range proj.Modules {
-		for _, lane := range mod.Lanes {
-			for _, item := range lane.ListItems() {
-				if item.JobID == jobID {
-					out.Found = true
-					out.ItemID = item.ID
-					out.ItemName = item.Name
-					out.ItemFiles = item.Files
-					out.ProjectDir = proj.DirAbs
-					out.CurrentLane = StatusLaneInfo{
-						Name:      lane.Name,
-						Dir:       lane.Dir,
-						Purpose:   lane.Purpose,
-						Module:    mod.Name,
-						Artifacts: lane.Artifacts,
-					}
-					return nil, out, nil
-				}
+		if item := mod.GetWorkItemById(workItemID); item != nil {
+			out.Found = true
+			out.ItemID = item.Seq
+			out.ItemName = item.Name
+			out.ItemFiles = item.Files
+			out.ProjectDir = proj.DirAbs
+			out.CurrentLane = StatusLaneInfo{
+				Name:      item.Lane.Name,
+				Dir:       item.Lane.Dir,
+				Purpose:   item.Lane.Purpose,
+				Module:    mod.Name,
+				Artifacts: item.Lane.Artifacts,
 			}
+			return nil, out, nil
 		}
 	}
 
-	out.Error = fmt.Sprintf("work item with job id %q not found", jobID)
+	out.Error = fmt.Sprintf("work item with job id %q not found", workItemID)
 	return nil, out, nil
 }

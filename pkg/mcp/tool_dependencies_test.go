@@ -21,22 +21,22 @@ func TestDependenciesHandler(t *testing.T) {
 		os.WriteFile(filepath.Join(itemDir, "DEP_0003"), []byte("depends on TASK-0003"), 0644)
 	}
 
-	// Set JobID for TASK-0001
+	// Set WorkItemID for TASK-0001
 	for _, lane := range taskModule.Lanes {
-		for _, item := range lane.ListItems() {
-			if item.ID == 1 {
-				item.JobID = "test-job-001"
+		for item := range lane.WorkItems() {
+			if item.Seq == 1 {
+				item.ID = "test-job-001"
 			}
 		}
 	}
 
 	t.Run("check dependencies", func(t *testing.T) {
-		jobID := "test-job-001"
-		input := &DependenciesInput{JobId: &jobID}
+		workItemID := "test-job-001"
+		input := &DependenciesInput{WorkItemID: &workItemID}
 		out := callHandler(t, DependenciesHandler, input, proj)
 
-		if out.ItemID != 1 {
-			t.Errorf("item_id = %d, want 1", out.ItemID)
+		if out.ItemSeq != 1 {
+			t.Errorf("item_id = %d, want 1", out.ItemSeq)
 		}
 
 		if len(out.Dependencies) != 1 {
@@ -72,8 +72,8 @@ func TestDependenciesHandler(t *testing.T) {
 	})
 
 	t.Run("unknown job id", func(t *testing.T) {
-		jobID := "nonexistent"
-		input := &DependenciesInput{JobId: &jobID}
+		workItemID := "nonexistent"
+		input := &DependenciesInput{WorkItemID: &workItemID}
 		out := callHandler(t, DependenciesHandler, input, proj)
 
 		if out.Error == "" {
@@ -82,8 +82,8 @@ func TestDependenciesHandler(t *testing.T) {
 	})
 
 	t.Run("nil project", func(t *testing.T) {
-		jobID := "test-job-001"
-		input := &DependenciesInput{JobId: &jobID}
+		workItemID := "test-job-001"
+		input := &DependenciesInput{WorkItemID: &workItemID}
 		out := callHandler(t, DependenciesHandler, input, nil)
 
 		if out.Error == "" {

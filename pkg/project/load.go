@@ -9,9 +9,11 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/goccy/go-yaml"
 	"github.com/nidorx/orqen/pkg/utils"
+	"github.com/nidorx/orqen/pkg/utils/tinylfu"
 )
 
 var (
@@ -79,6 +81,8 @@ func Load(projectDir string) (*Project, error) {
 // Returns an error if the directory doesn't exist, doesn't contain .orqen, or the config file is missing.
 func ValidateDir(projectDir string) error {
 	projectDir = filepath.Clean(projectDir)
+
+	// @TODO: .lock file
 
 	// Check if directory exists
 	info, err := os.Stat(projectDir)
@@ -195,11 +199,50 @@ func applyDefaults(proj *Project) {
 			lane.Dir = fmt.Sprintf("%02d_%s", j+1, strings.ToLower(lane.Name))
 			lane.DirAbs = filepath.Clean(path.Join(mod.DirAbs, lane.Dir))
 			lane.Module = mod
+			lane.workItemsByID = tinylfu.NewSyncCacheT[*WorkItem](10000, 100000, time.Duration(0))
+			lane.workItemsBySeq = tinylfu.NewSyncCacheT[*WorkItem](10000, 100000, time.Duration(0))
 		}
 	}
 }
 
-// initialize create directories and prompts
+// validate checks the project configuration for required fields.
+func validate(proj *Project) error {
+	if len(proj.Modules) == 0 {
+		return fmt.Errorf("no modules defined")
+	}
+
+	for i, mod := range proj.Modules {
+		if mod.Name == "" {
+			return fmt.Errorf("module at index %d has no name", i)
+		}
+		if len(mod.Lanes) == 0 {
+			return fmt.Errorf("module %q has no lanes defined", mod.Name)
+		}
+
+		// Validate lane names are unique
+		laneNames := make(map[string]bool)
+		for j, lane := range mod.Lanes {
+			if lane.Name == "" {
+				return fmt.Errorf("module %q has lane at index %d with no name", mod.Name, j)
+			}
+			if laneNames[lane.Name] {
+				return fmt.Errorf("module %q has duplicate lane name: %s", mod.Name, lane.Name)
+			}
+			laneNames[lane.Name] = true
+		}
+	}
+
+	// Validate agent clients exist
+	for name, client := range proj.Agents.Clients {
+		if len(client.Command) == 0 {
+			return fmt.Errorf("agent client %q has empty command", name)
+		}
+	}
+
+	return nil
+}
+
+// initialize create directories and prompts and watchers
 func initialize(proj *Project) error {
 
 	for _, mod := range proj.Modules {
@@ -393,42 +436,60 @@ func initialize(proj *Project) error {
 		}
 	}
 
-	return nil
+	return initializeFsys(proj)
 }
 
-// validate checks the project configuration for required fields.
-func validate(proj *Project) error {
-	if len(proj.Modules) == 0 {
-		return fmt.Errorf("no modules defined")
+func initializeFsys(proj *Project) error {
+	fsys, err := newFsys()
+	if err != nil {
+		return err
 	}
 
-	for i, mod := range proj.Modules {
-		if mod.Name == "" {
-			return fmt.Errorf("module at index %d has no name", i)
-		}
-		if len(mod.Lanes) == 0 {
-			return fmt.Errorf("module %q has no lanes defined", mod.Name)
-		}
+	proj.fsys = fsys
 
-		// Validate lane names are unique
-		laneNames := make(map[string]bool)
-		for j, lane := range mod.Lanes {
-			if lane.Name == "" {
-				return fmt.Errorf("module %q has lane at index %d with no name", mod.Name, j)
+	laneByDir := map[string]*Lane{}
+
+	now := time.Now()
+
+	for _, mod := range proj.Modules {
+		for _, lane := range mod.Lanes {
+			if err := fsys.addRecursive(lane.DirAbs); err != nil {
+				fsys.Close()
+				// func (w *Watcher) Remove(path string) error { return w.b.Remove(path) }
+				return err
 			}
-			if laneNames[lane.Name] {
-				return fmt.Errorf("module %q has duplicate lane name: %s", mod.Name, lane.Name)
+
+			laneByDir[lane.DirAbs] = lane
+
+			// initialize lan WorkItems
+			if entries, err := os.ReadDir(lane.DirAbs); err == nil {
+				for _, entry := range entries {
+					info, _ := entry.Info()
+					isDir := info != nil && info.IsDir()
+
+					lane.onFsysUpdate(FsysEvent{
+						Path:     filepath.Join(lane.DirAbs, entry.Name()),
+						Op:       FsysOpCreate,
+						Time:     now,
+						IsDir:    isDir,
+						FileInfo: info,
+					})
+				}
 			}
-			laneNames[lane.Name] = true
 		}
 	}
 
-	// Validate agent clients exist
-	for name, client := range proj.Agents.Clients {
-		if len(client.Command) == 0 {
-			return fmt.Errorf("agent client %q has empty command", name)
+	go func() {
+		defer fsys.Close()
+		for ev := range fsys.Events() {
+			for dir, lane := range laneByDir {
+				if strings.HasPrefix(ev.Path, dir) {
+					lane.onFsysUpdate(ev)
+					break
+				}
+			}
 		}
-	}
+	}()
 
 	return nil
 }

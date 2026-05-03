@@ -12,23 +12,23 @@ import (
 // behaviors, critical rules, and configuration.
 
 type ProjectInfoInput struct {
-	JobId   *string `json:"job_id,omitempty" jsonschema:"job id (auto-injected)"`
-	Verbose bool    `json:"verbose,omitempty" jsonschema:"include full prompts and agent behavior details"`
+	WorkItemID *string `json:"workitem_id" jsonschema:"Work Item ID (auto-injected)"`
+	Verbose    bool    `json:"verbose,omitempty" jsonschema:"include full prompts and agent behavior details"`
 }
 
-func (i *ProjectInfoInput) SetJobId(jobId string) {
-	i.JobId = &jobId
+func (i *ProjectInfoInput) SetWorkItemID(workItemID string) {
+	i.WorkItemID = &workItemID
 }
 
 type LaneSummary struct {
-	Name        string   `json:"name"`
-	Dir         string   `json:"dir"`
-	Purpose     string   `json:"purpose"`
-	MaxAgents   int      `json:"max_agents"`
-	Artifacts   []string `json:"artifacts,omitempty"`
-	UserAction  string   `json:"user_action,omitempty"`
-	AgentCount  int      `json:"agent_count"`
-	ActiveCount int      `json:"active_count"`
+	Dir                  string   `json:"dir"`
+	Name                 string   `json:"name"`
+	Purpose              string   `json:"purpose"`
+	MaxAgents            int      `json:"max_agents"`
+	Artifacts            []string `json:"artifacts,omitempty"`
+	UserAction           string   `json:"user_action,omitempty"`
+	CountWorkItems       int      `json:"count_workitem"`
+	CountActiveWorkItems int      `json:"count_active_workitem"`
 }
 
 type ModuleSummary struct {
@@ -73,14 +73,14 @@ func ProjectInfoHandler(ctx context.Context, req *mcp.CallToolRequest, input *Pr
 
 		for _, lane := range mod.Lanes {
 			laneSummary := LaneSummary{
-				Name:        lane.Name,
-				Dir:         lane.Dir,
-				Purpose:     lane.Purpose,
-				MaxAgents:   lane.MaxAgents,
-				Artifacts:   lane.Artifacts,
-				UserAction:  lane.UserAction,
-				AgentCount:  len(lane.ListItems()),
-				ActiveCount: lane.ActiveItemCount(),
+				Name:                 lane.Name,
+				Dir:                  lane.Dir,
+				Purpose:              lane.Purpose,
+				MaxAgents:            lane.MaxAgents,
+				Artifacts:            lane.Artifacts,
+				UserAction:           lane.UserAction,
+				CountWorkItems:       lane.CountWorkItems(),
+				CountActiveWorkItems: lane.CountActiveWorkItems(),
 			}
 			modSummary.Lanes = append(modSummary.Lanes, laneSummary)
 		}

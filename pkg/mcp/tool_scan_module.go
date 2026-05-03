@@ -14,13 +14,13 @@ import (
 // and returns files matching the given filter criteria.
 
 type ScanModuleInput struct {
-	JobId   *string        `json:"job_id,omitempty" jsonschema:"job id (auto-injected)"`
-	Module  *string        `json:"module,omitempty" jsonschema:"module name (omit for current module)"`
-	Filters map[string]any `json:"filters,omitempty" jsonschema:"front matter filters with operators (eq, ne, contains, exists, in, prefix, suffix)"`
+	WorkItemID *string        `json:"workitem_id" jsonschema:"Work Item ID (auto-injected)"`
+	Module     *string        `json:"module,omitempty" jsonschema:"module name (omit for current module)"`
+	Filters    map[string]any `json:"filters,omitempty" jsonschema:"front matter filters with operators (eq, ne, contains, exists, in, prefix, suffix)"`
 }
 
-func (i *ScanModuleInput) SetJobId(jobId string) {
-	i.JobId = &jobId
+func (i *ScanModuleInput) SetWorkItemID(workItemID string) {
+	i.WorkItemID = &workItemID
 }
 
 type ScannedFile struct {
@@ -62,9 +62,9 @@ func ScanModuleHandler(ctx context.Context, req *mcp.CallToolRequest, input *Sca
 			return nil, out, nil
 		}
 	} else {
-		// Try to resolve current module from JobId
-		if input.JobId != nil && *input.JobId != "" {
-			targetModule = findModuleByJobID(proj, *input.JobId)
+		// Try to resolve current module from WorkItemID
+		if input.WorkItemID != nil && *input.WorkItemID != "" {
+			targetModule = findModuleByWorkItemID(proj, *input.WorkItemID)
 		}
 		if targetModule == nil && len(proj.Modules) == 1 {
 			targetModule = proj.Modules[0]
@@ -72,7 +72,7 @@ func ScanModuleHandler(ctx context.Context, req *mcp.CallToolRequest, input *Sca
 	}
 
 	if targetModule == nil {
-		out.Error = "could not resolve target module — specify module parameter or ensure job_id is set"
+		out.Error = "could not resolve target module — specify module parameter or ensure workitem_id is set"
 		return nil, out, nil
 	}
 

@@ -60,19 +60,31 @@ func (m *Module) GetLanesInOrder() []*Lane {
 	return ordered
 }
 
-// ListItems returns all work items across all lanes in this module
-func (m *Module) ListItems() []*WorkItem {
+// ListWorkItems returns all work items across all lanes in this module
+func (m *Module) ListWorkItems() []*WorkItem {
 	var items []*WorkItem
 	for _, lane := range m.Lanes {
-		items = append(items, lane.ListItems()...)
+		for item := range lane.WorkItems() {
+			items = append(items, item)
+		}
 	}
 	return items
 }
 
-// FindItemByID finds a work item by its ID across all lanes
-func (m *Module) FindItemByID(id int) *WorkItem {
+// GetWorkItemBySeq finds a work item by its sequential id across all lanes
+func (m *Module) GetWorkItemBySeq(seq int) *WorkItem {
 	for _, lane := range m.Lanes {
-		if item := lane.GetItem(id); item != nil {
+		if item := lane.GetWorkItemBySeq(seq); item != nil {
+			return item
+		}
+	}
+	return nil
+}
+
+// FindItemBySeq finds a work item by its sequential id across all lanes
+func (m *Module) GetWorkItemById(workItemID string) *WorkItem {
+	for _, lane := range m.Lanes {
+		if item := lane.GetWorkItemByID(workItemID); item != nil {
 			return item
 		}
 	}
@@ -83,7 +95,7 @@ func (m *Module) FindItemByID(id int) *WorkItem {
 func (m *Module) ActiveItemCount() int {
 	count := 0
 	for _, lane := range m.Lanes {
-		count += lane.ActiveItemCount()
+		count += lane.CountActiveWorkItems()
 	}
 	return count
 }
@@ -129,8 +141,7 @@ func (m *Module) NextSequence() int {
 	maxSeq := 0
 
 	for _, lane := range m.Lanes {
-		items := lane.ListItems()
-		for _, item := range items {
+		for item := range lane.WorkItems() {
 			name := item.Name
 			if !strings.HasPrefix(name, prefix) {
 				continue

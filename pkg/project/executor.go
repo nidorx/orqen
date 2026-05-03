@@ -75,7 +75,6 @@ func (e *Executor) cleanupCompleted() {
 	for id, handle := range e.active {
 		if handle.IsComplete() {
 			// Mark the work item as no longer in progress
-			handle.Item.JobID = ""
 			handle.Item.InProgress = false
 			delete(e.active, id)
 		}
@@ -105,14 +104,8 @@ func (e *Executor) processWorkItems() {
 				return
 			}
 
-			// Get work items from this lane
-			items := lane.ListItems()
-			if len(items) == 0 {
-				continue
-			}
-
 			// Try to execute each work item
-			for _, item := range items {
+			for item := range lane.WorkItems() {
 				if item.InProgress {
 					continue
 				}
@@ -140,9 +133,21 @@ func (e *Executor) processWorkItems() {
 // shouldIgnoreItem checks if a work item should be skipped based on ignore rules
 func (e *Executor) shouldIgnoreItem(module *Module, lane *Lane, item *WorkItem) bool {
 
+	// ignore if recently updated
+	if item.ModTime.After(time.Now().Add(-30 * time.Second)) {
+		return true
+	}
+
 	// Check ignore_if_exists
 	if len(lane.IgnoreIfExists) > 0 {
-		if HasItemsInReferencedLanes(e.project, module, lane.IgnoreIfExists) {
+		if lane.HasItemsInReferencedLanes(lane.IgnoreIfExists) {
+			return true
+		}
+	}
+
+	// Check ignore_if_not_exists
+	if len(lane.IgnoreIfNotExists) > 0 {
+		if !lane.HasItemsInReferencedLanes(lane.IgnoreIfNotExists) {
 			return true
 		}
 	}
@@ -154,9 +159,19 @@ func (e *Executor) shouldIgnoreItem(module *Module, lane *Lane, item *WorkItem) 
 		}
 	}
 
-	// ignore if recently updated
-	if item.ModTime.After(time.Now().Add(-30 * time.Second)) {
-		return true
+	// regex validations
+	// Check ignore_if_exists
+	if len(lane.ignoreIfExistsRegexp) > 0 {
+		if lane.HasItemsInReferencedLanes(lane.IgnoreIfExists) {
+			return true
+		}
+	}
+
+	// Check ignore_if_not_exists
+	if len(lane.ignoreIfNotExistsRegexp) > 0 {
+		if !lane.HasItemsInReferencedLanes(lane.IgnoreIfNotExists) {
+			return true
+		}
 	}
 
 	return false
@@ -177,7 +192,7 @@ func (e *Executor) invokeItem(module *Module, lane *Lane, item *WorkItem) error 
 
 	// Track the invocation
 	e.mu.Lock()
-	e.active[handle.ID] = handle
+	e.active[item.ID] = handle
 	e.mu.Unlock()
 
 	// Start a goroutine to handle completion
@@ -190,7 +205,7 @@ func (e *Executor) invokeItem(module *Module, lane *Lane, item *WorkItem) error 
 
 		// Clean up
 		e.mu.Lock()
-		delete(e.active, handle.ID)
+		delete(e.active, item.ID)
 		e.mu.Unlock()
 
 		// Mark item as no longer in progress

@@ -11,19 +11,19 @@ import (
 func TestStatusHandler(t *testing.T) {
 	proj, _ := setupTestProject(t)
 
-	// Set JobID for TASK-0001
+	// Set WorkItemID for TASK-0001
 	taskModule := proj.GetModule("task")
 	for _, lane := range taskModule.Lanes {
-		for _, item := range lane.ListItems() {
-			if item.ID == 1 {
-				item.JobID = "test-job-status"
+		for item := range lane.WorkItems() {
+			if item.Seq == 1 {
+				item.ID = "test-job-status"
 			}
 		}
 	}
 
 	t.Run("get status", func(t *testing.T) {
-		jobID := "test-job-status"
-		input := &StatusInput{JobId: &jobID}
+		workItemID := "test-job-status"
+		input := &StatusInput{WorkItemID: &workItemID}
 		out := callHandler(t, StatusHandler, input, proj)
 
 		if !out.Found {
@@ -44,8 +44,8 @@ func TestStatusHandler(t *testing.T) {
 	})
 
 	t.Run("unknown job id", func(t *testing.T) {
-		jobID := "nonexistent"
-		input := &StatusInput{JobId: &jobID}
+		workItemID := "nonexistent"
+		input := &StatusInput{WorkItemID: &workItemID}
 		out := callHandler(t, StatusHandler, input, proj)
 
 		if out.Found {
@@ -66,8 +66,8 @@ func TestStatusHandler(t *testing.T) {
 	})
 
 	t.Run("nil project", func(t *testing.T) {
-		jobID := "test-job-status"
-		input := &StatusInput{JobId: &jobID}
+		workItemID := "test-job-status"
+		input := &StatusInput{WorkItemID: &workItemID}
 		out := callHandler(t, StatusHandler, input, nil)
 
 		if out.Error == "" {

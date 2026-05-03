@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"strings"
 	"sync"
-
-	"github.com/nidorx/orqen/pkg/utils"
 )
 
 // Project represents the top-level project configuration (.orqen/orqen.yaml).
@@ -18,9 +16,10 @@ type Project struct {
 
 	// Runtime state (not serialized)
 	mu       sync.Mutex
-	invoker  AgentInvoker
-	executor *Executor
+	fsys     *Fsys
 	running  bool
+	executor *Executor
+	invoker  AgentInvoker
 }
 
 // GetModule returns a module by name, or nil if not found
@@ -113,12 +112,9 @@ func (p *Project) IsRunning() bool {
 // Invoke implements AgentInvoker for the noop invoker
 func agentInvoker(proj *Project, mod *Module, lane *Lane, item *WorkItem) (InvocationHandle, error) {
 	handle := InvocationHandle{
-		ID:   utils.HashXxh64([]byte(fmt.Sprintf("%d-%s", item.ID, item.Name))),
 		Item: item,
 		Done: make(chan struct{}),
 	}
-
-	item.JobID = handle.ID
 
 	go func() {
 
@@ -133,10 +129,10 @@ func agentInvoker(proj *Project, mod *Module, lane *Lane, item *WorkItem) (Invoc
 		prompt.WriteString("**REQUIRED ACTION:** Work on item bellow\n")
 		prompt.WriteString(fmt.Sprintf("- lane_name: %s\n", lane.Name))
 		prompt.WriteString(fmt.Sprintf("- lane_dir: %s\n", lane.Dir))
-		if item.ID == 0 {
+		if item.Seq == 0 {
 			prompt.WriteString("- item_id: NOT CREATED (0), see tool orqen_create_item from orqen MCP Server\n")
 		} else {
-			prompt.WriteString(fmt.Sprintf("- item_id: %d\n", item.ID))
+			prompt.WriteString(fmt.Sprintf("- item_id: %d\n", item.Seq))
 		}
 		prompt.WriteString(fmt.Sprintf("- item_name: %s\n", item.Name))
 		prompt.WriteString(fmt.Sprintf("- item_last_update: %v\n", item.ModTime))

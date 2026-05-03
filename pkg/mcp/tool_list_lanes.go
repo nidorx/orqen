@@ -12,25 +12,26 @@ import (
 // Lists all lanes in a module with their configuration and item counts.
 
 type ListLanesInput struct {
-	JobId  *string `json:"job_id,omitempty" jsonschema:"job id (auto-injected)"`
-	Module *string `json:"module,omitempty" jsonschema:"module name (omit for current module)"`
+	WorkItemID *string `json:"workitem_id" jsonschema:"Work Item ID (auto-injected)"`
+	Module     *string `json:"module,omitempty" jsonschema:"module name (omit for current module)"`
 }
 
-func (i *ListLanesInput) SetJobId(jobId string) {
-	i.JobId = &jobId
+func (i *ListLanesInput) SetWorkItemID(workItemID string) {
+	i.WorkItemID = &workItemID
 }
 
 type LaneDetail struct {
-	Name             string   `json:"name"`
-	Dir              string   `json:"dir"`
-	Purpose          string   `json:"purpose"`
-	MaxAgents        int      `json:"max_agents"`
-	Artifacts        []string `json:"artifacts,omitempty"`
-	UserAction       string   `json:"user_action,omitempty"`
-	IgnoreIfExists   []string `json:"ignore_if_exists,omitempty"`
-	ItemCount        int      `json:"item_count"`
-	ActiveCount      int      `json:"active_count"`
-	HasAvailableSlot bool     `json:"has_available_slot"`
+	Name              string   `json:"name"`
+	Dir               string   `json:"dir"`
+	Purpose           string   `json:"purpose"`
+	MaxAgents         int      `json:"max_agents"`
+	Artifacts         []string `json:"artifacts,omitempty"`
+	UserAction        string   `json:"user_action,omitempty"`
+	IgnoreIfExists    []string `json:"ignore_if_exists,omitempty"`
+	IgnoreIfNotExists []string `json:"ignore_if_not_exists,omitempty"`
+	ItemCount         int      `json:"item_count"`
+	ActiveCount       int      `json:"active_count"`
+	HasAvailableSlot  bool     `json:"has_available_slot"`
 }
 
 type ListLanesOutput struct {
@@ -63,9 +64,9 @@ func ListLanesHandler(ctx context.Context, req *mcp.CallToolRequest, input *List
 			return nil, out, nil
 		}
 	} else {
-		// Try to resolve current module from JobId
-		if input.JobId != nil && *input.JobId != "" {
-			targetModule = findModuleByJobID(proj, *input.JobId)
+		// Try to resolve current module from WorkItemID
+		if input.WorkItemID != nil && *input.WorkItemID != "" {
+			targetModule = findModuleByWorkItemID(proj, *input.WorkItemID)
 		}
 		if targetModule == nil && len(proj.Modules) == 1 {
 			targetModule = proj.Modules[0]
@@ -73,27 +74,25 @@ func ListLanesHandler(ctx context.Context, req *mcp.CallToolRequest, input *List
 	}
 
 	if targetModule == nil {
-		out.Error = "could not resolve target module — specify module parameter or ensure job_id is set"
+		out.Error = "could not resolve target module — specify module parameter or ensure workitem_id is set"
 		return nil, out, nil
 	}
 
 	out.Module = targetModule.Name
 
 	for _, lane := range targetModule.Lanes {
-		items := lane.ListItems()
-		activeCount := lane.ActiveItemCount()
-
 		out.Lanes = append(out.Lanes, LaneDetail{
-			Name:             lane.Name,
-			Dir:              lane.Dir,
-			Purpose:          lane.Purpose,
-			MaxAgents:        lane.MaxAgents,
-			Artifacts:        lane.Artifacts,
-			UserAction:       lane.UserAction,
-			IgnoreIfExists:   lane.IgnoreIfExists,
-			ItemCount:        len(items),
-			ActiveCount:      activeCount,
-			HasAvailableSlot: lane.HasAvailableSlot(),
+			Dir:               lane.Dir,
+			Name:              lane.Name,
+			Purpose:           lane.Purpose,
+			MaxAgents:         lane.MaxAgents,
+			Artifacts:         lane.Artifacts,
+			UserAction:        lane.UserAction,
+			IgnoreIfExists:    lane.IgnoreIfExists,
+			IgnoreIfNotExists: lane.IgnoreIfNotExists,
+			ItemCount:         lane.CountWorkItems(),
+			ActiveCount:       lane.CountActiveWorkItems(),
+			HasAvailableSlot:  lane.HasAvailableSlot(),
 		})
 	}
 

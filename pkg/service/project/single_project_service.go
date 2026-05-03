@@ -80,7 +80,7 @@ func (s *Service) OnStart() error {
 							"--mcp",
 							"--port=" + strconv.Itoa(orqenPort),
 							"--project=" + proj.Id,
-							"--job=" + item.JobID,
+							"--workitem=" + item.ID,
 						},
 						Env: make([]acp.EnvVariable, 0),
 					},

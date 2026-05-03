@@ -13,13 +13,13 @@ import (
 // Lists work items in a specific lane (same module or cross-module).
 
 type ListItemsInput struct {
-	JobId  *string `json:"job_id,omitempty" jsonschema:"job id (auto-injected)"`
-	Module *string `json:"module,omitempty" jsonschema:"module name (omit for current module)"`
-	Lane   string  `json:"lane" jsonschema:"lane name within the module"`
+	WorkItemID *string `json:"workitem_id" jsonschema:"Work Item ID (auto-injected)"`
+	Module     *string `json:"module,omitempty" jsonschema:"module name (omit for current module)"`
+	Lane       string  `json:"lane" jsonschema:"lane name within the module"`
 }
 
-func (i *ListItemsInput) SetJobId(jobId string) {
-	i.JobId = &jobId
+func (i *ListItemsInput) SetWorkItemID(workItemID string) {
+	i.WorkItemID = &workItemID
 }
 
 type ListItemSummary struct {
@@ -63,9 +63,9 @@ func ListItemsHandler(ctx context.Context, req *mcp.CallToolRequest, input *List
 			return nil, out, nil
 		}
 	} else {
-		// Try to resolve current module from JobId
-		if input.JobId != nil && *input.JobId != "" {
-			targetModule = findModuleByJobID(proj, *input.JobId)
+		// Try to resolve current module from WorkItemID
+		if input.WorkItemID != nil && *input.WorkItemID != "" {
+			targetModule = findModuleByWorkItemID(proj, *input.WorkItemID)
 		}
 		if targetModule == nil && len(proj.Modules) == 1 {
 			targetModule = proj.Modules[0]
@@ -73,7 +73,7 @@ func ListItemsHandler(ctx context.Context, req *mcp.CallToolRequest, input *List
 	}
 
 	if targetModule == nil {
-		out.Error = "could not resolve target module — specify module parameter or ensure job_id is set"
+		out.Error = "could not resolve target module — specify module parameter or ensure workitem_id is set"
 		return nil, out, nil
 	}
 
@@ -83,8 +83,7 @@ func ListItemsHandler(ctx context.Context, req *mcp.CallToolRequest, input *List
 		return nil, out, nil
 	}
 
-	items := lane.ListItems()
-	for _, item := range items {
+	for item := range lane.WorkItems() {
 		dirPath := filepath.Join(lane.DirAbs, item.Name)
 		rel, err := filepath.Rel(proj.DirAbs, filepath.Clean(dirPath))
 		dirStr := filepath.ToSlash(rel)
@@ -92,7 +91,7 @@ func ListItemsHandler(ctx context.Context, req *mcp.CallToolRequest, input *List
 			dirStr = dirPath
 		}
 		out.Items = append(out.Items, ListItemSummary{
-			ID:    item.ID,
+			ID:    item.Seq,
 			Name:  item.Name,
 			Dir:   dirStr,
 			Files: item.Files,

@@ -17,11 +17,11 @@ import (
 // Scans for DEP_XXX files and resolves them to actual work items.
 
 type DependenciesInput struct {
-	JobId *string `json:"job_id" jsonschema:"job id (auto-injected)"`
+	WorkItemID *string `json:"workitem_id" jsonschema:"Work Item ID (auto-injected)"`
 }
 
-func (i *DependenciesInput) SetJobId(jobId string) {
-	i.JobId = &jobId
+func (i *DependenciesInput) SetWorkItemID(workItemID string) {
+	i.WorkItemID = &workItemID
 }
 
 type DependencyInfo struct {
@@ -34,7 +34,8 @@ type DependencyInfo struct {
 }
 
 type DependenciesOutput struct {
-	ItemID       int              `json:"item_id"`
+	ItemID       string           `json:"item_id"`
+	ItemSeq      int              `json:"item_seq"`
 	ItemName     string           `json:"item_name"`
 	Dependencies []DependencyInfo `json:"dependencies"`
 	Error        string           `json:"error,omitempty"`
@@ -56,46 +57,38 @@ func DependenciesHandler(ctx context.Context, req *mcp.CallToolRequest, input *D
 		return nil, out, nil
 	}
 
-	if input.JobId == nil || *input.JobId == "" {
+	if input.WorkItemID == nil || *input.WorkItemID == "" {
 		out.Error = "no job id provided"
 		return nil, out, nil
 	}
 
-	jobID := *input.JobId
+	workItemID := *input.WorkItemID
 
-	// Find the current work item by JobID
+	// Find the current work item by WorkItemID
 	var currentItem *project.WorkItem
 	var currentLane *project.Lane
 	var currentMod *project.Module
 
 	for _, mod := range proj.Modules {
-		for _, lane := range mod.Lanes {
-			for _, item := range lane.ListItems() {
-				if item.JobID == jobID {
-					currentItem = item
-					currentLane = lane
-					currentMod = mod
-					break
-				}
-			}
-			if currentItem != nil {
-				break
-			}
-		}
-		if currentItem != nil {
+		if item := mod.GetWorkItemById(workItemID); item != nil {
+			currentItem = item
+			currentLane = item.Lane
+			currentMod = mod
 			break
 		}
 	}
 
 	if currentItem == nil || currentLane == nil {
-		out.Error = fmt.Sprintf("work item with job id %q not found", jobID)
+		out.Error = fmt.Sprintf("work item with job id %q not found", workItemID)
 		return nil, out, nil
 	}
 
 	out.ItemID = currentItem.ID
+	out.ItemSeq = currentItem.Seq
 	out.ItemName = currentItem.Name
 
 	// Build item directory path
+	// @TODO: Mudar lógica para usar metadaodos
 	itemDir := filepath.Join(currentLane.DirAbs, currentItem.Name)
 	entries, err := os.ReadDir(itemDir)
 	if err != nil {
@@ -120,7 +113,7 @@ func DependenciesHandler(ctx context.Context, req *mcp.CallToolRequest, input *D
 		depInfo := DependencyInfo{DepID: depID}
 
 		// Try to find the dependency item across all lanes in the module
-		depItem := currentMod.FindItemByID(depID)
+		depItem := currentMod.GetWorkItemBySeq(depID)
 		if depItem != nil {
 			depInfo.ItemName = depItem.Name
 			depInfo.Lane = depItem.Lane.Name
