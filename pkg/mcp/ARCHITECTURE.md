@@ -74,7 +74,7 @@ Each HTTP request to `/mcp/http` creates an independent MCP session. The handler
 
 ### Role 2: Proxy (Stdio Subprocess) — `server_stdio.go`
 
-When the main process invokes an ACP agent, it spawns a **subprocess** of itself with `--mcp --port=6180 --job=<job_id>`:
+When the main process invokes an ACP agent, it spawns a **subprocess** of itself with `--mcp --port=6180 --workitem=<workitem_id> --project=<project_id>`:
 
 ```go
 // main.go — agent invoker
@@ -102,9 +102,9 @@ The subprocess enters `StartStdio()`:
 The `*mcp.ClientSession` from step 3 is **shared across all 10 tool proxies**. Each proxy function follows the same pattern:
 
 ```go
-func sseProxyWithJobId[In InputWithJobId, Out any](tool string, h, cs, jobId) mcp.ToolHandlerFor[In, Out] {
+func sseProxyWithJobId[In InputWithJobId, Out any](tool string, h, cs, workItemID) mcp.ToolHandlerFor[In, Out] {
     return func(ctx, req, input) (result, output, err) {
-        input.SetJobId(jobId)                          // auto-inject job_id
+        input.SetWorkItemID(workItemID)                // auto-inject workitem_id
         result, err = cs.CallTool(ctx, &CallToolParams{Name: tool, Arguments: input})
         if err != nil {
             logError(err, result)                      // log to .ignore/debug/mcp_error.txt
@@ -195,7 +195,7 @@ addToolProjecProxyWithJobId(server, tnMoveItem, MoveItemHandler, session, jobId)
 ```
 
 The handler is wrapped by `sseProxyWithJobId`, which:
-1. Auto-injects the `jobId` into the input via `input.SetJobId(jobId)`
+1. Auto-injects the `jobId` into the input via `input.SetWorkItemID(workItemID)`
 2. Forwards the call to the host via `cs.CallTool()`
 3. Logs errors to `.ignore/debug/mcp_error.txt`
 4. Returns the result (or error) back to the agent
@@ -215,20 +215,20 @@ This forwards the call as-is without modification.
 Most tools accept an optional `module` parameter, but when called from an agent subprocess, the module should be inferred from the agent's current job. The `InputWithJobId` interface enables this:
 
 ```go
-type InputWithJobId interface {
-    SetJobId(jobId string)
+type InputWithWorkItemID interface {
+    SetWorkItemID(workItemID string)
 }
 ```
 
 Tool input structs that need auto-injection implement this method:
 
 ```go
-func (i *MoveItemInput) SetJobId(jobId string) {
-    i.JobId = &jobId
+func (i *MoveItemInput) SetWorkItemID(workItemID string) {
+    i.WorkItemID = &workItemID
 }
 ```
 
-The proxy wrapper calls `SetJobId(jobId)` before forwarding, so the agent never needs to pass `job_id` explicitly.
+The proxy wrapper calls `SetWorkItemID(jobId)` before forwarding, so the agent never needs to pass `workitem_id` explicitly.
 
 ## Error Handling
 

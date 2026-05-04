@@ -67,7 +67,7 @@ orqen/
 │   │   ├── tool_create_item.go # Create work items in lanes
 │   │   ├── tool_move_item.go   # Move items between lanes
 │   │   ├── tool_list_items.go  # List items in a lane
-│   │   ├── tool_status.go      # Get current work item context by job_id
+│   │   ├── tool_status.go      # Get current work item context by workitem_id
 │   │   ├── tool_dependencies.go# Manage item dependencies (DEP_XXX files)
 │   │   ├── tool_scan_module.go # Scan module lanes for items
 │   │   ├── tool_schema.go      # Get project schema
@@ -223,7 +223,7 @@ main.go:
 
 executor.go → agentInvoker:
   4. When invoking an agent, spawn agent process with:
-     --mcp --port=6180 --job=<job_id>
+     --mcp --port=6180 --workitem=<workitem_id> --project=<project_id>
   5. Agent process starts MCP Stdio server (server_stdio.go)
   6. Stdio server connects to Orqen's Streamable HTTP endpoint
   7. Agent calls tools (orqen_status, orqen_create_item, etc.) via HTTP proxy
@@ -263,20 +263,19 @@ in one does not affect subsequent calls.
 
 | Tool | Purpose |
 |------|---------|
-| `orqen_status` | Get current work item context by job_id |
+| `orqen_status` | Get current work item context by workitem_id |
 | `orqen_create_item` | Create a new work item in a lane (directory + .md file) |
 | `orqen_move_item` | Move a work item directory from one lane to another |
 | `orqen_list_items` | List all work items in a lane |
 | `orqen_list_lanes` | List available lanes in a module |
 | `orqen_scan_module` | Scan all lanes in a module for items |
 | `orqen_dependencies` | Manage dependency files (DEP_XXX) |
-| `orqen_next_sequence` | Get the next available sequence number for a module |
 | `orqen_project_info` | Get project metadata |
 | `orqen_schema` | Get the project configuration schema |
 
 ### JobId Resolution
 
-Most tools accept an optional `job_id` parameter. When provided, Orqen uses it to:
+Most tools accept an optional `workitem_id` parameter. When provided, Orqen uses it to:
 - Resolve the calling agent's current module (via `findModuleByJobID`)
 - Scope operations to the correct module without requiring explicit `module` parameter
 - Track which work item is being processed
@@ -311,7 +310,7 @@ acp.McpServer{
     Stdio: &acp.McpServerStdio{
         Name:    "orqen",
         Command: orqen_executable,
-        Args:    ["--mcp", "--port=6180", "--job=<job_id>"],
+        Args:    ["--mcp", "--port=6180", "--workitem=<workitem_id>", "--project=<project_id>"],
     },
 }
 ```

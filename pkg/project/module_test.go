@@ -79,18 +79,22 @@ func TestModuleActiveItemCount(t *testing.T) {
 	createWorkItemDir(t, doingLane, "TASK-001-test1")
 	createWorkItemDir(t, readyLane, "TASK-002-test2")
 
+	// Scan to populate caches
+	scanLaneDirectory(doingLane)
+	scanLaneDirectory(readyLane)
+
 	// Initially no items are in progress
 	if taskModule.ActiveItemCount() != 0 {
 		t.Errorf("expected 0 active items, got %d", taskModule.ActiveItemCount())
 	}
 
 	// Mark items as in progress
-	items := doingLane.ListItems()
+	items := collectWorkItems(doingLane.WorkItems())
 	if len(items) > 0 {
 		items[0].InProgress = true
 	}
 
-	items = readyLane.ListItems()
+	items = collectWorkItems(readyLane.WorkItems())
 	if len(items) > 0 {
 		items[0].InProgress = true
 	}
@@ -123,6 +127,10 @@ func TestModuleListItems(t *testing.T) {
 	createWorkItemDir(t, doingLane, "TASK-001-test1")
 	createWorkItemDir(t, readyLane, "TASK-002-test2")
 
+	// Scan to populate caches
+	scanLaneDirectory(doingLane)
+	scanLaneDirectory(readyLane)
+
 	items := taskModule.ListWorkItems()
 	if len(items) != 2 {
 		t.Errorf("expected 2 items across all lanes, got %d", len(items))
@@ -144,6 +152,9 @@ func TestModuleFindItemByID(t *testing.T) {
 
 	doingLane := taskModule.GetLane("doing")
 	createWorkItemDir(t, doingLane, "TASK-001-test1")
+
+	// Scan to populate cache
+	scanLaneDirectory(doingLane)
 
 	// Find by ID
 	item := taskModule.GetWorkItemBySeq(1)
@@ -192,13 +203,15 @@ func TestModuleHasAvailableSlot(t *testing.T) {
 			if err := os.WriteFile(inboxFile, []byte("some content"), 0644); err != nil {
 				t.Fatal(err)
 			}
-			// Make the file older than 1 minute so it's picked up by ListItems
+			// Make the file older than 1 minute so it's picked up by WorkItems
 			oldTime := time.Now().Add(-2 * time.Minute)
 			if err := os.Chtimes(inboxFile, oldTime, oldTime); err != nil {
 				t.Fatal(err)
 			}
+			// Scan to populate cache
+			scanLaneDirectory(lane)
 			// Mark the inbox item as in progress
-			items := lane.ListItems()
+			items := collectWorkItems(lane.WorkItems())
 			if len(items) > 0 {
 				items[0].InProgress = true
 			}
@@ -206,7 +219,9 @@ func TestModuleHasAvailableSlot(t *testing.T) {
 		}
 
 		createWorkItemDir(t, lane, "TASK-001-test")
-		items := lane.ListItems()
+		// Scan to populate cache
+		scanLaneDirectory(lane)
+		items := collectWorkItems(lane.WorkItems())
 		if len(items) > 0 {
 			items[0].InProgress = true
 		}
@@ -264,6 +279,9 @@ func TestModuleNextSequence(t *testing.T) {
 	doingLane := taskModule.GetLane("doing")
 	createWorkItemDir(t, doingLane, "TASK-001-first")
 	createWorkItemDir(t, doingLane, "TASK-005-fifth")
+
+	// Scan to populate cache
+	scanLaneDirectory(doingLane)
 
 	// Should be max + 1
 	seq = taskModule.NextSequence()

@@ -12,7 +12,7 @@ import (
 )
 
 type InputWithWorkItemID interface {
-	SetWorkItemID(id string)
+	SetWorkItemID(workItemID string)
 }
 
 var (
@@ -78,7 +78,6 @@ func StartStdio(orqenPort string, projectId string, workItemID string) {
 	addToolProxy(server, tnDependencies, DependenciesHandler, session, workItemID)
 	addToolProxy(server, tnProjectInfo, ProjectInfoHandler, session, workItemID)
 	addToolProxy(server, tnCreateItem, CreateItemHandler, session, workItemID)
-	addToolProxy(server, tnNextSequence, NextSequenceHandler, session, workItemID)
 	addToolProxy(server, tnListLanes, ListLanesHandler, session, workItemID)
 	if DEBUG_STDIO {
 		debugAny("MCP_TOOLS_ADDED", time.Now())

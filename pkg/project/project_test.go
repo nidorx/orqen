@@ -51,6 +51,8 @@ modules:
         purpose: "Approved tasks"
         ignore_if_exists: ["doing"]
         ignore_if_dependency: ["prioritized", "backlog", "doing"]
+        agent_behavior:
+          - "Execute the task"
       - name: "doing"
         purpose: "Task being implemented"
       - name: "done"
@@ -192,7 +194,11 @@ func TestProjectActiveAgentCount(t *testing.T) {
 	doingLane := taskModule.GetLane("doing")
 
 	createWorkItemDir(t, doingLane, "TASK-001-test")
-	items := doingLane.ListItems()
+
+	// Scan to populate cache
+	scanLaneDirectory(doingLane)
+
+	items := collectWorkItems(doingLane.WorkItems())
 	if len(items) > 0 {
 		items[0].InProgress = true
 	}
@@ -225,6 +231,9 @@ func TestProjectHasAvailableSlot(t *testing.T) {
 		createWorkItemDir(t, doingLane, fmt.Sprintf("TASK-%03d-test", i+1))
 	}
 
+	// Scan to populate cache
+	scanLaneDirectory(doingLane)
+
 	// Should still have slot
 	if !project.HasAvailableSlot() {
 		t.Error("expected HasAvailableSlot to return true")
@@ -232,7 +241,11 @@ func TestProjectHasAvailableSlot(t *testing.T) {
 
 	// Add one more to reach max
 	createWorkItemDir(t, doingLane, fmt.Sprintf("TASK-%03d-test", project.Execution.MaxAgents))
-	items := doingLane.ListItems()
+
+	// Scan to populate cache
+	scanLaneDirectory(doingLane)
+
+	items := collectWorkItems(doingLane.WorkItems())
 	for _, item := range items {
 		item.InProgress = true
 	}
@@ -300,6 +313,9 @@ func TestExecutorTick(t *testing.T) {
 	// Create a work item
 	createWorkItemDir(t, readyLane, "TASK-001-test")
 
+	// Scan to populate cache
+	scanLaneDirectory(readyLane)
+
 	// Create a mock invoker
 	invoker := &mockInvoker{}
 	executor := NewExecutor(project, invoker.AsWorkItemInvoker())
@@ -352,6 +368,9 @@ func TestExecutorRespectsMaxAgents(t *testing.T) {
 	createWorkItemDir(t, readyLane, "TASK-002-test2")
 	createWorkItemDir(t, readyLane, "TASK-003-test3")
 
+	// Scan to populate cache
+	scanLaneDirectory(readyLane)
+
 	// Create a mock invoker with a delay
 	invoker := &mockInvoker{
 		invocationDelay: 100 * time.Millisecond,
@@ -390,6 +409,9 @@ func TestExecutorCleanupCompleted(t *testing.T) {
 	// Create a work item
 	createWorkItemDir(t, readyLane, "TASK-001-test")
 
+	// Scan to populate cache
+	scanLaneDirectory(readyLane)
+
 	// Create a mock invoker with no delay
 	invoker := &mockInvoker{}
 	executor := NewExecutor(project, invoker.AsWorkItemInvoker())
@@ -404,7 +426,8 @@ func TestExecutorCleanupCompleted(t *testing.T) {
 	executor.cleanupCompleted()
 
 	// Check that the item is no longer in progress
-	items := readyLane.ListItems()
+	scanLaneDirectory(readyLane)
+	items := collectWorkItems(readyLane.WorkItems())
 	if len(items) != 1 {
 		t.Fatalf("expected 1 item, got %d", len(items))
 	}
@@ -442,6 +465,10 @@ func TestIgnoreIfExists(t *testing.T) {
 
 	// Create an item in ready lane
 	createWorkItemDir(t, readyLane, "TASK-002-new")
+
+	// Scan to populate caches
+	scanLaneDirectory(doingLane)
+	scanLaneDirectory(readyLane)
 
 	// ready lane has ignore_if_exists: ["doing"]
 	// So the new item should be ignored
@@ -502,15 +529,19 @@ func TestIgnoreIfDependency(t *testing.T) {
 	// Create an item in ready lane with a dependency on the prioritized item
 	createWorkItemDir(t, readyLane, "TASK-002-dependent")
 
+	// Scan to populate caches
+	scanLaneDirectory(prioritizedLane)
+	scanLaneDirectory(readyLane)
+
 	// The dependency is simulated by adding it to the item's Dependencies field
 	// First, we need to list items in the prioritized lane to get the dependency item
-	prioritizedItems := prioritizedLane.ListItems()
+	prioritizedItems := collectWorkItems(prioritizedLane.WorkItems())
 	if len(prioritizedItems) == 0 {
 		t.Fatal("expected at least one item in prioritized lane")
 	}
 
 	// Now list items in ready lane and set the dependency
-	readyItems := readyLane.ListItems()
+	readyItems := collectWorkItems(readyLane.WorkItems())
 	if len(readyItems) == 0 {
 		t.Fatal("expected at least one item in ready lane")
 	}
@@ -560,6 +591,9 @@ func TestExecutionLoopIntegration(t *testing.T) {
 	// Create some work items
 	createWorkItemDir(t, readyLane, "TASK-001-create-project")
 	createWorkItemDir(t, readyLane, "TASK-002-implement-feature")
+
+	// Scan to populate cache
+	scanLaneDirectory(readyLane)
 
 	// Create a mock invoker
 	invoker := &mockInvoker{}

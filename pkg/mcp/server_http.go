@@ -20,7 +20,6 @@ func ServerHttp(proj *project.Project) http.Handler {
 	addTool(server, tnDependencies, DependenciesHandler, proj)
 	addTool(server, tnProjectInfo, ProjectInfoHandler, proj)
 	addTool(server, tnCreateItem, CreateItemHandler, proj)
-	addTool(server, tnNextSequence, NextSequenceHandler, proj)
 	addTool(server, tnListLanes, ListLanesHandler, proj)
 
 	return mcp.NewStreamableHTTPHandler(func(request *http.Request) *mcp.Server {

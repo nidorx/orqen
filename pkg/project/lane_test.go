@@ -4,7 +4,45 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 )
+
+// ============================================================================
+// Test Helpers
+// ============================================================================
+
+// collectWorkItems collects all items from the WorkItems iterator into a slice
+func collectWorkItems(iter func(func(*WorkItem) bool)) []*WorkItem {
+	var items []*WorkItem
+	for item := range iter {
+		items = append(items, item)
+	}
+	return items
+}
+
+// scanLaneDirectory simulates the file system scan by calling onFsysUpdate for each entry
+// This is needed because tests create directories after the project is loaded
+func scanLaneDirectory(lane *Lane) {
+	if entries, err := os.ReadDir(lane.DirAbs); err == nil {
+		for _, entry := range entries {
+			info, _ := entry.Info()
+			isDir := info != nil && info.IsDir()
+			lane.onFsysUpdate(FsysEvent{
+				Path:     filepath.Join(lane.DirAbs, entry.Name()),
+				Op:       FsysOpCreate,
+				Time:     info.ModTime(),
+				IsDir:    isDir,
+				FileInfo: info,
+			})
+		}
+	}
+
+	// Set ModTime to 1 minute ago for all items to avoid the executor's "recently updated" filter
+	oldTime := time.Now().Add(-1 * time.Minute)
+	for item := range lane.WorkItems() {
+		item.ModTime = oldTime
+	}
+}
 
 // ============================================================================
 // Lane Tests
@@ -33,7 +71,7 @@ func TestLaneListItems(t *testing.T) {
 	}
 
 	// Initially should be empty
-	items := readyLane.ListItems()
+	items := collectWorkItems(readyLane.WorkItems())
 	if len(items) != 0 {
 		t.Errorf("expected 0 items, got %d", len(items))
 	}
@@ -43,7 +81,10 @@ func TestLaneListItems(t *testing.T) {
 	createWorkItemDir(t, readyLane, "TASK-002-implement-feature")
 	createWorkItemDir(t, readyLane, "not-a-task") // should be ignored
 
-	items = readyLane.ListItems()
+	// Scan to populate cache
+	scanLaneDirectory(readyLane)
+
+	items = collectWorkItems(readyLane.WorkItems())
 	if len(items) != 2 {
 		t.Errorf("expected 2 items, got %d", len(items))
 	}
@@ -79,6 +120,9 @@ func TestLaneHasItems(t *testing.T) {
 	// Create an item
 	createWorkItemDir(t, readyLane, "TASK-001-test")
 
+	// Scan to populate cache
+	scanLaneDirectory(readyLane)
+
 	if !readyLane.HasWorkItems() {
 		t.Error("expected HasItems to return true")
 	}
@@ -99,13 +143,16 @@ func TestLaneActiveItemCount(t *testing.T) {
 	createWorkItemDir(t, doingLane, "TASK-001-test1")
 	createWorkItemDir(t, doingLane, "TASK-002-test2")
 
+	// Scan to populate cache
+	scanLaneDirectory(doingLane)
+
 	// Initially no items are in progress
 	if doingLane.CountActiveWorkItems() != 0 {
 		t.Errorf("expected 0 active items, got %d", doingLane.CountActiveWorkItems())
 	}
 
 	// Get items and mark them as in progress
-	items := doingLane.ListItems()
+	items := collectWorkItems(doingLane.WorkItems())
 	if len(items) != 2 {
 		t.Fatalf("expected 2 items, got %d", len(items))
 	}
@@ -136,7 +183,10 @@ func TestLaneHasAvailableSlot(t *testing.T) {
 
 	createWorkItemDir(t, doingLane, "TASK-001-test")
 
-	items := doingLane.ListItems()
+	// Scan to populate cache
+	scanLaneDirectory(doingLane)
+
+	items := collectWorkItems(doingLane.WorkItems())
 	if len(items) != 1 {
 		t.Fatalf("expected 1 item, got %d", len(items))
 	}
@@ -156,7 +206,11 @@ func TestLaneHasAvailableSlot(t *testing.T) {
 
 	// Add another item and mark as in progress
 	createWorkItemDir(t, doingLane, "TASK-002-test2")
-	items = doingLane.ListItems()
+
+	// Scan to populate cache
+	scanLaneDirectory(doingLane)
+
+	items = collectWorkItems(doingLane.WorkItems())
 	for _, item := range items {
 		item.InProgress = true
 	}
@@ -243,6 +297,9 @@ func TestLaneItemCount(t *testing.T) {
 	createWorkItemDir(t, readyLane, "TASK-001-test1")
 	createWorkItemDir(t, readyLane, "TASK-002-test2")
 
+	// Scan to populate cache
+	scanLaneDirectory(readyLane)
+
 	if readyLane.CountWorkItems() != 2 {
 		t.Errorf("expected 2 items, got %d", readyLane.CountWorkItems())
 	}
@@ -261,6 +318,9 @@ func TestLaneGetItem(t *testing.T) {
 
 	createWorkItemDir(t, readyLane, "TASK-001-test1")
 	createWorkItemDir(t, readyLane, "TASK-002-test2")
+
+	// Scan to populate cache
+	scanLaneDirectory(readyLane)
 
 	// Get by ID
 	item := readyLane.GetWorkItemBySeq(1)
@@ -307,9 +367,13 @@ func TestLaneFindItemDependencies(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// Scan to populate caches
+	scanLaneDirectory(doingLane)
+	scanLaneDirectory(readyLane)
+
 	// List items to populate caches
-	doingItems := doingLane.ListItems()
-	readyItems := readyLane.ListItems()
+	doingItems := collectWorkItems(doingLane.WorkItems())
+	readyItems := collectWorkItems(readyLane.WorkItems())
 
 	if len(doingItems) == 0 || len(readyItems) == 0 {
 		t.Fatal("expected items in both lanes")
@@ -348,6 +412,9 @@ func TestHasItemsInReferencedLanes(t *testing.T) {
 
 	// Create item in doing lane
 	createWorkItemDir(t, doingLane, "TASK-001-test")
+
+	// Scan to populate cache
+	scanLaneDirectory(doingLane)
 
 	// Now should return true
 	if !doingLane.HasItemsInReferencedLanes([]string{"doing"}) {
@@ -413,7 +480,11 @@ func TestHasDependencyInReferencedLanes(t *testing.T) {
 
 	// Create a dependency item
 	createWorkItemDir(t, doingLane, "TASK-001-dep")
-	items := doingLane.ListItems()
+
+	// Scan to populate cache
+	scanLaneDirectory(doingLane)
+
+	items := collectWorkItems(doingLane.WorkItems())
 	if len(items) == 0 {
 		t.Fatal("expected item in doing lane")
 	}
