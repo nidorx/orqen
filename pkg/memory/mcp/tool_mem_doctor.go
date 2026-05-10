@@ -10,9 +10,9 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 	mcp2 "github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/nidorx/orqen/pkg/engine"
 	"github.com/nidorx/orqen/pkg/memory/diagnostic"
 	"github.com/nidorx/orqen/pkg/memory/store"
-	"github.com/nidorx/orqen/pkg/project"
 )
 
 // ── mem_doctor ─────────────────────────────────────────────────────
@@ -46,7 +46,7 @@ func init() {
 }
 
 // MemDoctorHandler migrates from handleDoctor in mcp.go.
-func MemDoctorHandler(ctx context.Context, req *mcp2.CallToolRequest, input *MemDoctorInput, proj *project.Project) (*mcp2.CallToolResult, MemDoctorOutput, error) {
+func MemDoctorHandler(ctx context.Context, req *mcp2.CallToolRequest, input *MemDoctorInput, proj *engine.Project) (*mcp2.CallToolResult, MemDoctorOutput, error) {
 	out := MemDoctorOutput{}
 
 	// TODO: Wire up actual diagnostic.NewRunner() call

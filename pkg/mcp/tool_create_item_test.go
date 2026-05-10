@@ -25,28 +25,26 @@ func TestCreateItemHandler(t *testing.T) {
 			t.Fatalf("expected success, got error: %s", out.Error)
 		}
 
-		if out.ModuleType != "TASK" {
-			t.Errorf("module_type = %q, want 'TASK'", out.ModuleType)
-		}
-
 		// Item ID should be 4 (we have 0001, 0002, 0003)
-		if out.ItemSeq != 4 {
-			t.Errorf("item_id = %d, want 4", out.ItemSeq)
+		if out.WorkItem.Seq != 4 {
+			t.Errorf("item_id = %d, want 4", out.WorkItem.Seq)
 		}
 
 		// Directory name
-		if out.ItemName != "TASK-0004-implement-auth" {
-			t.Errorf("item_name = %q, want 'TASK-0004-implement-auth'", out.ItemName)
+		if out.WorkItem.Name != "TASK-0004-implement-auth" {
+			t.Errorf("item_name = %q, want 'TASK-0004-implement-auth'", out.WorkItem.Name)
 		}
 
 		// Verify directory exists
-		fullDir := filepath.Join(proj.DirAbs, out.DirPath)
+		// filepath.ToSlash(filepath.Rel(proj.DirAbs, filepath.Clean(dirPath)))
+		// filepath.Join(l.DirAbs, fmt.Sprintf("%s-%04d-%s", modType, nextSeq, simpleName))
+		fullDir := filepath.Join(proj.DirAbs, "tasks", "02_backlog", "TASK-0004-implement-auth")
 		if _, err := os.Stat(fullDir); os.IsNotExist(err) {
 			t.Errorf("directory does not exist: %s", fullDir)
 		}
 
 		// Verify file exists
-		fullFile := filepath.Join(proj.DirAbs, out.FilePath)
+		fullFile := filepath.Join(proj.DirAbs, "tasks", "02_backlog", "TASK-0004-implement-auth", "TASK-0004.yaml")
 		if _, err := os.Stat(fullFile); os.IsNotExist(err) {
 			t.Errorf("file does not exist: %s", fullFile)
 		}
@@ -70,8 +68,8 @@ func TestCreateItemHandler(t *testing.T) {
 			t.Fatalf("expected success, got error: %s", out.Error)
 		}
 
-		if out.ItemName != "ADR-0003-use-redis-cache" {
-			t.Errorf("item_name = %q, want 'ADR-0003-use-redis-cache'", out.ItemName)
+		if out.WorkItem.Name != "ADR-0003-use-redis-cache" {
+			t.Errorf("item_name = %q, want 'ADR-0003-use-redis-cache'", out.WorkItem.Name)
 		}
 	})
 
@@ -127,8 +125,8 @@ func TestCreateItemHandler(t *testing.T) {
 		}
 
 		// The name should be lowercased
-		if out.ItemName != "TASK-0005-my-feature" {
-			t.Errorf("item_name = %q, want 'TASK-0005-my-feature'", out.ItemName)
+		if out.WorkItem.Name != "TASK-0005-my-feature" {
+			t.Errorf("item_name = %q, want 'TASK-0005-my-feature'", out.WorkItem.Name)
 		}
 	})
 

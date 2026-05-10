@@ -9,7 +9,8 @@ import (
 	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	"github.com/nidorx/orqen/pkg/project"
+	"github.com/nidorx/orqen/pkg/engine"
+	project "github.com/nidorx/orqen/pkg/engine"
 )
 
 // ── orqen_dependencies ─────────────────────────────────────────────
@@ -49,7 +50,7 @@ func init() {
 	}
 }
 
-func DependenciesHandler(ctx context.Context, req *mcp.CallToolRequest, input *DependenciesInput, proj *project.Project) (*mcp.CallToolResult, DependenciesOutput, error) {
+func DependenciesHandler(ctx context.Context, req *mcp.CallToolRequest, input *DependenciesInput, proj *engine.Project) (*mcp.CallToolResult, DependenciesOutput, error) {
 	out := DependenciesOutput{}
 
 	if proj == nil {
@@ -65,9 +66,9 @@ func DependenciesHandler(ctx context.Context, req *mcp.CallToolRequest, input *D
 	workItemID := *input.WorkItemID
 
 	// Find the current work item by WorkItemID
-	var currentItem *project.WorkItem
+	var currentItem *engine.WorkItem
 	var currentLane *project.Lane
-	var currentMod *project.Module
+	var currentMod *engine.Module
 
 	for _, mod := range proj.Modules {
 		if item := mod.GetWorkItemById(workItemID); item != nil {

@@ -9,8 +9,8 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 	mcp2 "github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/nidorx/orqen/pkg/engine"
 	"github.com/nidorx/orqen/pkg/memory/store"
-	"github.com/nidorx/orqen/pkg/project"
 )
 
 // ── mem_stats ──────────────────────────────────────────────────────
@@ -47,7 +47,7 @@ func init() {
 }
 
 // MemStatsHandler migrates from handleStats in mcp.go.
-func MemStatsHandler(ctx context.Context, req *mcp2.CallToolRequest, input *MemStatsInput, proj *project.Project) (*mcp2.CallToolResult, MemStatsOutput, error) {
+func MemStatsHandler(ctx context.Context, req *mcp2.CallToolRequest, input *MemStatsInput, proj *engine.Project) (*mcp2.CallToolResult, MemStatsOutput, error) {
 	out := MemStatsOutput{}
 
 	// TODO: Wire up actual store.Stats() call

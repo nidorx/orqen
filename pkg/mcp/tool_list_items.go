@@ -2,11 +2,10 @@ package mcp
 
 import (
 	"context"
-	"fmt"
 	"path/filepath"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	"github.com/nidorx/orqen/pkg/project"
+	"github.com/nidorx/orqen/pkg/engine"
 )
 
 // ── orqen_list_items ───────────────────────────────────────────────
@@ -42,7 +41,7 @@ func init() {
 	}
 }
 
-func ListItemsHandler(ctx context.Context, req *mcp.CallToolRequest, input *ListItemsInput, proj *project.Project) (*mcp.CallToolResult, ListItemsOutput, error) {
+func ListItemsHandler(ctx context.Context, req *mcp.CallToolRequest, input *ListItemsInput, proj *engine.Project) (*mcp.CallToolResult, ListItemsOutput, error) {
 	out := ListItemsOutput{}
 
 	if proj == nil {
@@ -55,23 +54,11 @@ func ListItemsHandler(ctx context.Context, req *mcp.CallToolRequest, input *List
 		return nil, out, nil
 	}
 
-	var targetModule *project.Module
-	if input.Module != nil && *input.Module != "" {
-		targetModule = proj.GetModule(*input.Module)
-		if targetModule == nil {
-			out.Error = fmt.Sprintf("module not found: %s", *input.Module)
-			return nil, out, nil
-		}
-	} else {
-		// Try to resolve current module from WorkItemID
-		if input.WorkItemID != nil && *input.WorkItemID != "" {
-			targetModule = findModuleByWorkItemID(proj, *input.WorkItemID)
-		}
-		if targetModule == nil && len(proj.Modules) == 1 {
-			targetModule = proj.Modules[0]
-		}
+	targetModule, err := findTargetModuleBy(proj, input.Module, input.WorkItemID)
+	if err != nil {
+		out.Error = err.Error()
+		return nil, out, nil
 	}
-
 	if targetModule == nil {
 		out.Error = "could not resolve target module — specify module parameter or ensure workitem_id is set"
 		return nil, out, nil

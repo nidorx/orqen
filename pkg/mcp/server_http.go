@@ -4,10 +4,10 @@ import (
 	"net/http"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	"github.com/nidorx/orqen/pkg/project"
+	"github.com/nidorx/orqen/pkg/engine"
 )
 
-func ServerHttp(proj *project.Project) http.Handler {
+func ServerHttp(proj *engine.Project) http.Handler {
 
 	server := createServer()
 
@@ -33,6 +33,6 @@ func ServerHttp(proj *project.Project) http.Handler {
 	// }
 }
 
-func addTool[In, Out any](s *mcp.Server, tool string, h ToolProjectHandler[In, Out], proj *project.Project) {
+func addTool[In, Out any](s *mcp.Server, tool string, h ToolProjectHandler[In, Out], proj *engine.Project) {
 	mcp.AddTool(s, tools[tool], projectHandler2MCP(proj, h))
 }

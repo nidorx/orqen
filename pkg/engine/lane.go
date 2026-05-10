@@ -1,4 +1,4 @@
-package project
+package engine
 
 import (
 	"fmt"
@@ -7,17 +7,40 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
-	"slices"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/nidorx/orqen/pkg/utils"
-	"github.com/nidorx/orqen/pkg/utils/glob"
 	"github.com/nidorx/orqen/pkg/utils/tinylfu"
 )
 
 // Lane defines a task lane within a module.
+//
+// A lane represents a stage in a workflow pipeline (e.g., inbox, doing, review).
+// Each lane has a purpose, optional agent behavior instructions, and conditional
+// rules that control when work items should be ignored.
+//
+// YAML structure:
+//
+//	lanes:
+//	  - name: "doing"                   # lane name (directory created as NN_name automatically)
+//	    purpose: "Task being implemented"  # description injected into agent prompt
+//	    agent: "qwen"                  # override default agent for this lane (optional)
+//	    max_agents: 3                  # max concurrent agents in this lane (0 = unlimited)
+//	    artifacts: ["SUMMARY", "FAIL"] # artifact types the agent may create
+//	    user_action: "approve"         # short label for expected user action
+//	    agent_behavior:                # sequential steps the agent follows (numbered 1., 2., 3...)
+//	      - "Read the provided task document"
+//	      - "Implement the task according to specifications"
+//	    critical_rules:                # absolute rules that must never be ignored
+//	      - "Create ALL tasks from the inbox file in this single invocation"
+//	    ignore_if_attr: "priority > 3" # ignore if work item attributes match condition
+//	    ignore_if_exists: ["draft"]    # ignore if any items exist in referenced lanes
+//	    ignore_if_not_exists: ["metricas.md"] # ignore if referenced lanes/files don't exist
+//	    ignore_if_dependency: ["doing"] # ignore if work item has dependencies in referenced lanes
+//	    extra_prompt: |                # additional context injected after agent_behavior
+//	      Upon successful completion, create the SUMMARY artifact...
 type Lane struct {
 	Dir                string   `yaml:"-"`
 	Name               string   `yaml:"name"`
@@ -31,23 +54,112 @@ type Lane struct {
 	ExtraPrompt        string   `yaml:"extra_prompt"`
 	AgentBehavior      []string `yaml:"agent_behavior"`
 	CriticalRules      []string `yaml:"critical_rules"`
-	IgnoreIfExists     []string `yaml:"ignore_if_exists"`     // ignora se existir uma tarefa ou artefato na lane informada
-	IgnoreIfNotExists  []string `yaml:"ignore_if_not_exists"` // ignora se existir uma tarefa ou artefato na lane informada
-	IgnoreIfDependency []string `yaml:"ignore_if_dependency"` // ignora se exisitir uma tarefa que é dependencia da atual na lane informad
+	IgnoreIfAttr       string   `yaml:"ignore_if_attr"`       // ignore if work item attributes match a condition
+	IgnoreIfExists     []string `yaml:"ignore_if_exists"`     // ignore if items exist in referenced lanes
+	IgnoreIfNotExists  []string `yaml:"ignore_if_not_exists"` // ignore if items/files don't exist in referenced lanes
+	IgnoreIfDependency []string `yaml:"ignore_if_dependency"` // ignore if item has dependencies in referenced lanes
 	Module             *Module  `yaml:"-"`                    // reference to parent module
 
 	// Runtime state
-	workItemsByID  *tinylfu.SyncCacheT[*WorkItem]
-	workItemsBySeq *tinylfu.SyncCacheT[*WorkItem]
-
-	// file:
-	ignoreIfExistsRegexp    []*regexp.Regexp `yaml:"-"`
-	ignoreIfNotExistsRegexp []*regexp.Regexp `yaml:"-"`
+	workItemsByID *tinylfu.SyncCacheT[*WorkItem]
 }
 
-// WorkItems iterator https://go.dev/blog/range-functions
+// WorkItems returns an iterator over all work items in this lane.
 func (l *Lane) WorkItems() func(func(*WorkItem) bool) {
 	return l.workItemsByID.Values()
+}
+
+// GetWorkItemByID returns a work item by its ID, or nil if not found.
+func (l *Lane) GetWorkItemByID(workItemID string) *WorkItem {
+	if item, exists := l.workItemsByID.Get(workItemID); exists {
+		return item
+	} else {
+		return nil
+	}
+}
+
+// HasWorkItems returns true if this lane has work items.
+func (l *Lane) HasWorkItems() bool {
+	return l.workItemsByID.Len() > 0
+}
+
+// CountWorkItems returns the number of work items in this lane.
+func (l *Lane) CountWorkItems() int {
+	return l.workItemsByID.Len()
+}
+
+// CountActiveWorkItems returns the number of items that are currently being processed.
+func (l *Lane) CountActiveWorkItems() int {
+	count := 0
+	for item := range l.workItemsByID.Values() {
+		if item.InProgress {
+			count++
+		}
+	}
+	return count
+}
+
+// HasAvailableSlot checks if this lane can accept more agents.
+func (l *Lane) HasAvailableSlot() bool {
+	if l.MaxAgents <= 0 {
+		return true
+	}
+	return l.CountActiveWorkItems() < l.MaxAgents
+}
+
+// kebabCasePattern validates kebab-case names (lowercase, numbers, hyphens).
+var kebabCasePattern = regexp.MustCompile(`^[a-z0-9][a-z0-9-]*[a-z0-9]$|^[a-z0-9]$`)
+
+func (l *Lane) CreateWorkItem(simpleNameP string) (wi *WorkItem, err error) {
+
+	// Validate kebab-case
+	simpleName := strings.ToLower(strings.TrimSpace(simpleNameP))
+	if !kebabCasePattern.MatchString(simpleName) {
+		return nil, fmt.Errorf("simple_name must be kebab-case (lowercase letters, numbers, hyphens): %q", simpleNameP)
+	}
+
+	var wiSeq int
+
+	err = l.Module.TxNewWorkItem(func(nextSeq int) (e error) {
+
+		wiDirPath := filepath.Join(l.DirAbs, fmt.Sprintf("%s-%04d-%s", l.Module.Prefix, nextSeq, simpleName))
+
+		defer func() {
+			if err != nil {
+				_ = os.RemoveAll(wiDirPath)
+			}
+		}()
+
+		// Create directory
+		if err := os.MkdirAll(wiDirPath, 0755); err != nil {
+			e = fmt.Errorf("failed to create directory: %v", err)
+			return
+		}
+
+		// Create empty .yaml attribute file
+		wiAttrPath := filepath.Join(wiDirPath, fmt.Sprintf("%s-%04d.yaml", l.Module.Prefix, nextSeq))
+		if err := os.WriteFile(wiAttrPath, []byte{}, 0644); err != nil {
+			e = fmt.Errorf("failed to create file: %v", err)
+			return
+		}
+
+		wiSeq = nextSeq
+
+		return nil
+	})
+
+	if err == nil {
+		ts := time.Now()
+		for {
+			time.Sleep(5 * time.Millisecond)
+			wi = l.Module.GetWorkItemBySeq(wiSeq)
+			if wi != nil || ts.Add(2*time.Second).Before(time.Now()) {
+				break
+			}
+		}
+	}
+
+	return
 }
 
 // onFsysUpdate método responsável por manter o estado da lane atualizada a partir de mudanças no diretório
@@ -58,12 +170,12 @@ func (l *Lane) onFsysUpdate(ev FsysEvent) {
 		return
 	}
 
-	// TASK-001-name, TASK-001-name/TASK-001-CONTENT.md
+	// WI-001-name, WI-001-name/WI-001-CONTENT.md
 	fileSlash := filepath.ToSlash(fileRel)
 
 	var (
-		itemName      string // TASK-001-name, (inbox: do-something.md, do-something.txt)
-		fileExtraPath string // TASK-001-CONTENT.md, do-something.md, path/to/internal/folder/something.md
+		itemName      string // WI-001-name, (inbox: do-something.md, do-something.txt)
+		fileExtraPath string // WI-001-CONTENT.md, do-something.md, path/to/internal/folder/something.md
 	)
 
 	if i := strings.IndexByte(fileSlash, '/'); i == -1 {
@@ -74,7 +186,7 @@ func (l *Lane) onFsysUpdate(ev FsysEvent) {
 
 	var item *WorkItem
 
-	// Check if this is a work item directory (e.g., TASK-001-name, ADR-001-title)
+	// Check if this is a work item directory (e.g., WI-001-name, ADR-001-title)
 	if l.isWorkItemDir(itemName) {
 		seq := l.extractItemSeq(itemName)
 		id := utils.HashXxh64([]byte(fmt.Sprintf("%d-%s", seq, itemName)))
@@ -83,13 +195,25 @@ func (l *Lane) onFsysUpdate(ev FsysEvent) {
 			// work item removed, renamed or moved to another lane
 
 			l.workItemsByID.Del(id)
-			l.workItemsBySeq.Del(strconv.Itoa(seq))
+
+			// temporarily remove
+			l.Module.stash(seq)
 			return
 		}
 
-		if existingItem, exists := l.workItemsByID.Get(id); exists {
-			// Reuse existing item if it exists to preserve InProgress state
-			item = existingItem
+		// Reuse existing item if it exists to preserve InProgress state
+
+		if existingLaneItem, exists := l.workItemsByID.Get(id); exists {
+			item = existingLaneItem
+
+		} else if existingUnstashedItem := l.Module.unstash(seq); existingUnstashedItem != nil {
+			item = existingUnstashedItem
+			item.Lane = l
+
+		} else if existingModuleItem := l.Module.GetWorkItemBySeq(seq); existingModuleItem != nil {
+			item = existingModuleItem
+			item.Lane = l
+
 		} else {
 			item = &WorkItem{
 				ID:    id,
@@ -215,8 +339,8 @@ func (l *Lane) onFsysUpdate(ev FsysEvent) {
 		}
 
 		// Reuse existing item if it exists to preserve InProgress state
-		if existingItem, exists := l.workItemsByID.Get(id); exists {
-			item = existingItem
+		if existingInboxItem, exists := l.workItemsByID.Get(id); exists {
+			item = existingInboxItem
 		} else {
 			rel, err := filepath.Rel(l.Module.Project.DirAbs, filepath.Clean(filepath.Join(l.DirAbs, itemName)))
 			if err != nil {
@@ -245,103 +369,66 @@ func (l *Lane) onFsysUpdate(ev FsysEvent) {
 
 	l.workItemsByID.Set(item.ID, item)
 	if item.Seq > 0 {
-		l.workItemsBySeq.Set(strconv.Itoa(item.Seq), item)
+		l.Module.set(item)
 	}
 }
 
-// FindItemBySeq returns a work item by its ID, or nil if not found
-func (l *Lane) GetWorkItemByID(workItemID string) *WorkItem {
-	if item, exists := l.workItemsByID.Get(workItemID); exists {
-		return item
-	} else {
-		return nil
-	}
-}
-
-// GetWorkItemBySeq returns a work item by its sequential number, or nil if not found
-func (l *Lane) GetWorkItemBySeq(workItemID int) *WorkItem {
-	if item, exists := l.workItemsBySeq.Get(strconv.Itoa(workItemID)); exists {
-		return item
-	} else {
-		return nil
-	}
-}
-
-// HasWorkItems returns true if this lane has work items
-func (l *Lane) HasWorkItems() bool {
-	return l.workItemsByID.Len() > 0
-}
-
-// CountWorkItems returns the number of work items in this lane
-func (l *Lane) CountWorkItems() int {
-	return l.workItemsByID.Len()
-}
-
-// CountActiveWorkItems returns the number of items that are currently being processed
-func (l *Lane) CountActiveWorkItems() int {
-	count := 0
-	for item := range l.workItemsByID.Values() {
-		if item.InProgress {
-			count++
-		}
-	}
-	return count
-}
-
-// HasAvailableSlot checks if this lane can accept more agents
-func (l *Lane) HasAvailableSlot() bool {
-	if l.MaxAgents <= 0 {
-		return true
-	}
-	return l.CountActiveWorkItems() < l.MaxAgents
-}
-
-// FindItemDependencies scans the item directory for dependency files and populates the Dependencies field
-func (l *Lane) FindItemDependencies(item *WorkItem) []*WorkItem {
-	if item.Name == "" || l.Module == nil {
-		return nil
+// isWorkItemDir determines if a directory name represents a work item.
+func (l *Lane) isWorkItemDir(name string) bool {
+	// Check for common work item patterns: TASK-NNN, ADR-NNN, etc.
+	parts := strings.SplitN(name, "-", 2)
+	if len(parts) != 2 {
+		return false
 	}
 
-	itemDir := filepath.Join(l.Dir, item.Name)
-	entries, err := os.ReadDir(itemDir)
-	if err != nil {
-		return nil
-	}
-
-	var deps []*WorkItem
-	for _, entry := range entries {
-		if entry.IsDir() {
-			continue
-		}
-
-		// Check for dependency files (e.g., DEP_001, DEP_002)
-		if strings.HasPrefix(entry.Name(), "DEP_") {
-			depID := l.extractDependencyID(entry.Name())
-			if depID > 0 {
-				// Find the work item with this ID across all lanes in the module
-				depItem := l.Module.GetWorkItemBySeq(depID)
-				if depItem != nil {
-					deps = append(deps, depItem)
-				}
-			}
+	// Try to extract sequence number from the second part
+	seqStr := ""
+	for _, ch := range parts[1] {
+		if ch >= '0' && ch <= '9' {
+			seqStr += string(ch)
+		} else if seqStr != "" {
+			break
 		}
 	}
 
-	return deps
+	if seqStr == "" {
+		return false
+	}
+
+	_, err := strconv.Atoi(seqStr)
+	return err == nil
 }
 
-// extractDependencyID extracts the numeric ID from a dependency file name
-func (l *Lane) extractDependencyID(name string) int {
-	trimmed := strings.TrimPrefix(name, "DEP_")
-	id, err := strconv.Atoi(trimmed)
+// extractItemSeq extracts the numeric ID from a work item directory name.
+func (l *Lane) extractItemSeq(name string) int {
+	parts := strings.SplitN(name, "-", 2)
+	if len(parts) != 2 {
+		return 0
+	}
+
+	seqStr := ""
+	for _, ch := range parts[1] {
+		if ch >= '0' && ch <= '9' {
+			seqStr += string(ch)
+		} else if seqStr != "" {
+			break
+		}
+	}
+
+	if seqStr == "" {
+		return 0
+	}
+
+	seq, err := strconv.Atoi(seqStr)
 	if err != nil {
 		return 0
 	}
-	return id
+
+	return seq
 }
 
-// ParseLaneReference parses a lane reference which can be just "lane_name" or "module.lane_name"
-func ParseLaneReference(ref string) (moduleName, laneName, filePath string) {
+// laneParseReference parses a lane reference which can be "lane_name", "module.lane_name", or "file:...".
+func laneParseReference(ref string) (moduleName, laneName, filePath string) {
 
 	isFile := strings.HasPrefix(ref, "file:")
 	if isFile {
@@ -424,162 +511,9 @@ func ParseLaneReference(ref string) (moduleName, laneName, filePath string) {
 	}
 }
 
-// HasItemsInReferencedLanes checks if any of the referenced lanes have items
-// References can be "lane_name" (same module) or "module.lane_name" (cross-module)
-func (l *Lane) HasItemsInReferencedLanes(refs []string) bool {
-	// "lane_name
-	// "module.lane_name"
-	// "file:file.ext"
-	// "file:path/to/file.ext"
-	// "file:lane_name.file.ext"
-	// "file:module.lane_name.file.ext"
-	// "file:module.lane_name.path/to/file.ext"
-	// "file:module.lane_name.path/to/file.*"
-	// "file:module.lane_name.path/to/*.ext"
-	// "file:module.lane_name.path/to/*.*"
-	// "file:module.lane_name.**/*.*"
-	// "file:adr.draft.artifacts/test.md"
-
-	for _, ref := range refs {
-		moduleName, laneName, filePath := ParseLaneReference(ref)
-
-		// Same module reference
-		targetModule := l.Module
-
-		if moduleName != "" {
-			// Cross-module reference
-			targetModule = l.Module.Project.GetModule(moduleName)
-			if targetModule == nil {
-				continue
-			}
-		}
-
-		if laneName == "" {
-			laneName = l.Name
-		}
-
-		targetLane := targetModule.GetLane(laneName)
-		if targetLane == nil {
-			continue
-		}
-
-		if filePath == "" {
-			if targetLane.HasWorkItems() {
-				return true
-			}
-		} else {
-			if glob.IsGlob(filePath) {
-				regex := glob.Cached(filePath)
-				for item := range l.workItemsByID.Values() {
-					for _, v := range item.Files {
-						if regex.Match([]byte(v)) {
-							return true
-						}
-					}
-				}
-			} else {
-				for item := range l.workItemsByID.Values() {
-					if slices.Contains(item.Files, filePath) {
-						return true
-					}
-				}
-			}
-		}
-	}
-
-	return false
-}
-
-// isWorkItemDir determines if a directory name represents a work item
-func (l *Lane) isWorkItemDir(name string) bool {
-	// Check for common work item patterns: TASK-NNN, ADR-NNN, etc.
-	parts := strings.SplitN(name, "-", 2)
-	if len(parts) != 2 {
-		return false
-	}
-
-	// Try to extract sequence number from the second part
-	seqStr := ""
-	for _, ch := range parts[1] {
-		if ch >= '0' && ch <= '9' {
-			seqStr += string(ch)
-		} else if seqStr != "" {
-			break
-		}
-	}
-
-	if seqStr == "" {
-		return false
-	}
-
-	_, err := strconv.Atoi(seqStr)
-	return err == nil
-}
-
-// extractItemSeq extracts the numeric ID from a work item directory name
-func (l *Lane) extractItemSeq(name string) int {
-	parts := strings.SplitN(name, "-", 2)
-	if len(parts) != 2 {
-		return 0
-	}
-
-	seqStr := ""
-	for _, ch := range parts[1] {
-		if ch >= '0' && ch <= '9' {
-			seqStr += string(ch)
-		} else if seqStr != "" {
-			break
-		}
-	}
-
-	if seqStr == "" {
-		return 0
-	}
-
-	id, err := strconv.Atoi(seqStr)
-	if err != nil {
-		return 0
-	}
-
-	return id
-}
-
-// HasDependencyInReferencedLanes checks if work item dependencies exist in referenced lanes
-// This is more specific than HasItemsInReferencedLanes as it checks for specific dependency IDs
-func HasDependencyInReferencedLanes(project *Project, currentModule *Module, item *WorkItem, laneRefs []string) bool {
-	for _, ref := range laneRefs {
-		moduleName, laneName, _ := ParseLaneReference(ref)
-
-		var targetModule *Module
-		if moduleName != "" {
-			targetModule = project.GetModule(moduleName)
-		} else {
-			targetModule = currentModule
-		}
-
-		if targetModule == nil {
-			continue
-		}
-
-		targetLane := targetModule.GetLane(laneName)
-		if targetLane == nil {
-			continue
-		}
-
-		// Check if any of the item's dependencies exist in this lane
-		for _, dep := range item.Dependencies {
-			if targetLane == dep.Lane {
-				return true
-			}
-		}
-	}
-
-	return false
-}
-
-// ResolveLanePath resolves a lane reference to an actual Lane object
-func ResolveLanePath(project *Project, currentModule *Module, ref string) *Lane {
-	moduleName, laneName, _ := ParseLaneReference(ref)
+// laneResolvePath resolves a lane reference to an actual Lane object.
+func laneResolvePath(project *Project, currentModule *Module, ref string) *Lane {
+	moduleName, laneName, _ := laneParseReference(ref)
 
 	var targetModule *Module
 	if moduleName != "" {

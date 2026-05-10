@@ -90,22 +90,22 @@ If there is any conflict between this document and the lane instructions, the la
 ## Naming Conventions
 
 ### Directories
-Pattern: `_$_MOD_TYPE_$_-${SEQUENCE}-${SIMPLE_NAME}`
+Pattern: `_$_MOD_PREFIX_$_-${SEQUENCE}-${SIMPLE_NAME}`
 
 - `${SEQUENCE}`: 4-digit numeric identifier (e.g., 0001, 0002, 0003)
 - `${SIMPLE_NAME}`: Kebab-case descriptive name
 
 **Examples:**
-- `_$_MOD_TYPE_$_-0001-create-project-structure`
-- `_$_MOD_TYPE_$_-0020-add-login-page`
-- `_$_MOD_TYPE_$_-0003-fix-database`
+- `_$_MOD_PREFIX_$_-0001-create-project-structure`
+- `_$_MOD_PREFIX_$_-0020-add-login-page`
+- `_$_MOD_PREFIX_$_-0003-fix-database`
 
 ### Files
-Pattern: `_$_MOD_TYPE_$_-${SEQUENCE}.md`
+Pattern: `_$_MOD_PREFIX_$_-${SEQUENCE}.md`
 
 **Examples:**
-- `_$_MOD_TYPE_$_-0001.md`
-- `_$_MOD_TYPE_$_-0002.md`
-- `_$_MOD_TYPE_$_-0003.md`
+- `_$_MOD_PREFIX_$_-0001.md`
+- `_$_MOD_PREFIX_$_-0002.md`
+- `_$_MOD_PREFIX_$_-0003.md`
 
 _$_ARTIFACTS_INSTRUCTIONS_$_

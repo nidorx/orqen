@@ -14,8 +14,8 @@ import (
 )
 
 const (
-	repoOwner = "Gentleman-Programming"
-	repoName  = "engram"
+	repoOwner = "nidorx"
+	repoName  = "orqen"
 )
 
 var (
@@ -150,11 +150,11 @@ func splitVersion(v string) [3]int {
 func updateInstructions() string {
 	switch runtime.GOOS {
 	case "darwin":
-		return "  brew update && brew upgrade engram"
+		return "  brew update && brew upgrade orqen"
 	case "linux":
-		return "  brew update && brew upgrade engram\n  or: go install github.com/nidorx/orqen/pkg/memory/cmd/engram@latest"
+		return "  brew update && brew upgrade orqen\n  or: go install github.com/nidorx/orqen/cmd/orqen@latest"
 	default:
-		return "  go install github.com/nidorx/orqen/pkg/memory/cmd/engram@latest\n  or: https://github.com/nidorx/orqen/pkg/memory/releases/latest"
+		return "  go install github.com/nidorx/orqen/cmd/orqen@latest\n  or: https://github.com/nidorx/orqen/releases/latest"
 	}
 }
 

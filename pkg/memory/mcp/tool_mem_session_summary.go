@@ -7,8 +7,8 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 	mcp2 "github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/nidorx/orqen/pkg/engine"
 	"github.com/nidorx/orqen/pkg/memory/store"
-	"github.com/nidorx/orqen/pkg/project"
 )
 
 // ── mem_session_summary ────────────────────────────────────────────
@@ -63,7 +63,7 @@ FORMAT — use this exact structure in the content field:
 }
 
 // MemSessionSummaryHandler migrates from handleSessionSummary in mcp.go.
-func MemSessionSummaryHandler(ctx context.Context, req *mcp2.CallToolRequest, input *MemSessionSummaryInput, proj *project.Project) (*mcp2.CallToolResult, MemSessionSummaryOutput, error) {
+func MemSessionSummaryHandler(ctx context.Context, req *mcp2.CallToolRequest, input *MemSessionSummaryInput, proj *engine.Project) (*mcp2.CallToolResult, MemSessionSummaryOutput, error) {
 	out := MemSessionSummaryOutput{}
 
 	if input.Content == "" {
@@ -126,7 +126,7 @@ GUIDELINES:
 			),
 			// project field intentionally omitted — auto-detect only (REQ-308 write-tool contract)
 		),
-		queuedWriteHandler(getWriteQueue(), handleSessionSummary(s, cfg, activity)),
+		QueuedWriteHandler(getWriteQueue(), handleSessionSummary(s, cfg, activity)),
 	)
 }
 

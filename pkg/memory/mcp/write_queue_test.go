@@ -14,7 +14,7 @@ import (
 )
 
 func TestWriteQueueConcurrentWritesAreSerialized(t *testing.T) {
-	q := newWriteQueue(32)
+	q := NewWriteQueue(32)
 
 	const writes = 12
 	var active int32
@@ -61,7 +61,7 @@ func TestWriteQueueConcurrentWritesAreSerialized(t *testing.T) {
 }
 
 func TestWriteQueueFullAndCanceledQueuedWriteDoNotRun(t *testing.T) {
-	q := newWriteQueue(1)
+	q := NewWriteQueue(1)
 	releaseFirst := make(chan struct{})
 	firstStarted := make(chan struct{})
 
@@ -97,7 +97,7 @@ func TestWriteQueueFullAndCanceledQueuedWriteDoNotRun(t *testing.T) {
 	_, err := q.Do(context.Background(), func(context.Context) (*mcppkg.CallToolResult, error) {
 		return mcppkg.NewToolResultText("third"), nil
 	})
-	if !errors.Is(err, errMCPWriteQueueFull) {
+	if !errors.Is(err, ErrWriteQueueFull) {
 		t.Fatalf("expected queue full error, got %v", err)
 	}
 
@@ -128,7 +128,7 @@ func TestWriteQueueFullAndCanceledQueuedWriteDoNotRun(t *testing.T) {
 }
 
 func TestWriteQueueStartedCanceledWriteReturnsHandlerResult(t *testing.T) {
-	q := newWriteQueue(1)
+	q := NewWriteQueue(1)
 	ctx, cancel := context.WithCancel(context.Background())
 	started := make(chan struct{})
 	release := make(chan struct{})
@@ -172,7 +172,7 @@ func TestWriteQueueStartedCanceledWriteReturnsHandlerResult(t *testing.T) {
 }
 
 func TestWriteQueuePanicDoesNotKillWorker(t *testing.T) {
-	q := newWriteQueue(1)
+	q := NewWriteQueue(1)
 
 	_, err := q.Do(context.Background(), func(context.Context) (*mcppkg.CallToolResult, error) {
 		panic("boom")
@@ -193,11 +193,11 @@ func TestWriteQueuePanicDoesNotKillWorker(t *testing.T) {
 }
 
 func TestReadHandlerDoesNotWaitBehindBlockedQueuedWrite(t *testing.T) {
-	q := newWriteQueue(1)
+	q := NewWriteQueue(1)
 	release := make(chan struct{})
 	started := make(chan struct{})
 
-	writeH := queuedWriteHandler(q, func(context.Context, mcppkg.CallToolRequest) (*mcppkg.CallToolResult, error) {
+	writeH := QueuedWriteHandler(q, func(context.Context, mcppkg.CallToolRequest) (*mcppkg.CallToolResult, error) {
 		close(started)
 		<-release
 		return mcppkg.NewToolResultText("write done"), nil
@@ -253,7 +253,7 @@ func TestReadHandlerDoesNotWaitBehindBlockedQueuedWrite(t *testing.T) {
 
 func TestQueuedHandleSavePersistsMemory(t *testing.T) {
 	s := newMCPTestStore(t)
-	h := queuedWriteHandler(newWriteQueue(1), handleSave(s, MCPConfig{}, NewSessionActivity(10*time.Minute)))
+	h := QueuedWriteHandler(NewWriteQueue(1), handleSave(s, MCPConfig{}, NewSessionActivity(10*time.Minute)))
 
 	res, err := h(context.Background(), mcppkg.CallToolRequest{Params: mcppkg.CallToolParams{Arguments: map[string]any{
 		"title":   "Queued save architecture",
@@ -285,7 +285,7 @@ func TestQueuedHandleSavePersistsMemory(t *testing.T) {
 	t.Fatalf("queued save did not persist expected observation; got %+v", obs)
 }
 
-func waitForQueueDepth(t *testing.T, q *writeQueue, want int) {
+func waitForQueueDepth(t *testing.T, q *WriteQueue, want int) {
 	t.Helper()
 	deadline := time.After(time.Second)
 	ticker := time.NewTicker(time.Millisecond)

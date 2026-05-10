@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	"github.com/nidorx/orqen/pkg/project"
+	"github.com/nidorx/orqen/pkg/engine"
 )
 
 // ── orqen_status ───────────────────────────────────────────────────
@@ -46,7 +46,7 @@ func init() {
 	}
 }
 
-func StatusHandler(ctx context.Context, req *mcp.CallToolRequest, input *StatusInput, proj *project.Project) (*mcp.CallToolResult, StatusOutput, error) {
+func StatusHandler(ctx context.Context, req *mcp.CallToolRequest, input *StatusInput, proj *engine.Project) (*mcp.CallToolResult, StatusOutput, error) {
 	out := StatusOutput{}
 
 	if proj == nil {

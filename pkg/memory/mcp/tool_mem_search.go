@@ -9,8 +9,8 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 	mcp2 "github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/nidorx/orqen/pkg/engine"
 	"github.com/nidorx/orqen/pkg/memory/store"
-	"github.com/nidorx/orqen/pkg/project"
 )
 
 // ── mem_search ─────────────────────────────────────────────────────
@@ -52,7 +52,7 @@ func init() {
 	}
 }
 
-func MemSearchHandler(ctx context.Context, req *mcp2.CallToolRequest, input *MemSearchInput, proj *project.Project) (*mcp2.CallToolResult, MemSearchOutput, error) {
+func MemSearchHandler(ctx context.Context, req *mcp2.CallToolRequest, input *MemSearchInput, proj *engine.Project) (*mcp2.CallToolResult, MemSearchOutput, error) {
 	return nil, MemSearchOutput{}, nil
 }
 

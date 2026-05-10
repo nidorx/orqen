@@ -7,8 +7,8 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 	mcp2 "github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/nidorx/orqen/pkg/engine"
 	"github.com/nidorx/orqen/pkg/memory/store"
-	"github.com/nidorx/orqen/pkg/project"
 )
 
 // ── mem_get_observation ────────────────────────────────────────────
@@ -52,7 +52,7 @@ func init() {
 }
 
 // MemGetObservationHandler migrates from handleGetObservation in mcp.go.
-func MemGetObservationHandler(ctx context.Context, req *mcp2.CallToolRequest, input *MemGetObservationInput, proj *project.Project) (*mcp2.CallToolResult, MemGetObservationOutput, error) {
+func MemGetObservationHandler(ctx context.Context, req *mcp2.CallToolRequest, input *MemGetObservationInput, proj *engine.Project) (*mcp2.CallToolResult, MemGetObservationOutput, error) {
 	out := MemGetObservationOutput{}
 
 	if input.ID == 0 {

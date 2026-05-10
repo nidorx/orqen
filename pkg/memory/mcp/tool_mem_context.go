@@ -9,8 +9,8 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 	mcp2 "github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/nidorx/orqen/pkg/engine"
 	"github.com/nidorx/orqen/pkg/memory/store"
-	"github.com/nidorx/orqen/pkg/project"
 )
 
 // ── mem_context ────────────────────────────────────────────────────
@@ -48,7 +48,7 @@ func init() {
 }
 
 // MemContextHandler migrates from handleContext in mcp.go.
-func MemContextHandler(ctx context.Context, req *mcp2.CallToolRequest, input *MemContextInput, proj *project.Project) (*mcp2.CallToolResult, MemContextOutput, error) {
+func MemContextHandler(ctx context.Context, req *mcp2.CallToolRequest, input *MemContextInput, proj *engine.Project) (*mcp2.CallToolResult, MemContextOutput, error) {
 	out := MemContextOutput{}
 
 	// TODO: Wire up actual store.FormatContext call

@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	"github.com/nidorx/orqen/pkg/project"
+	"github.com/nidorx/orqen/pkg/engine"
 )
 
 // ── orqen_project_info ─────────────────────────────────────────────
@@ -32,9 +32,10 @@ type LaneSummary struct {
 }
 
 type ModuleSummary struct {
-	Name  string        `json:"name"`
-	Dir   string        `json:"dir"`
-	Lanes []LaneSummary `json:"lanes"`
+	Name   string        `json:"name"`
+	Prefix string        `json:"prefix"`
+	Dir    string        `json:"dir"`
+	Lanes  []LaneSummary `json:"lanes"`
 }
 
 type ProjectInfoOutput struct {
@@ -53,7 +54,7 @@ func init() {
 	}
 }
 
-func ProjectInfoHandler(ctx context.Context, req *mcp.CallToolRequest, input *ProjectInfoInput, proj *project.Project) (*mcp.CallToolResult, ProjectInfoOutput, error) {
+func ProjectInfoHandler(ctx context.Context, req *mcp.CallToolRequest, input *ProjectInfoInput, proj *engine.Project) (*mcp.CallToolResult, ProjectInfoOutput, error) {
 	if proj == nil {
 		return nil, ProjectInfoOutput{}, nil
 	}
@@ -67,8 +68,9 @@ func ProjectInfoHandler(ctx context.Context, req *mcp.CallToolRequest, input *Pr
 
 	for _, mod := range proj.Modules {
 		modSummary := ModuleSummary{
-			Name: mod.Name,
-			Dir:  mod.DirAbs,
+			Name:   mod.Name,
+			Prefix: mod.Prefix,
+			Dir:    mod.DirAbs,
 		}
 
 		for _, lane := range mod.Lanes {

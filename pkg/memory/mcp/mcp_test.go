@@ -19,10 +19,7 @@ import (
 
 func newMCPTestStore(t *testing.T) *store.Store {
 	t.Helper()
-	cfg, err := store.DefaultConfig()
-	if err != nil {
-		t.Fatalf("DefaultConfig: %v", err)
-	}
+	cfg := store.DefaultConfig(".")
 	cfg.DataDir = t.TempDir()
 
 	s, err := store.New(cfg)
@@ -158,19 +155,18 @@ func TestHandleSaveSuggestsTopicKeyWhenMissing(t *testing.T) {
 
 func TestHandleSaveAutoCapturesCurrentPromptByDefault(t *testing.T) {
 	s := newMCPTestStore(t)
-	if err := s.EnrollProject("engram"); err != nil {
+	if err := s.EnrollProject("orqen"); err != nil {
 		t.Fatalf("enroll project: %v", err)
 	}
 	activity := NewSessionActivity(10 * time.Minute)
-	sessionID := defaultSessionID("engram")
-	activity.RecordPrompt(sessionID, "engram", "please persist the auth decision")
+	sessionID := defaultSessionID("orqen")
+	activity.RecordPrompt(sessionID, "orqen", "please persist the auth decision")
 	h := handleSave(s, MCPConfig{}, activity)
 
 	req := mcppkg.CallToolRequest{Params: mcppkg.CallToolParams{Arguments: map[string]any{
 		"title":   "Auth decision",
 		"content": "**What**: chose auth boundary\n**Why**: user asked",
 		"type":    "decision",
-		"project": "engram",
 	}}}
 
 	res, err := h(context.Background(), req)
@@ -181,7 +177,7 @@ func TestHandleSaveAutoCapturesCurrentPromptByDefault(t *testing.T) {
 		t.Fatalf("unexpected save error: %s", callResultText(t, res))
 	}
 
-	prompts, err := s.RecentPrompts("engram", 5)
+	prompts, err := s.RecentPrompts("orqen", 5)
 	if err != nil {
 		t.Fatalf("recent prompts: %v", err)
 	}
@@ -198,7 +194,7 @@ func TestHandleSaveAutoCapturesCurrentPromptByDefault(t *testing.T) {
 	if err != nil || res.IsError {
 		t.Fatalf("second save failed: err=%v isError=%v text=%q", err, res.IsError, callResultText(t, res))
 	}
-	prompts, err = s.RecentPrompts("engram", 5)
+	prompts, err = s.RecentPrompts("orqen", 5)
 	if err != nil {
 		t.Fatalf("recent prompts after second save: %v", err)
 	}
@@ -258,7 +254,7 @@ func TestHandleSaveWithNilActivityStillSucceeds(t *testing.T) {
 func TestHandleSavePromptCaptureFailureIsNonFatal(t *testing.T) {
 	s := newMCPTestStore(t)
 	activity := NewSessionActivity(10 * time.Minute)
-	activity.RecordPrompt(defaultSessionID("engram"), "engram", "prompt capture should fail non-fatally")
+	activity.RecordPrompt(defaultSessionID("orqen"), "orqen", "prompt capture should fail non-fatally")
 	h := handleSave(s, MCPConfig{}, activity)
 
 	originalAddPromptIfMissing := addPromptIfMissing
@@ -271,7 +267,6 @@ func TestHandleSavePromptCaptureFailureIsNonFatal(t *testing.T) {
 		"title":   "Non fatal prompt capture",
 		"content": "**What**: saved despite prompt capture failure\n**Why**: regression test",
 		"type":    "bugfix",
-		"project": "engram",
 	}}})
 	if err != nil {
 		t.Fatalf("handler error: %v", err)
@@ -280,7 +275,7 @@ func TestHandleSavePromptCaptureFailureIsNonFatal(t *testing.T) {
 		t.Fatalf("unexpected save error: %s", callResultText(t, res))
 	}
 
-	obs, err := s.RecentObservations("engram", "project", 5)
+	obs, err := s.RecentObservations("orqen", "project", 5)
 	if err != nil {
 		t.Fatalf("recent observations: %v", err)
 	}
@@ -297,7 +292,6 @@ func TestHandleSavePromptFeedsAutoCaptureContext(t *testing.T) {
 
 	promptRes, err := savePrompt(context.Background(), mcppkg.CallToolRequest{Params: mcppkg.CallToolParams{Arguments: map[string]any{
 		"content": "user asked for prompt-linked bugfix memory",
-		"project": "engram",
 	}}})
 	if err != nil {
 		t.Fatalf("save prompt handler error: %v", err)
@@ -310,7 +304,6 @@ func TestHandleSavePromptFeedsAutoCaptureContext(t *testing.T) {
 		"title":   "Prompt linked bugfix",
 		"content": "**What**: linked prompt context\n**Why**: user asked",
 		"type":    "bugfix",
-		"project": "engram",
 	}}})
 	if err != nil {
 		t.Fatalf("save handler error: %v", err)
@@ -319,7 +312,7 @@ func TestHandleSavePromptFeedsAutoCaptureContext(t *testing.T) {
 		t.Fatalf("unexpected save error: %s", callResultText(t, saveRes))
 	}
 
-	prompts, err := s.RecentPrompts("engram", 5)
+	prompts, err := s.RecentPrompts("orqen", 5)
 	if err != nil {
 		t.Fatalf("recent prompts: %v", err)
 	}
@@ -483,7 +476,6 @@ func TestHandleCapturePassiveDefaultsSourceAndSession(t *testing.T) {
 
 	req := mcppkg.CallToolRequest{Params: mcppkg.CallToolParams{Arguments: map[string]any{
 		"content": "## Key Learnings:\n\n1. This learning is long enough to be persisted with default source",
-		"project": "engram",
 	}}}
 
 	res, err := h(context.Background(), req)
@@ -494,7 +486,7 @@ func TestHandleCapturePassiveDefaultsSourceAndSession(t *testing.T) {
 		t.Fatalf("unexpected tool error: %s", callResultText(t, res))
 	}
 
-	obs, err := s.RecentObservations("engram", "project", 5)
+	obs, err := s.RecentObservations("orqen", "project", 5)
 	if err != nil {
 		t.Fatalf("recent observations: %v", err)
 	}

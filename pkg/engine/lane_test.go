@@ -1,8 +1,9 @@
-package project
+package engine
 
 import (
 	"os"
 	"path/filepath"
+	"strconv"
 	"testing"
 	"time"
 )
@@ -259,7 +260,7 @@ func TestParseLaneReference(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
-			gotModule, gotLane, gotFile := ParseLaneReference(tt.input)
+			gotModule, gotLane, gotFile := laneParseReference(tt.input)
 			if gotModule != tt.wantModule {
 				t.Errorf("module = %q, want %q", gotModule, tt.wantModule)
 			}
@@ -323,7 +324,7 @@ func TestLaneGetItem(t *testing.T) {
 	scanLaneDirectory(readyLane)
 
 	// Get by ID
-	item := readyLane.GetWorkItemBySeq(1)
+	item := taskModule.GetWorkItemBySeq(1)
 	if item == nil {
 		t.Fatal("expected to find item with ID 1")
 	}
@@ -332,103 +333,9 @@ func TestLaneGetItem(t *testing.T) {
 	}
 
 	// Get nonexistent item
-	item = readyLane.GetWorkItemBySeq(999)
+	item = taskModule.GetWorkItemBySeq(999)
 	if item != nil {
 		t.Error("expected nil for nonexistent item")
-	}
-}
-
-func TestLaneFindItemDependencies(t *testing.T) {
-	project, tempDir := createTempProject(t)
-
-	taskModule := project.GetModule("task")
-
-	// Set up lane directories and module references
-	// Note: FindItemDependencies uses l.Dir (not l.DirAbs), so we set Dir to the absolute path
-	for _, lane := range taskModule.Lanes {
-		lane.Dir = filepath.Join(tempDir, taskModule.Dir, lane.Name)
-		lane.DirAbs = filepath.Join(tempDir, taskModule.Dir, lane.Name)
-		lane.Module = taskModule
-		if err := os.MkdirAll(lane.DirAbs, 0755); err != nil {
-			t.Fatal(err)
-		}
-	}
-
-	doingLane := taskModule.GetLane("doing")
-	readyLane := taskModule.GetLane("ready")
-
-	// Create a dependency item in doing lane
-	createWorkItemDir(t, doingLane, "TASK-001-dependency")
-
-	// Create an item in ready lane
-	createWorkItemDir(t, readyLane, "TASK-002-dependent")
-	depFile := filepath.Join(readyLane.Dir, "TASK-002-dependent", "DEP_001")
-	if err := os.WriteFile(depFile, []byte("1"), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	// Scan to populate caches
-	scanLaneDirectory(doingLane)
-	scanLaneDirectory(readyLane)
-
-	// List items to populate caches
-	doingItems := collectWorkItems(doingLane.WorkItems())
-	readyItems := collectWorkItems(readyLane.WorkItems())
-
-	if len(doingItems) == 0 || len(readyItems) == 0 {
-		t.Fatal("expected items in both lanes")
-	}
-
-	// Find dependencies
-	deps := readyLane.FindItemDependencies(readyItems[0])
-	if len(deps) != 1 {
-		t.Fatalf("expected 1 dependency, got %d", len(deps))
-	}
-	if deps[0].Seq != 1 {
-		t.Errorf("expected dependency ID 1, got %d", deps[0].Seq)
-	}
-}
-
-func TestHasItemsInReferencedLanes(t *testing.T) {
-	project, tempDir := createTempProject(t)
-
-	taskModule := project.GetModule("task")
-
-	// Set up lane directories and module references
-	for _, lane := range taskModule.Lanes {
-		lane.DirAbs = filepath.Join(tempDir, taskModule.Dir, lane.Name)
-		lane.Module = taskModule
-		if err := os.MkdirAll(lane.DirAbs, 0755); err != nil {
-			t.Fatal(err)
-		}
-	}
-
-	doingLane := taskModule.GetLane("doing")
-
-	// No items in any lane
-	if doingLane.HasItemsInReferencedLanes([]string{"doing"}) {
-		t.Error("expected false when doing lane is empty")
-	}
-
-	// Create item in doing lane
-	createWorkItemDir(t, doingLane, "TASK-001-test")
-
-	// Scan to populate cache
-	scanLaneDirectory(doingLane)
-
-	// Now should return true
-	if !doingLane.HasItemsInReferencedLanes([]string{"doing"}) {
-		t.Error("expected true when doing lane has items")
-	}
-
-	// Ready lane should be empty
-	if doingLane.HasItemsInReferencedLanes([]string{"ready"}) {
-		t.Error("expected false when ready lane is empty")
-	}
-
-	// Test multiple refs
-	if !doingLane.HasItemsInReferencedLanes([]string{"ready", "doing"}) {
-		t.Error("expected true when at least one ref has items")
 	}
 }
 
@@ -437,26 +344,26 @@ func TestResolveLanePath(t *testing.T) {
 	taskModule := project.GetModule("task")
 
 	// Same module
-	lane := ResolveLanePath(project, taskModule, "doing")
+	lane := laneResolvePath(project, taskModule, "doing")
 	if lane == nil || lane.Name != "doing" {
 		t.Error("expected to resolve doing lane")
 	}
 
 	// Cross module
 	_ = project.GetModule("adr")
-	lane = ResolveLanePath(project, taskModule, "adr.draft")
+	lane = laneResolvePath(project, taskModule, "adr.draft")
 	if lane == nil || lane.Name != "draft" {
 		t.Error("expected to resolve adr.draft lane")
 	}
 
 	// Nonexistent
-	lane = ResolveLanePath(project, taskModule, "nonexistent")
+	lane = laneResolvePath(project, taskModule, "nonexistent")
 	if lane != nil {
 		t.Error("expected nil for nonexistent lane")
 	}
 
 	// Nonexistent module
-	lane = ResolveLanePath(project, taskModule, "fake.lane")
+	lane = laneResolvePath(project, taskModule, "fake.lane")
 	if lane != nil {
 		t.Error("expected nil for nonexistent module")
 	}
@@ -491,23 +398,29 @@ func TestHasDependencyInReferencedLanes(t *testing.T) {
 
 	// Test with item that has dependency in doing lane
 	testItem := &WorkItem{
-		Seq:          999,
-		Name:         "TASK-999-test",
-		Dependencies: []*WorkItem{items[0]},
+		Seq:        999,
+		Name:       "TASK-999-test",
+		Lane:       taskModule.GetLane("ready"),
+		Attributes: make(Attributes),
 	}
 
-	if !HasDependencyInReferencedLanes(project, taskModule, testItem, []string{"doing"}) {
+	testItem.Attributes.Set("dependencies", []string{strconv.Itoa(items[0].Seq)})
+
+	readyLane := taskModule.GetLane("ready")
+	readyLane.IgnoreIfDependency = []string{"doing"}
+
+	if !shouldIgnoreIfDependency(testItem) {
 		t.Error("expected true when dependency is in referenced lane")
 	}
 
 	// Test with item that has no matching dependency
 	testItem2 := &WorkItem{
-		Seq:          998,
-		Name:         "TASK-998-test",
-		Dependencies: []*WorkItem{},
+		Seq:  998,
+		Name: "TASK-998-test",
+		Lane: taskModule.GetLane("ready"),
 	}
 
-	if HasDependencyInReferencedLanes(project, taskModule, testItem2, []string{"doing"}) {
+	if shouldIgnoreIfDependency(testItem2) {
 		t.Error("expected false when no dependencies match")
 	}
 }

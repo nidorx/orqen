@@ -8,8 +8,8 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 	mcp2 "github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/nidorx/orqen/pkg/engine"
 	"github.com/nidorx/orqen/pkg/memory/store"
-	"github.com/nidorx/orqen/pkg/project"
 )
 
 // ── mem_suggest_topic_key ──────────────────────────────────────────
@@ -48,7 +48,7 @@ func init() {
 }
 
 // MemSuggestTopicKeyHandler migrates from handleSuggestTopicKey in mcp.go.
-func MemSuggestTopicKeyHandler(ctx context.Context, req *mcp2.CallToolRequest, input *MemSuggestTopicKeyInput, proj *project.Project) (*mcp2.CallToolResult, MemSuggestTopicKeyOutput, error) {
+func MemSuggestTopicKeyHandler(ctx context.Context, req *mcp2.CallToolRequest, input *MemSuggestTopicKeyInput, proj *engine.Project) (*mcp2.CallToolResult, MemSuggestTopicKeyOutput, error) {
 	return nil, MemSuggestTopicKeyOutput{}, nil
 }
 

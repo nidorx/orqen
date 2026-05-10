@@ -1,4 +1,4 @@
-package project
+package engine
 
 import (
 	"os"
@@ -257,7 +257,7 @@ func TestModuleGetFullDir(t *testing.T) {
 	}
 }
 
-func TestModuleNextSequence(t *testing.T) {
+func TestModuleTxNewWorkItem(t *testing.T) {
 	project, tempDir := createTempProject(t)
 
 	taskModule := project.GetModule("task")
@@ -271,10 +271,12 @@ func TestModuleNextSequence(t *testing.T) {
 	}
 
 	// Initially 1
-	seq := taskModule.NextSequence()
-	if seq != 1 {
-		t.Errorf("expected sequence 1, got %d", seq)
-	}
+	taskModule.TxNewWorkItem(func(seq int) error {
+		if seq != 1 {
+			t.Errorf("expected sequence 1, got %d", seq)
+		}
+		return nil
+	})
 
 	doingLane := taskModule.GetLane("doing")
 	createWorkItemDir(t, doingLane, "TASK-001-first")
@@ -284,8 +286,11 @@ func TestModuleNextSequence(t *testing.T) {
 	scanLaneDirectory(doingLane)
 
 	// Should be max + 1
-	seq = taskModule.NextSequence()
-	if seq != 6 {
-		t.Errorf("expected sequence 6, got %d", seq)
-	}
+	taskModule.TxNewWorkItem(func(seq int) error {
+		if seq != 6 {
+			t.Errorf("expected sequence 6, got %d", seq)
+		}
+		return nil
+	})
+
 }

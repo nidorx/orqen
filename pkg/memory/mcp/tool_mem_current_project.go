@@ -7,9 +7,9 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 	mcp2 "github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/nidorx/orqen/pkg/engine"
 	projectpkg "github.com/nidorx/orqen/pkg/memory/project"
 	"github.com/nidorx/orqen/pkg/memory/store"
-	"github.com/nidorx/orqen/pkg/project"
 )
 
 // ── mem_current_project ────────────────────────────────────────────
@@ -42,7 +42,7 @@ func init() {
 }
 
 // MemCurrentProjectHandler migrates from handleCurrentProject in mcp.go.
-func MemCurrentProjectHandler(ctx context.Context, req *mcp2.CallToolRequest, input *MemCurrentProjectInput, proj *project.Project) (*mcp2.CallToolResult, MemCurrentProjectOutput, error) {
+func MemCurrentProjectHandler(ctx context.Context, req *mcp2.CallToolRequest, input *MemCurrentProjectInput, proj *engine.Project) (*mcp2.CallToolResult, MemCurrentProjectOutput, error) {
 	out := MemCurrentProjectOutput{}
 
 	// TODO: Wire up actual projectpkg.DetectProjectFull call

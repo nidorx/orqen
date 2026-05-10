@@ -1,9 +1,11 @@
-package project
+package engine
 
 import (
 	"fmt"
 	"strings"
 	"sync"
+
+	"github.com/nidorx/orqen/pkg/memory/store"
 )
 
 // Project represents the top-level project configuration (.orqen/orqen.yaml).
@@ -17,12 +19,18 @@ type Project struct {
 	// Runtime state (not serialized)
 	mu       sync.Mutex
 	fsys     *Fsys
+	memory   *store.Store
 	running  bool
 	executor *Executor
 	invoker  AgentInvoker
 }
 
-// GetModule returns a module by name, or nil if not found
+// Memory returns the project's memory store.
+func (p *Project) Memory() *store.Store {
+	return p.memory
+}
+
+// GetModule returns a module by name, or nil if not found.
 func (p *Project) GetModule(name string) *Module {
 	for _, mod := range p.Modules {
 		if mod.Name == name {
@@ -32,7 +40,7 @@ func (p *Project) GetModule(name string) *Module {
 	return nil
 }
 
-// ActiveAgentCount returns the total number of active agents across all modules
+// ActiveAgentCount returns the total number of active agents across all modules.
 func (p *Project) ActiveAgentCount() int {
 	count := 0
 	for _, mod := range p.Modules {
@@ -41,7 +49,7 @@ func (p *Project) ActiveAgentCount() int {
 	return count
 }
 
-// HasAvailableSlot checks if there's room for more agents at the project level
+// HasAvailableSlot checks if there's room for more agents at the project level.
 func (p *Project) HasAvailableSlot() bool {
 	if p.Execution.MaxAgents <= 0 {
 		return true
@@ -49,7 +57,7 @@ func (p *Project) HasAvailableSlot() bool {
 	return p.ActiveAgentCount() < p.Execution.MaxAgents
 }
 
-// WithInvoker sets the agent invoker for the project
+// WithInvoker sets the agent invoker for the project.
 func (p *Project) WithInvoker(invoker AgentInvoker) *Project {
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -68,7 +76,7 @@ func (p *Project) withInvokerOld(invoker WorkItemInvoker) *Project {
 	return p
 }
 
-// Start inicia a execução do projeto
+// Start begins project execution.
 func (p *Project) Start() {
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -86,7 +94,7 @@ func (p *Project) Start() {
 	go p.executor.Run()
 }
 
-// Stop finaliza a execução do projeto
+// Stop terminates project execution.
 func (p *Project) Stop() {
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -101,15 +109,15 @@ func (p *Project) Stop() {
 	p.running = false
 }
 
-// IsRunning returns true if the project is currently running
+// IsRunning returns true if the project is currently running.
 func (p *Project) IsRunning() bool {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	return p.running
 }
 
-// agentInvoker is a default invoker that does nothing
-// Invoke implements AgentInvoker for the noop invoker
+// agentInvoker is a default invoker that wraps the project's configured invoker,
+// building a prompt from module/lane context and work item metadata.
 func agentInvoker(proj *Project, mod *Module, lane *Lane, item *WorkItem) (InvocationHandle, error) {
 	handle := InvocationHandle{
 		Item: item,

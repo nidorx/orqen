@@ -7,18 +7,18 @@ import (
 
 var (
 	once     sync.Once
-	queue    *writeQueue
+	queue    *WriteQueue
 	activity *SessionActivity
 )
 
 func doInit() {
 	once.Do(func() {
-		queue = newWriteQueue(defaultMCPWriteQueueSize)
+		queue = NewWriteQueue(defaultWriteQueueSize)
 		activity = NewSessionActivity(10 * time.Minute)
 	})
 }
 
-func getWriteQueue() *writeQueue {
+func getWriteQueue() *WriteQueue {
 	doInit()
 	return queue
 }
@@ -29,6 +29,18 @@ func getSessionActivity() *SessionActivity {
 }
 
 func ptrBool(b bool) *bool { return &b }
+func ptrBoolVal(p *bool, defaultVal bool) bool {
+	if p == nil {
+		return defaultVal
+	}
+	return *p
+}
+func ptrStr(s *string, defaultVal string) string {
+	if s == nil {
+		return defaultVal
+	}
+	return *s
+}
 func derefStr(s *string) string {
 	if s == nil {
 		return ""

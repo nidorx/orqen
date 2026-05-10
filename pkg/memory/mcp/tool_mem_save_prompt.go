@@ -7,8 +7,8 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 	mcp2 "github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/nidorx/orqen/pkg/engine"
 	"github.com/nidorx/orqen/pkg/memory/store"
-	"github.com/nidorx/orqen/pkg/project"
 )
 
 // ── mem_save_prompt ────────────────────────────────────────────────
@@ -44,7 +44,7 @@ func init() {
 }
 
 // MemSavePromptHandler migrates from handleSavePrompt in mcp.go.
-func MemSavePromptHandler(ctx context.Context, req *mcp2.CallToolRequest, input *MemSavePromptInput, proj *project.Project) (*mcp2.CallToolResult, MemSavePromptOutput, error) {
+func MemSavePromptHandler(ctx context.Context, req *mcp2.CallToolRequest, input *MemSavePromptInput, proj *engine.Project) (*mcp2.CallToolResult, MemSavePromptOutput, error) {
 	out := MemSavePromptOutput{}
 
 	if input.Content == "" {
@@ -87,7 +87,7 @@ func add_tool_mem_save_prompt(srv *server.MCPServer, s *store.Store, cfg MCPConf
 				mcp.Description("Must be user_selected_after_ambiguous_project, and only after the user explicitly chose one of available_projects from an ambiguous_project error."),
 			),
 		),
-		queuedWriteHandler(getWriteQueue(), handleSavePrompt(s, cfg, activity)),
+		QueuedWriteHandler(getWriteQueue(), handleSavePrompt(s, cfg, activity)),
 	)
 }
 

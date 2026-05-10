@@ -11,7 +11,7 @@ import (
 func TestStatusHandler(t *testing.T) {
 	proj, _ := setupTestProject(t)
 
-	// Set WorkItemID for TASK-0001
+	// Set WorkItemID for WI-0001
 	taskModule := proj.GetModule("task")
 	for _, lane := range taskModule.Lanes {
 		for item := range lane.WorkItems() {

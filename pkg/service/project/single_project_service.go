@@ -10,7 +10,8 @@ import (
 	"github.com/nidorx/orqen/pkg/agent"
 	"github.com/nidorx/orqen/pkg/cli"
 	"github.com/nidorx/orqen/pkg/conf"
-	"github.com/nidorx/orqen/pkg/project"
+	"github.com/nidorx/orqen/pkg/engine"
+	project "github.com/nidorx/orqen/pkg/engine"
 )
 
 var messages = cli.Messages{
@@ -41,7 +42,7 @@ var messages = cli.Messages{
 }
 
 type Service struct {
-	proj *project.Project
+	proj *engine.Project
 }
 
 func (s *Service) Name() string {
@@ -55,7 +56,7 @@ func (s *Service) OnStart() error {
 
 	// Prompt user for proj directory and load configuration
 	proj := loadProject()
-	proj.WithInvoker(func(prompt string, item *project.WorkItem) error {
+	proj.WithInvoker(func(prompt string, item *engine.WorkItem) error {
 		cwd := proj.DirAbs
 		lane := item.Lane
 
@@ -104,7 +105,7 @@ func New() *Service {
 
 // loadProject prompts the user for a project directory path, validates it,
 // and loads the project configuration. Returns the validated project directory path.
-func loadProject() *project.Project {
+func loadProject() *engine.Project {
 	reader := bufio.NewReader(os.Stdin)
 
 	orqenPort := conf.GetHttpServer().Port

@@ -7,8 +7,8 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 	mcp2 "github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/nidorx/orqen/pkg/engine"
 	"github.com/nidorx/orqen/pkg/memory/store"
-	"github.com/nidorx/orqen/pkg/project"
 )
 
 // ── mem_update ─────────────────────────────────────────────────────
@@ -54,7 +54,7 @@ func init() {
 }
 
 // MemUpdateHandler migrates from handleUpdate in mcp.go.
-func MemUpdateHandler(ctx context.Context, req *mcp2.CallToolRequest, input *MemUpdateInput, proj *project.Project) (*mcp2.CallToolResult, MemUpdateOutput, error) {
+func MemUpdateHandler(ctx context.Context, req *mcp2.CallToolRequest, input *MemUpdateInput, proj *engine.Project) (*mcp2.CallToolResult, MemUpdateOutput, error) {
 	return nil, MemUpdateOutput{}, nil
 }
 
@@ -88,7 +88,7 @@ func add_tool_mem_update(srv *server.MCPServer, s *store.Store, cfg MCPConfig, a
 				mcp.Description("New topic key (normalized internally)"),
 			),
 		),
-		queuedWriteHandler(getWriteQueue(), handleUpdate(s)),
+		QueuedWriteHandler(getWriteQueue(), handleUpdate(s)),
 	)
 }
 

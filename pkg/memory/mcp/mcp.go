@@ -24,6 +24,7 @@ import (
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
+	mcp2 "github.com/modelcontextprotocol/go-sdk/mcp"
 	projectpkg "github.com/nidorx/orqen/pkg/memory/project"
 	"github.com/nidorx/orqen/pkg/memory/store"
 )
@@ -519,6 +520,11 @@ func respondWithProject(res projectpkg.DetectionResult, text string, extra map[s
 	}
 	out, _ := jsonMarshal(envelope)
 	return mcp.NewToolResultText(string(out))
+}
+
+func respondWithProjectMCP2(res projectpkg.DetectionResult, text string, extra map[string]any) *mcp2.CallToolResult {
+	// TODO: Implement with mcp2 types when needed
+	return nil
 }
 
 func writeProjectErrorResult(res projectpkg.DetectionResult, err error) *mcp.CallToolResult {

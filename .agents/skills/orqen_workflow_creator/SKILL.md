@@ -41,7 +41,7 @@ Work through these topics in order. Skip topics the user has already covered nat
   - Some workflows update existing files without creating new ones — that's fine.
   - Others create new structured artifacts — those need a type name (e.g., `SUMMARY`, `TASK`, `TEMA`, `PESQUISA`).
 - For each artifact type, define a **template** — what sections/structure should it have? You will generate a `.orqen/{module}/prompts/{ARTIFACT}.md` template file later.
-- Naming convention: artifacts follow `{MODULE}-{SEQUENCE}-{ARTIFACT}.md` (e.g., `TASK-0001-SUMMARY.md`). The user does not need to worry about this — it's automatic.
+- Naming convention: artifacts follow `{MODULE}-{SEQUENCE}-{ARTIFACT}.md` (e.g., `WI-0001-SUMMARY.md`). The user does not need to worry about this — it's automatic.
 
 ### 4. Rules & Constraints
 - Are there any hard rules that must NEVER be violated? (`critical_rules`)

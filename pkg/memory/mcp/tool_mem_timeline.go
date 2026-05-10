@@ -9,8 +9,8 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 	mcp2 "github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/nidorx/orqen/pkg/engine"
 	"github.com/nidorx/orqen/pkg/memory/store"
-	"github.com/nidorx/orqen/pkg/project"
 )
 
 // ── mem_timeline ───────────────────────────────────────────────────
@@ -64,7 +64,7 @@ func init() {
 }
 
 // MemTimelineHandler migrates from handleTimeline in mcp.go.
-func MemTimelineHandler(ctx context.Context, req *mcp2.CallToolRequest, input *MemTimelineInput, proj *project.Project) (*mcp2.CallToolResult, MemTimelineOutput, error) {
+func MemTimelineHandler(ctx context.Context, req *mcp2.CallToolRequest, input *MemTimelineInput, proj *engine.Project) (*mcp2.CallToolResult, MemTimelineOutput, error) {
 	out := MemTimelineOutput{}
 
 	if input.ObservationID == 0 {

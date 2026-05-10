@@ -1,9 +1,10 @@
-package project
+package engine
 
 import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"sync"
 	"testing"
 	"time"
@@ -39,7 +40,7 @@ execution:
 
 modules:
   - name: task
-    dir: ".orqen/tasks"
+    dir: "tasks"
     order: ["doing", "ready", "prioritized", "inbox"]
     lanes:
       - name: "inbox"
@@ -547,7 +548,7 @@ func TestIgnoreIfDependency(t *testing.T) {
 	}
 
 	// Set the dependency on the ready item
-	readyItems[0].Dependencies = []*WorkItem{prioritizedItems[0]}
+	readyItems[0].Attributes.Set("dependencies", []string{strconv.Itoa(prioritizedItems[0].Seq)})
 
 	// ready lane has ignore_if_dependency: ["prioritized", "backlog", "doing"]
 	// So the new item should be ignored because TASK-001 is in prioritized

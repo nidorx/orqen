@@ -1,4 +1,4 @@
-package project
+package engine
 
 import (
 	"os"
@@ -43,7 +43,7 @@ func TestOnFsysUpdate_CreateWorkItemDir(t *testing.T) {
 		t.Errorf("expected 1 item, got %d", readyLane.CountWorkItems())
 	}
 
-	item := readyLane.GetWorkItemBySeq(1)
+	item := taskModule.GetWorkItemBySeq(1)
 	if item == nil {
 		t.Fatal("expected to find item with Seq=1")
 	}
@@ -95,7 +95,7 @@ func TestOnFsysUpdate_CreateFileInWorkItem(t *testing.T) {
 	})
 
 	// Verify file was added to item
-	item := readyLane.GetWorkItemBySeq(1)
+	item := taskModule.GetWorkItemBySeq(1)
 	if item == nil {
 		t.Fatal("expected to find item")
 	}
@@ -137,10 +137,10 @@ func TestOnFsysUpdate_RemoveWorkItemDir(t *testing.T) {
 
 	// Remove event
 	readyLane.onFsysUpdate(FsysEvent{
-		Path:     itemDir,
-		Op:       FsysOpRemove,
-		Time:     time.Now(),
-		IsDir:    true,
+		Path:  itemDir,
+		Op:    FsysOpRemove,
+		Time:  time.Now(),
+		IsDir: true,
 	})
 
 	// Verify item was removed
@@ -182,10 +182,10 @@ func TestOnFsysUpdate_RenameWorkItemDir(t *testing.T) {
 
 	// Rename event
 	readyLane.onFsysUpdate(FsysEvent{
-		Path:     oldPath,
-		Op:       FsysOpRename,
-		Time:     time.Now(),
-		IsDir:    true,
+		Path:  oldPath,
+		Op:    FsysOpRename,
+		Time:  time.Now(),
+		IsDir: true,
 	})
 
 	// Verify item was removed (rename is treated as removal)
@@ -265,7 +265,7 @@ func TestOnFsysUpdate_PreservesInProgressState(t *testing.T) {
 	})
 
 	// Mark item as in progress
-	item := readyLane.GetWorkItemBySeq(1)
+	item := taskModule.GetWorkItemBySeq(1)
 	if item == nil {
 		t.Fatal("expected to find item")
 	}
@@ -281,7 +281,7 @@ func TestOnFsysUpdate_PreservesInProgressState(t *testing.T) {
 	})
 
 	// Verify InProgress state was preserved
-	item = readyLane.GetWorkItemBySeq(1)
+	item = taskModule.GetWorkItemBySeq(1)
 	if item == nil {
 		t.Fatal("expected to find item after update")
 	}

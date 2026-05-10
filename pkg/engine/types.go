@@ -1,8 +1,7 @@
-package project
+package engine
 
 import (
 	"embed"
-	"time"
 )
 
 //go:embed prompts
@@ -17,6 +16,14 @@ const (
 )
 
 // Agent holds project-level agent settings.
+//
+// YAML structure:
+//
+//	agents:
+//	  default: "qwen"              # default agent client name
+//	  clients:
+//	    qwen:
+//	      command: ["qwen", "--yolo", "--acp"]
 type Agent struct {
 	Default string                 `yaml:"default"`
 	Clients map[string]AgentClient `yaml:"clients"`
@@ -40,53 +47,49 @@ func (a *Agent) GetCommand(agent string) []string {
 	return client.Command
 }
 
-// AgentClient defines a single agent client at project level.
+// AgentClient defines a single agent client configuration.
+//
+// YAML structure:
+//
+//	command: ["qwen", "--yolo", "--acp"]   # CLI command and arguments to invoke the agent
 type AgentClient struct {
 	Command []string `yaml:"command"`
 }
 
 // Execution holds project-level execution settings.
+//
+// YAML structure:
+//
+//	execution:
+//	  max_agents: 10                  # maximum concurrent agents across all modules (0 = unlimited)
+//	  sleep_interval_seconds: 60      # seconds between work cycles
 type Execution struct {
 	MaxAgents            int `yaml:"max_agents"`
 	SleepIntervalSeconds int `yaml:"sleep_interval_seconds"`
 }
 
-// WorkItem representa uma tarefa que está disponível em uma Lane
-type WorkItem struct {
-	ID           string      // unique identifier for this work item hash(Seq+Name)
-	Seq          int         // unique sequential id for this work item
-	Name         string      // directory/file name (e.g., TASK-001-create-project)
-	Files        []string    // files in directory (e.g., TASK-001.md, TASK-001-SUmMARY.md)
-	Lane         *Lane       // the lane this item belongs to
-	InProgress   bool        // indica que um agente está executando a tarefa
-	ModTime      time.Time   // atualização mais recente do item
-	Dependencies []*WorkItem // todas as dependencias desse WorkItem
-	// @TODO: Attributes
-}
-
-// AgentInvoker defines the function for invoking agent executions
-// AgentInvoker starts an agent execution for the given work item
+// AgentInvoker defines the function signature for invoking agent executions.
+// It receives the synthesized prompt and the work item being processed.
 type AgentInvoker func(prompt string, item *WorkItem) error
 
-// WorkItemInvoker defines the interface for invoking and managing agent executions
-// WorkItemInvoker starts an execution for the given work item
-// Returns an invocation handle that can be used to track progress
+// WorkItemInvoker defines the function signature for invoking and managing agent executions.
+// Returns an InvocationHandle that can be used to track progress.
 type WorkItemInvoker func(project *Project, module *Module, lane *Lane, item *WorkItem) (InvocationHandle, error)
 
-// InvocationHandle represents a running agent invocation
+// InvocationHandle represents a running agent invocation.
 type InvocationHandle struct {
 	Item *WorkItem     // the work item being processed
 	Done chan struct{} // closed when the invocation completes
 	err  error         // error from the invocation (if any)
 }
 
-// Wait blocks until the invocation completes
+// Wait blocks until the invocation completes.
 func (h InvocationHandle) Wait() error {
 	<-h.Done
 	return h.err
 }
 
-// IsComplete returns true if the invocation has completed
+// IsComplete returns true if the invocation has completed.
 func (h InvocationHandle) IsComplete() bool {
 	select {
 	case <-h.Done:

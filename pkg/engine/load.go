@@ -1,4 +1,4 @@
-package project
+package engine
 
 import (
 	"errors"
@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/goccy/go-yaml"
+	"github.com/nidorx/orqen/pkg/memory/store"
 	"github.com/nidorx/orqen/pkg/utils"
 	"github.com/nidorx/orqen/pkg/utils/tinylfu"
 )
@@ -19,6 +20,9 @@ import (
 var (
 	projectsMu sync.Mutex
 	projects   = map[string]*Project{}
+
+	// use engram memory (WIP)
+	FLAG_USE_MEMORY = false
 )
 
 func Get(id string) *Project {
@@ -147,7 +151,16 @@ func applyDefaults(proj *Project) {
 		mod.DirAbs = filepath.Clean(filepath.Join(proj.DirAbs, mod.Dir))
 		mod.DirPrompts = filepath.Clean(filepath.Join(proj.DirAbs, projectConfigDir, mod.Name, "prompts", "generated"))
 
-		modType := strings.ToUpper(mod.Name)
+		mod.Prefix = strings.ReplaceAll(
+			strings.ReplaceAll(
+				strings.ReplaceAll(strings.ToUpper(strings.TrimSpace(mod.Prefix)), " ", ""),
+				" ", "_",
+			),
+			"-", "_", // WorkItem pattern: ${PREFIX}-${SEQUENCE}-${SIMPLE_NAME}
+		)
+		if mod.Prefix == "" {
+			mod.Prefix = "WI"
+		}
 
 		// special lane
 		var inbox *Lane
@@ -165,7 +178,7 @@ func applyDefaults(proj *Project) {
 		}
 
 		if inbox.Purpose == "" {
-			inbox.Purpose = fmt.Sprintf("User ideas that are ready to be transformed into %s by the agent", modType)
+			inbox.Purpose = fmt.Sprintf("User ideas that are ready to be transformed into %s by the agent", mod.Prefix)
 		}
 
 		if inbox.MaxAgents <= 0 {
@@ -175,11 +188,10 @@ func applyDefaults(proj *Project) {
 		if len(inbox.AgentBehavior) == 0 {
 			inbox.AgentBehavior = []string{
 				"Read the inbox file to understand the idea",
-				fmt.Sprintf("Analyze and decompose into %s (see `%s/%s.md`)", modType, path.Join(mod.Dir, "prompts"), modType),
-				fmt.Sprintf("An idea may result in one or more %s - the agent should make appropriate judgment", modType),
+				fmt.Sprintf("Analyze and decompose into %s.", mod.Prefix),
+				fmt.Sprintf("An idea may result in one or more %s - the agent should make appropriate judgment", mod.Prefix),
 				fmt.Sprintf(
-					"Create %s using orqen_create_item (orqen MCP Server), following the template structure (`%s/%s.md`)",
-					modType, path.Join(mod.Dir, "prompts"), modType,
+					"Create %s using orqen_create_item (orqen MCP Server).", mod.Prefix,
 				),
 				"**Terminate execution** after processing the inbox file",
 			}
@@ -187,9 +199,14 @@ func applyDefaults(proj *Project) {
 
 		if len(inbox.CriticalRules) == 0 {
 			inbox.CriticalRules = []string{
-				fmt.Sprintf("Move the idea file to the directory of the first %s created from that idea. Do not remove the file, just move it.", modType),
+				fmt.Sprintf("Move the idea file to the directory of the first %s created from that idea. Do not remove the file, just move it.", mod.Prefix),
 			}
 		}
+
+		mod.workItemsBySeq = tinylfu.NewSyncCacheT[*WorkItem](10000, 100000, time.Duration(0))
+
+		// keep in memory for 30 seconds only
+		mod.workItemsStashed = tinylfu.NewSyncCacheT[*WorkItem](10000, 100000, 30*time.Second)
 
 		for j, lane := range mod.Lanes {
 			if lane.MaxAgents <= 0 {
@@ -200,7 +217,6 @@ func applyDefaults(proj *Project) {
 			lane.DirAbs = filepath.Clean(path.Join(mod.DirAbs, lane.Dir))
 			lane.Module = mod
 			lane.workItemsByID = tinylfu.NewSyncCacheT[*WorkItem](10000, 100000, time.Duration(0))
-			lane.workItemsBySeq = tinylfu.NewSyncCacheT[*WorkItem](10000, 100000, time.Duration(0))
 		}
 	}
 }
@@ -246,8 +262,6 @@ func validate(proj *Project) error {
 func initialize(proj *Project) error {
 
 	for _, mod := range proj.Modules {
-
-		modType := strings.ToUpper(mod.Name)
 
 		// create prompts directory
 		modPromptsDir := mod.DirPrompts
@@ -303,15 +317,15 @@ func initialize(proj *Project) error {
 								artifacts = append(artifacts, artifact)
 								artifactsExamples = append(
 									artifactsExamples,
-									fmt.Sprintf("- `_$_MOD_TYPE_$_-%04d-%s.md`", i+1, artifact),
+									fmt.Sprintf("- `_$_MOD_PREFIX_$_-%04d-%s.md`", i+1, artifact),
 								)
 								artifactsExamples = append(
 									artifactsExamples,
-									fmt.Sprintf("- `_$_MOD_TYPE_$_-%04d-%s-02.md`", i+2, artifact),
+									fmt.Sprintf("- `_$_MOD_PREFIX_$_-%04d-%s-02.md`", i+2, artifact),
 								)
 								artifactsExamples = append(
 									artifactsExamples,
-									fmt.Sprintf("- `_$_MOD_TYPE_$_-%04d-%s-03.md`", i+3, artifact),
+									fmt.Sprintf("- `_$_MOD_PREFIX_$_-%04d-%s-03.md`", i+3, artifact),
 								)
 							}
 						}
@@ -321,7 +335,7 @@ func initialize(proj *Project) error {
 				if len(artifacts) > 0 {
 					artifactsInstructions := append([]string{
 						"### _$_MOD_TYPE_$_ Artifacts",
-						"Pattern: `_$_MOD_TYPE_$_-${SEQUENCE}-${ARTIFACT}[-{ARTIFACT_SEQUENCE}].md`",
+						"Pattern: `_$_MOD_PREFIX_$_-${SEQUENCE}-${ARTIFACT}[-{ARTIFACT_SEQUENCE}].md`",
 						"",
 						fmt.Sprintf("- `${ARTIFACT}`: %s", strings.Join(artifacts, ", ")),
 						"- `${ARTIFACT_SEQUENCE}`: Optional 2-digit sequence number",
@@ -334,10 +348,12 @@ func initialize(proj *Project) error {
 					prompt = strings.Replace(prompt, "_$_ARTIFACTS_INSTRUCTIONS_$_", "", 1)
 				}
 				prompt = prompt + "\n\n" + strings.TrimSpace(mod.ExtraPrompt)
-				prompt = strings.ReplaceAll(prompt, "_$_MOD_TYPE_$_", modType)
+				prompt = strings.ReplaceAll(prompt, "_$_MOD_TYPE_$_", strings.ToUpper(mod.Name))
+				prompt = strings.ReplaceAll(prompt, "_$_MOD_PREFIX_$_", mod.Prefix)
 				mod.Prompt = prompt
 			} else {
-				prompt = strings.ReplaceAll(prompt, "_$_MOD_TYPE_$_", modType)
+				prompt = strings.ReplaceAll(prompt, "_$_MOD_TYPE_$_", strings.ToUpper(mod.Name))
+				prompt = strings.ReplaceAll(prompt, "_$_MOD_PREFIX_$_", mod.Prefix)
 			}
 
 			// Create the destination file on the OS
@@ -434,6 +450,15 @@ func initialize(proj *Project) error {
 				}
 			}
 		}
+	}
+
+	// initalize memory DB
+	if FLAG_USE_MEMORY {
+		memory, err := store.New(store.DefaultConfig(proj.DirAbs))
+		if err != nil {
+			return err
+		}
+		proj.memory = memory
 	}
 
 	return initializeFsys(proj)

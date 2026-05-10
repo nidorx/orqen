@@ -5,7 +5,7 @@ import (
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/nidorx/orqen/pkg/conf"
-	"github.com/nidorx/orqen/pkg/project"
+	"github.com/nidorx/orqen/pkg/engine"
 )
 
 var (
@@ -29,9 +29,9 @@ func createServer() *mcp.Server {
 	return server
 }
 
-type ToolProjectHandler[In, Out any] func(_ context.Context, request *mcp.CallToolRequest, input In, proj *project.Project) (result *mcp.CallToolResult, output Out, _ error)
+type ToolProjectHandler[In, Out any] func(_ context.Context, request *mcp.CallToolRequest, input In, proj *engine.Project) (result *mcp.CallToolResult, output Out, _ error)
 
-func projectHandler2MCP[In, Out any](proj *project.Project, handler ToolProjectHandler[In, Out]) mcp.ToolHandlerFor[In, Out] {
+func projectHandler2MCP[In, Out any](proj *engine.Project, handler ToolProjectHandler[In, Out]) mcp.ToolHandlerFor[In, Out] {
 	return func(ctx context.Context, req *mcp.CallToolRequest, input In) (result *mcp.CallToolResult, output Out, err error) {
 		return handler(ctx, req, input, proj)
 	}

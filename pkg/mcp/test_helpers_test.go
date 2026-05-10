@@ -7,7 +7,8 @@ import (
 	"testing"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	"github.com/nidorx/orqen/pkg/project"
+	"github.com/nidorx/orqen/pkg/engine"
+	project "github.com/nidorx/orqen/pkg/engine"
 )
 
 // ============================================================================
@@ -15,7 +16,7 @@ import (
 // ============================================================================
 
 // setupTestProject creates a temporary project with modules and work items.
-func setupTestProject(t *testing.T) (*project.Project, string) {
+func setupTestProject(t *testing.T) (*engine.Project, string) {
 	t.Helper()
 
 	tempDir := t.TempDir()
@@ -33,12 +34,14 @@ agents:
   clients:
     qwen:
       command: ["qwen", "--yolo", "--acp"]
+
 execution:
   max_agents: 10
   sleep_interval_seconds: 60
+
 modules:
   - name: task
-    dir: ".orqen/tasks"
+    dir: "tasks"
     order: ["doing", "ready", "inbox"]
     lanes:
       - name: "inbox"
@@ -49,6 +52,7 @@ modules:
         purpose: "Being implemented"
       - name: "done"
         purpose: "Completed"
+
   - name: adr
     dir: "docs/adr"
     lanes:
@@ -75,19 +79,19 @@ modules:
 			// TASK-0001-write-tests
 			itemDir := filepath.Join(backlog.DirAbs, "TASK-0001-write-tests")
 			os.MkdirAll(itemDir, 0755)
-			os.WriteFile(filepath.Join(itemDir, "TASK-0001.md"), []byte("---\ntitle: Write Tests\n---\n"), 0644)
+			os.WriteFile(filepath.Join(itemDir, "TASK-0001.yaml"), []byte("title: Write Tests\n"), 0644)
 
 			// TASK-0002-add-feature
 			itemDir2 := filepath.Join(backlog.DirAbs, "TASK-0002-add-feature")
 			os.MkdirAll(itemDir2, 0755)
-			os.WriteFile(filepath.Join(itemDir2, "TASK-0002.md"), []byte("---\ntitle: Add Feature\n---\n"), 0644)
+			os.WriteFile(filepath.Join(itemDir2, "TASK-0002.yaml"), []byte("title: Add Feature\n"), 0644)
 		}
 
 		doing := taskModule.GetLane("doing")
 		if doing != nil {
 			itemDir := filepath.Join(doing.DirAbs, "TASK-0003-refactor")
 			os.MkdirAll(itemDir, 0755)
-			os.WriteFile(filepath.Join(itemDir, "TASK-0003.md"), []byte("---\ntitle: Refactor\n---\n"), 0644)
+			os.WriteFile(filepath.Join(itemDir, "TASK-0003.yaml"), []byte("title: Refactor\n"), 0644)
 		}
 	}
 
@@ -113,7 +117,7 @@ modules:
 }
 
 // callHandler is a helper to invoke a tool handler and get the output.
-func callHandler[In, Out any](t *testing.T, handler func(context.Context, *mcp.CallToolRequest, In, *project.Project) (*mcp.CallToolResult, Out, error), input In, proj *project.Project) Out {
+func callHandler[In, Out any](t *testing.T, handler func(context.Context, *mcp.CallToolRequest, In, *engine.Project) (*mcp.CallToolResult, Out, error), input In, proj *engine.Project) Out {
 	t.Helper()
 	_, out, err := handler(context.Background(), nil, input, proj)
 	if err != nil {

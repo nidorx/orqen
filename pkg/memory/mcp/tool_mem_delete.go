@@ -7,8 +7,8 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 	mcp2 "github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/nidorx/orqen/pkg/engine"
 	"github.com/nidorx/orqen/pkg/memory/store"
-	"github.com/nidorx/orqen/pkg/project"
 )
 
 // ── mem_delete ─────────────────────────────────────────────────────
@@ -46,7 +46,7 @@ func init() {
 }
 
 // MemDeleteHandler migrates from handleDelete in mcp.go.
-func MemDeleteHandler(ctx context.Context, req *mcp2.CallToolRequest, input *MemDeleteInput, proj *project.Project) (*mcp2.CallToolResult, MemDeleteOutput, error) {
+func MemDeleteHandler(ctx context.Context, req *mcp2.CallToolRequest, input *MemDeleteInput, proj *engine.Project) (*mcp2.CallToolResult, MemDeleteOutput, error) {
 	// out := MemDeleteOutput{}
 	// s := getStore()
 
@@ -91,7 +91,7 @@ func add_tool_mem_delete(srv *server.MCPServer, s *store.Store, cfg MCPConfig, a
 				mcp.Description("If true, permanently deletes the observation"),
 			),
 		),
-		queuedWriteHandler(getWriteQueue(), handleDelete(s)),
+		QueuedWriteHandler(getWriteQueue(), handleDelete(s)),
 	)
 }
 

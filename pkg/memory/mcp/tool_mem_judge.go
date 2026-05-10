@@ -6,8 +6,8 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 	mcp2 "github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/nidorx/orqen/pkg/engine"
 	"github.com/nidorx/orqen/pkg/memory/store"
-	"github.com/nidorx/orqen/pkg/project"
 )
 
 // tools is the local registry for this package. Each tool file registers via init().
@@ -61,7 +61,7 @@ ERROR: Returns IsError=true if judgment_id is unknown or relation verb is invali
 }
 
 // MemJudgeHandler migrates from handleJudge in mcp.go.
-func MemJudgeHandler(ctx context.Context, req *mcp2.CallToolRequest, input *MemJudgeInput, proj *project.Project) (*mcp2.CallToolResult, MemJudgeOutput, error) {
+func MemJudgeHandler(ctx context.Context, req *mcp2.CallToolRequest, input *MemJudgeInput, proj *engine.Project) (*mcp2.CallToolResult, MemJudgeOutput, error) {
 	out := MemJudgeOutput{}
 
 	if input.JudgmentID == "" {
@@ -141,7 +141,7 @@ Re-judging an already-judged ID overwrites the verdict (deliberate revision).`),
 				mcp.Description("Session ID for provenance (default: auto)"),
 			),
 		),
-		queuedWriteHandler(getWriteQueue(), handleJudge(s, activity)),
+		QueuedWriteHandler(getWriteQueue(), handleJudge(s, activity)),
 	)
 }
 

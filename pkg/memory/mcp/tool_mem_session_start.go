@@ -8,8 +8,8 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 	mcp2 "github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/nidorx/orqen/pkg/engine"
 	"github.com/nidorx/orqen/pkg/memory/store"
-	"github.com/nidorx/orqen/pkg/project"
 )
 
 // ── mem_session_start ──────────────────────────────────────────────
@@ -43,7 +43,7 @@ func init() {
 }
 
 // MemSessionStartHandler migrates from handleSessionStart in mcp.go.
-func MemSessionStartHandler(ctx context.Context, req *mcp2.CallToolRequest, input *MemSessionStartInput, proj *project.Project) (*mcp2.CallToolResult, MemSessionStartOutput, error) {
+func MemSessionStartHandler(ctx context.Context, req *mcp2.CallToolRequest, input *MemSessionStartInput, proj *engine.Project) (*mcp2.CallToolResult, MemSessionStartOutput, error) {
 	out := MemSessionStartOutput{}
 
 	if input.ID == "" {
@@ -78,7 +78,7 @@ func add_tool_mem_session_start(srv *server.MCPServer, s *store.Store, cfg MCPCo
 				mcp.Description("Working directory"),
 			),
 		),
-		queuedWriteHandler(getWriteQueue(), handleSessionStart(s, cfg, activity)),
+		QueuedWriteHandler(getWriteQueue(), handleSessionStart(s, cfg, activity)),
 	)
 }
 

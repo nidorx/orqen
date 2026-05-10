@@ -8,8 +8,8 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 	mcp2 "github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/nidorx/orqen/pkg/engine"
 	"github.com/nidorx/orqen/pkg/memory/store"
-	"github.com/nidorx/orqen/pkg/project"
 )
 
 // ── mem_merge_projects ─────────────────────────────────────────────
@@ -44,7 +44,7 @@ func init() {
 }
 
 // MemMergeProjectsHandler migrates from handleMergeProjects in mcp.go.
-func MemMergeProjectsHandler(ctx context.Context, req *mcp2.CallToolRequest, input *MemMergeProjectsInput, proj *project.Project) (*mcp2.CallToolResult, MemMergeProjectsOutput, error) {
+func MemMergeProjectsHandler(ctx context.Context, req *mcp2.CallToolRequest, input *MemMergeProjectsInput, proj *engine.Project) (*mcp2.CallToolResult, MemMergeProjectsOutput, error) {
 	out := MemMergeProjectsOutput{}
 
 	if input.From == "" || input.To == "" {
@@ -92,7 +92,7 @@ func add_tool_mem_merge_projects(srv *server.MCPServer, s *store.Store, cfg MCPC
 				mcp.Description("The canonical project name to merge INTO (e.g. 'engram')"),
 			),
 		),
-		queuedWriteHandler(getWriteQueue(), handleMergeProjects(s)),
+		QueuedWriteHandler(getWriteQueue(), handleMergeProjects(s)),
 	)
 }
 

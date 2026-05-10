@@ -7,8 +7,8 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 	mcp2 "github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/nidorx/orqen/pkg/engine"
 	"github.com/nidorx/orqen/pkg/memory/store"
-	"github.com/nidorx/orqen/pkg/project"
 )
 
 // ── mem_compare ────────────────────────────────────────────────────
@@ -61,7 +61,7 @@ ERROR: Returns IsError=true if IDs are unknown, relation is invalid, or cross-pr
 }
 
 // MemCompareHandler migrates from handleCompare in mcp.go.
-func MemCompareHandler(ctx context.Context, req *mcp2.CallToolRequest, input *MemCompareInput, proj *project.Project) (*mcp2.CallToolResult, MemCompareOutput, error) {
+func MemCompareHandler(ctx context.Context, req *mcp2.CallToolRequest, input *MemCompareInput, proj *engine.Project) (*mcp2.CallToolResult, MemCompareOutput, error) {
 	out := MemCompareOutput{}
 
 	if input.MemoryIDA == 0 {

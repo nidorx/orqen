@@ -60,7 +60,7 @@ main.go → service.Start() → http_service.New() → mux.Handle("/mcp/http", m
 `ServerHttp()` creates an `mcp.Server`, registers all 10 tools directly (no proxy), and wraps it with `mcp.NewStreamableHTTPHandler`:
 
 ```go
-func ServerHttp(proj *project.Project) http.Handler {
+func ServerHttp(proj *engine.Project) http.Handler {
     server := createServer()
     addToolProject(server, tnMoveItem, MoveItemHandler, proj)
     // ... 9 more tools
@@ -70,7 +70,7 @@ func ServerHttp(proj *project.Project) http.Handler {
 }
 ```
 
-Each HTTP request to `/mcp/http` creates an independent MCP session. The handler dispatches `tools/call` requests to the registered tool functions, which operate on the shared `*project.Project`.
+Each HTTP request to `/mcp/http` creates an independent MCP session. The handler dispatches `tools/call` requests to the registered tool functions, which operate on the shared `*engine.Project`.
 
 ### Role 2: Proxy (Stdio Subprocess) — `server_stdio.go`
 
@@ -186,7 +186,7 @@ Tools are registered in two ways depending on the role:
 addToolProject(server, tnMoveItem, MoveItemHandler, proj)
 ```
 
-The handler receives the real `*project.Project` reference and operates on it directly.
+The handler receives the real `*engine.Project` reference and operates on it directly.
 
 ### Proxy Registration (Stdio — `server_stdio.go`)
 

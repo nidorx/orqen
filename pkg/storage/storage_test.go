@@ -499,7 +499,7 @@ title: ADR-0001
 ---
 `,
 			"file2.md": `---
-title: TASK-0001
+title: WI-0001
 ---
 `,
 		})

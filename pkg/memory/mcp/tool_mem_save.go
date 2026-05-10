@@ -2,15 +2,17 @@ package mcp
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 	mcp2 "github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/nidorx/orqen/pkg/engine"
 	projectpkg "github.com/nidorx/orqen/pkg/memory/project"
 	"github.com/nidorx/orqen/pkg/memory/store"
-	"github.com/nidorx/orqen/pkg/project"
 )
 
 // ── mem_save ───────────────────────────────────────────────────────
@@ -48,6 +50,7 @@ type MemSaveOutput struct {
 	Project           string             `json:"project"`
 	ProjectSource     string             `json:"project_source"`
 	ProjectPath       string             `json:"project_path"`
+	ProjectWarning    string             `json:"project_warning,omitempty"`
 	ID                int64              `json:"id,omitempty"`
 	SyncID            string             `json:"sync_id,omitempty"`
 	SuggestedTopicKey string             `json:"suggested_topic_key,omitempty"`
@@ -103,8 +106,227 @@ Examples:
 }
 
 // MemSaveHandler migrates from handleSave in mcp.go.
-func MemSaveHandler(ctx context.Context, req *mcp2.CallToolRequest, input *MemSaveInput, proj *project.Project) (*mcp2.CallToolResult, MemSaveOutput, error) {
-	return nil, MemSaveOutput{}, nil
+func MemSaveHandler(ctx context.Context, req *mcp2.CallToolRequest, input *MemSaveInput, proj *engine.Project) (*mcp2.CallToolResult, MemSaveOutput, error) {
+	var (
+		s        = proj.Memory()
+		cfg      = MCPConfig{}
+		activity = getSessionActivity()
+	)
+
+	title := input.Title
+	content := input.Content
+	typ := ptrStr(input.Type, "manual")
+	sessionID := ptrStr(input.SessionID, defaultSessionID(""))
+	scope := ptrStr(input.Scope, "")
+	topicKey := ptrStr(input.TopicKey, "")
+	projectChoice := ptrStr(input.Project, "")
+	projectChoiceReason := ptrStr(input.ProjectChoiceReason, "")
+	capturePromptVal := ptrBoolVal(input.CapturePrompt, true)
+
+	// Auto-detect project from cwd; only allow explicit user-selected recovery
+	// after ErrAmbiguousProject (issue #306).
+	detRes, err := resolveWriteProjectWithChoice(projectChoice, projectChoiceReason)
+	if err != nil {
+		// Map errors to specific error codes, matching handleSave behavior.
+		code := "ambiguous_project"
+		if errors.Is(err, projectpkg.ErrInvalidConfig) {
+			code = "invalid_project_config"
+		}
+		var choiceErr *invalidProjectChoiceError
+		if errors.As(err, &choiceErr) {
+			if choiceErr.Name == "" {
+				msg := "Project choice is empty; choose exactly one value from available_projects and retry with project_choice_reason=user_selected_after_ambiguous_project"
+				out := MemSaveOutput{
+					Message:   msg,
+					Error:     msg,
+					ErrorCode: "invalid_project_choice",
+				}
+				return nil, out, err
+			}
+			msg := fmt.Sprintf("Project choice %q is not one of available_projects", choiceErr.Name)
+			out := MemSaveOutput{
+				Message:   msg,
+				Error:     msg,
+				ErrorCode: "invalid_project_choice",
+			}
+			return nil, out, err
+		}
+		// Build error message with available_projects, matching handleSave behavior.
+		availProjects := detRes.AvailableProjects
+		msg := fmt.Sprintf("Cannot determine project: %s", err)
+		if len(availProjects) > 0 {
+			msg += fmt.Sprintf("; available_projects: %v", availProjects)
+		}
+		if code == "ambiguous_project" {
+			msg += ". Ask the user to choose one of available_projects, then retry with project and project_choice_reason=user_selected_after_ambiguous_project."
+		}
+		out := MemSaveOutput{
+			Message:   msg,
+			Error:     msg,
+			ErrorCode: code,
+		}
+		return nil, out, err
+	}
+	project := detRes.Project
+
+	// Normalize project name and capture warning
+	normalized, normWarning := store.NormalizeProject(project)
+	project = normalized
+
+	if sessionID == "" {
+		sessionID = defaultSessionID(project)
+	}
+	suggestedTopicKey := suggestTopicKey(typ, title, content)
+
+	// Check for similar existing projects (only when this project has no existing observations)
+	var similarWarning string
+	if project != "" {
+		existingNames, _ := s.ListProjectNames()
+		isNew := true
+		for _, e := range existingNames {
+			if e == project {
+				isNew = false
+				break
+			}
+		}
+		if isNew && len(existingNames) > 0 {
+			matches := projectpkg.FindSimilar(project, existingNames, 3)
+			if len(matches) > 0 {
+				bestMatch := matches[0].Name
+				obsCount, _ := s.CountObservationsForProject(bestMatch)
+				similarWarning = fmt.Sprintf("⚠️ Project %q has no memories. Similar project found: %q (%d memories). Consider using that name instead.", project, bestMatch, obsCount)
+			}
+		}
+	}
+
+	// Ensure the implicit MCP session exists with the current working directory.
+	_ = ensureImplicitSessionWithCWD(s, sessionID, project)
+
+	truncated := len(content) > s.MaxObservationLength()
+
+	savedID, err := s.AddObservation(store.AddObservationParams{
+		SessionID: sessionID,
+		Type:      typ,
+		Title:     title,
+		Content:   content,
+		Project:   project,
+		Scope:     scope,
+		TopicKey:  topicKey,
+	})
+	if err != nil {
+		out := MemSaveOutput{
+			Error:     err.Error(),
+			ErrorCode: "save_failed",
+		}
+		return nil, out, err
+	}
+
+	if capturePromptVal && activity != nil {
+		if prompt, ok := activity.CurrentPrompt(sessionID, project); ok {
+			if _, _, promptErr := addPromptIfMissing(s, store.AddPromptParams{
+				SessionID: sessionID,
+				Content:   prompt,
+				Project:   project,
+			}); promptErr != nil {
+				fmt.Fprintf(os.Stderr, "engram: auto prompt capture error (non-fatal): %v\n", promptErr)
+			}
+		}
+	}
+
+	if activity != nil {
+		activity.RecordSave(sessionID)
+	}
+
+	msg := fmt.Sprintf("Memory saved: %q (%s)", title, typ)
+	if topicKey == "" && suggestedTopicKey != "" {
+		msg += fmt.Sprintf("\nSuggested topic_key: %s", suggestedTopicKey)
+	}
+	if truncated {
+		msg += fmt.Sprintf("\n⚠ WARNING: Content was truncated from %d to %d chars. Consider splitting into smaller observations.", len(content), s.MaxObservationLength())
+	}
+	if normWarning != "" {
+		msg += "\n" + normWarning
+	}
+	if similarWarning != "" {
+		msg += "\n" + similarWarning
+	}
+
+	// Post-transaction conflict candidate detection (REQ-001).
+	// Errors are logged and swallowed — detection failure never fails the save.
+	extra := map[string]any{}
+	// Build CandidateOptions, forwarding any MCPConfig overrides.
+	// nil fields mean "use store defaults"; explicit pointer values override.
+	candOpts := store.CandidateOptions{
+		Project:   project,
+		Scope:     scope,
+		BM25Floor: cfg.BM25Floor, // nil → store default (-2.0); explicit value overrides
+	}
+	if cfg.Limit != nil {
+		candOpts.Limit = *cfg.Limit
+	}
+	candidates, candErr := s.FindCandidates(savedID, candOpts)
+	if candErr != nil {
+		// Log only — do not fail the save.
+		fmt.Fprintf(os.Stderr, "engram: FindCandidates error (non-fatal): %v\n", candErr)
+	}
+
+	// Fetch the saved observation's sync_id for the envelope (REQ-001).
+	var savedSyncID string
+	if obs, obsErr := s.GetObservation(savedID); obsErr == nil {
+		savedSyncID = obs.SyncID
+		extra["id"] = savedID
+		extra["sync_id"] = savedSyncID
+	}
+
+	output := MemSaveOutput{
+		Message:           msg,
+		Project:           project,
+		ProjectSource:     detRes.Source,
+		ProjectPath:       detRes.Path,
+		ProjectWarning:    detRes.Warning,
+		ID:                savedID,
+		SyncID:            savedSyncID,
+		SuggestedTopicKey: suggestedTopicKey,
+		Truncated:         truncated,
+	}
+
+	if len(candidates) > 0 {
+		output.JudgmentRequired = true
+		output.JudgmentStatus = "pending"
+		output.JudgmentID = candidates[0].JudgmentID
+
+		candList := make([]MemSaveCandidate, 0, len(candidates))
+		for _, c := range candidates {
+			entry := MemSaveCandidate{
+				ID:         fmt.Sprintf("%d", c.ID),
+				SyncID:     c.SyncID,
+				Title:      c.Title,
+				Type:       c.Type,
+				Score:      c.Score,
+				JudgmentID: c.JudgmentID,
+				TopicKey:   c.TopicKey,
+			}
+			candList = append(candList, entry)
+		}
+		output.Candidates = candList
+
+		msg += fmt.Sprintf("\nCONFLICT REVIEW PENDING — %d candidate(s); use mem_judge to record verdicts.", len(candidates))
+		output.Message = msg
+	}
+
+	// Merge warnings
+	warningParts := []string{}
+	if normWarning != "" {
+		warningParts = append(warningParts, normWarning)
+	}
+	if similarWarning != "" {
+		warningParts = append(warningParts, similarWarning)
+	}
+	if len(warningParts) > 0 {
+		output.Warning = strings.Join(warningParts, "\n")
+	}
+
+	return nil, output, nil
 }
 
 func add_tool_mem_save(srv *server.MCPServer, s *store.Store, cfg MCPConfig, activity *SessionActivity) {
@@ -171,7 +393,7 @@ Examples:
 				mcp.Description("Automatically capture the current user prompt when available (default: true). Set false for SDD artifacts or automated saves."),
 			),
 		),
-		queuedWriteHandler(getWriteQueue(), handleSave(s, cfg, activity)),
+		QueuedWriteHandler(getWriteQueue(), handleSave(s, cfg, activity)),
 	)
 }
 

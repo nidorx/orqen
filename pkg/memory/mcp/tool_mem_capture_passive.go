@@ -7,8 +7,8 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 	mcp2 "github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/nidorx/orqen/pkg/engine"
 	"github.com/nidorx/orqen/pkg/memory/store"
-	"github.com/nidorx/orqen/pkg/project"
 )
 
 // ── mem_capture_passive ────────────────────────────────────────────
@@ -50,7 +50,7 @@ Duplicates are automatically detected and skipped — safe to call multiple time
 }
 
 // MemCapturePassiveHandler migrates from handleCapturePassive in mcp.go.
-func MemCapturePassiveHandler(ctx context.Context, req *mcp2.CallToolRequest, input *MemCapturePassiveInput, proj *project.Project) (*mcp2.CallToolResult, MemCapturePassiveOutput, error) {
+func MemCapturePassiveHandler(ctx context.Context, req *mcp2.CallToolRequest, input *MemCapturePassiveInput, proj *engine.Project) (*mcp2.CallToolResult, MemCapturePassiveOutput, error) {
 	out := MemCapturePassiveOutput{}
 
 	if input.Content == "" {
@@ -91,7 +91,7 @@ Duplicates are automatically detected and skipped — safe to call multiple time
 				mcp.Description("Source identifier (e.g. 'subagent-stop', 'session-end')"),
 			),
 		),
-		queuedWriteHandler(getWriteQueue(), handleCapturePassive(s, cfg, activity)),
+		QueuedWriteHandler(getWriteQueue(), handleCapturePassive(s, cfg, activity)),
 	)
 }
 

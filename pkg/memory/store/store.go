@@ -1,8 +1,7 @@
-// Package store implements the persistent memory engine for Engram.
+// Package store implements the persistent memory engine for Orqen.
 //
 // It uses SQLite with FTS5 full-text search to store and retrieve
-// observations from AI coding sessions. This is the core of Engram —
-// everything else (HTTP server, MCP server, CLI, plugins) talks to this.
+// observations from AI coding sessions.
 package store
 
 import (
@@ -423,26 +422,9 @@ type Config struct {
 	DedupeWindow         time.Duration
 }
 
-func DefaultConfig() (Config, error) {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return Config{}, fmt.Errorf("engram: determine home directory: %w", err)
-	}
+func DefaultConfig(projectDir string) Config {
 	return Config{
-		DataDir:              filepath.Join(home, ".engram"),
-		MaxObservationLength: 50000,
-		MaxContextResults:    20,
-		MaxSearchResults:     20,
-		DedupeWindow:         15 * time.Minute,
-	}, nil
-}
-
-// FallbackConfig returns a Config with the given DataDir and default values.
-// Use this when DefaultConfig fails and you have resolved the home directory
-// through alternative means.
-func FallbackConfig(dataDir string) Config {
-	return Config{
-		DataDir:              dataDir,
+		DataDir:              filepath.Join(projectDir, ".orqen"),
 		MaxObservationLength: 50000,
 		MaxContextResults:    20,
 		MaxSearchResults:     20,

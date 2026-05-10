@@ -9,9 +9,9 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 	mcp2 "github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/nidorx/orqen/pkg/engine"
 	projectpkg "github.com/nidorx/orqen/pkg/memory/project"
 	"github.com/nidorx/orqen/pkg/memory/store"
-	"github.com/nidorx/orqen/pkg/project"
 )
 
 // ── mem_session_end ────────────────────────────────────────────────
@@ -44,7 +44,7 @@ func init() {
 }
 
 // MemSessionEndHandler migrates from handleSessionEnd in mcp.go.
-func MemSessionEndHandler(ctx context.Context, req *mcp2.CallToolRequest, input *MemSessionEndInput, proj *project.Project) (*mcp2.CallToolResult, MemSessionEndOutput, error) {
+func MemSessionEndHandler(ctx context.Context, req *mcp2.CallToolRequest, input *MemSessionEndInput, proj *engine.Project) (*mcp2.CallToolResult, MemSessionEndOutput, error) {
 	out := MemSessionEndOutput{}
 
 	if input.ID == "" {
@@ -78,7 +78,7 @@ func add_tool_mem_session_end(srv *server.MCPServer, s *store.Store, cfg MCPConf
 				mcp.Description("Summary of what was accomplished"),
 			),
 		),
-		queuedWriteHandler(getWriteQueue(), handleSessionEnd(s, cfg, activity)),
+		QueuedWriteHandler(getWriteQueue(), handleSessionEnd(s, cfg, activity)),
 	)
 }
 

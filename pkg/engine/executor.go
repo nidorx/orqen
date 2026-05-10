@@ -1,4 +1,4 @@
-package project
+package engine
 
 import (
 	"context"
@@ -111,7 +111,7 @@ func (e *Executor) processWorkItems() {
 				}
 
 				// Check if this item should be ignored
-				if e.shouldIgnoreItem(mod, lane, item) {
+				if item.shouldIgnore() {
 					continue
 				}
 
@@ -128,53 +128,6 @@ func (e *Executor) processWorkItems() {
 			}
 		}
 	}
-}
-
-// shouldIgnoreItem checks if a work item should be skipped based on ignore rules
-func (e *Executor) shouldIgnoreItem(module *Module, lane *Lane, item *WorkItem) bool {
-
-	// ignore if recently updated
-	if item.ModTime.After(time.Now().Add(-30 * time.Second)) {
-		return true
-	}
-
-	// Check ignore_if_exists
-	if len(lane.IgnoreIfExists) > 0 {
-		if lane.HasItemsInReferencedLanes(lane.IgnoreIfExists) {
-			return true
-		}
-	}
-
-	// Check ignore_if_not_exists
-	if len(lane.IgnoreIfNotExists) > 0 {
-		if !lane.HasItemsInReferencedLanes(lane.IgnoreIfNotExists) {
-			return true
-		}
-	}
-
-	// Check ignore_if_dependency
-	if len(lane.IgnoreIfDependency) > 0 {
-		if HasDependencyInReferencedLanes(e.project, module, item, lane.IgnoreIfDependency) {
-			return true
-		}
-	}
-
-	// regex validations
-	// Check ignore_if_exists
-	if len(lane.ignoreIfExistsRegexp) > 0 {
-		if lane.HasItemsInReferencedLanes(lane.IgnoreIfExists) {
-			return true
-		}
-	}
-
-	// Check ignore_if_not_exists
-	if len(lane.ignoreIfNotExistsRegexp) > 0 {
-		if !lane.HasItemsInReferencedLanes(lane.IgnoreIfNotExists) {
-			return true
-		}
-	}
-
-	return false
 }
 
 // invokeItem starts execution of a work item

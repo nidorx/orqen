@@ -8,8 +8,9 @@ import (
 	"sync"
 
 	"github.com/nidorx/orqen/pkg/conf"
+	"github.com/nidorx/orqen/pkg/engine"
+	project "github.com/nidorx/orqen/pkg/engine"
 	"github.com/nidorx/orqen/pkg/mcp"
-	"github.com/nidorx/orqen/pkg/project"
 )
 
 type Service struct {
@@ -38,7 +39,7 @@ func New() *Service {
 		addr         = fmt.Sprintf("%s:%d", cfg.IP, cfg.Port)
 		mux          = http.NewServeMux()
 		mcpServersMu sync.Mutex
-		mcpServers   = map[*project.Project]http.Handler{}
+		mcpServers   = map[*engine.Project]http.Handler{}
 	)
 	// prepared for multi projects (future)
 	mux.Handle("/mcp/http/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

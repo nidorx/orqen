@@ -8,6 +8,10 @@
 *.so
 *.dylib
 
+# OS
+.DS_Store
+Thumbs.db
+
 # Test binary, built with `go test -c`
 *.test
 
@@ -39,3 +43,14 @@ tasks
 
 # debug files
 mcp_stdio_debug.txt
+
+# Database
+*.db
+*.db-wal
+*.db-shm
+
+# etc
+TODO.md
+
+# agents
+.qwen
