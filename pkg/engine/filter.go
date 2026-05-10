@@ -31,21 +31,6 @@ func FilterWorkItems(items []*WorkItem, cond string) ([]*WorkItem, error) {
 	return result, nil
 }
 
-// FilterWorkItemsByLane filters work items from a specific lane using a
-// condition DSL string.
-//
-// This is a convenience wrapper around FilterWorkItems that first selects
-// items from the given lane.
-func FilterWorkItemsByLane(items []*WorkItem, laneName string, cond string) ([]*WorkItem, error) {
-	var laneItems []*WorkItem
-	for _, item := range items {
-		if item.Lane != nil && item.Lane.Name == laneName {
-			laneItems = append(laneItems, item)
-		}
-	}
-	return FilterWorkItems(laneItems, cond)
-}
-
 // WorkItemMatches checks if a single WorkItem matches a condition DSL string.
 // Returns false if the item has no attributes or the condition fails.
 func WorkItemMatches(item *WorkItem, cond string) (bool, error) {

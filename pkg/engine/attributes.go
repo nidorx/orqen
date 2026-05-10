@@ -48,6 +48,9 @@ func (attrs Attributes) Keys() []string {
 // Existing keys are overwritten by the other attributes.
 func (attrs Attributes) Merge(other Attributes) {
 	for k, v := range other {
+		if v == nil || v == "" {
+			continue
+		}
 		attrs[k] = v
 	}
 }

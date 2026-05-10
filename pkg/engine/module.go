@@ -115,6 +115,22 @@ func (m *Module) ListWorkItems() []*WorkItem {
 	return items
 }
 
+// FilterWorkItems filters work items from a module using a
+// condition DSL string.
+func (m *Module) FilterWorkItems(cond string) ([]*WorkItem, error) {
+
+	var result []*WorkItem
+	for _, lane := range m.Lanes {
+		if items, err := lane.FilterWorkItems(cond); err != nil {
+			return nil, err
+		} else {
+			result = append(result, items...)
+		}
+	}
+
+	return result, nil
+}
+
 // GetWorkItemBySeq finds a work item by its sequential id across all lanes.
 func (m *Module) GetWorkItemBySeq(seq int) *WorkItem {
 	if item, exists := m.workItemsBySeq.Get(strconv.Itoa(seq)); exists {

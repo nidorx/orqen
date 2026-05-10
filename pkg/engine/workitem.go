@@ -2,6 +2,8 @@ package engine
 
 import (
 	"encoding/json"
+	"os"
+	"path/filepath"
 	"time"
 )
 
@@ -14,7 +16,9 @@ type WorkItem struct {
 	Lane       *Lane      `json:"-" jsonschema:"the lane this item belongs to"`
 	InProgress bool       `json:"in_progress,omitempty" jsonschema:"indica que um agente está executando a tarefa"`
 	Attributes Attributes `json:"attributes" jsonschema:"todos os atributos do WorkItem"`
-	ModTime    time.Time  `json:"mod_time,omitempty" jsonschema:"atualização mais recente do item"`
+	ModTime    time.Time  `json:"mod_time" jsonschema:"atualização mais recente do item"`
+
+	attributesModTime time.Time `json:"-"`
 }
 
 func (item WorkItem) MarshalJSON() ([]byte, error) {
@@ -37,13 +41,52 @@ func (item WorkItem) MarshalJSON() ([]byte, error) {
 
 	return json.Marshal(&struct {
 		Lane         string   `json:"lane"`
+		Module       string   `json:"module"`
 		Dependencies []string `json:"dependencies"`
 		*Alias
 	}{
 		Lane:         item.Lane.Name,
+		Module:       item.Lane.Module.Name,
 		Dependencies: deps,
 		Alias:        (*Alias)(&item),
 	})
+}
+
+func (item *WorkItem) AttributesLoad() {
+	if item.Seq <= 0 {
+		return
+	}
+	path := filepath.Clean(filepath.Join(item.Lane.DirAbs, item.Name, (item.Name + ".yaml")))
+	info, _ := os.Stat(path)
+	if info != nil && item.attributesModTime.Before(info.ModTime()) {
+		item.Attributes.LoadFromYAML(path)
+		item.attributesModTime = info.ModTime()
+	}
+}
+
+func (item *WorkItem) AttributesSave(other Attributes) error {
+	if item.Seq <= 0 || len(other) == 0 {
+		return nil
+	}
+
+	path := filepath.Clean(filepath.Join(item.Lane.DirAbs, item.Name, (item.Name + ".yaml")))
+	item.Attributes.Merge(other)
+	return item.Attributes.SaveToYAML(path)
+}
+
+func (item *WorkItem) AttributesDel(keys []string) error {
+	if item.Seq <= 0 || len(keys) == 0 {
+		return nil
+	}
+
+	path := filepath.Clean(filepath.Join(item.Lane.DirAbs, item.Name, (item.Name + ".yaml")))
+	for _, key := range keys {
+		if key == "dependencies" {
+			continue
+		}
+		item.Attributes.Delete(key)
+	}
+	return item.Attributes.SaveToYAML(path)
 }
 
 type ShouldIgnore func(item *WorkItem) bool

@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/nidorx/orqen/pkg/condition"
 	"github.com/nidorx/orqen/pkg/utils"
 	"github.com/nidorx/orqen/pkg/utils/tinylfu"
 )
@@ -76,6 +77,27 @@ func (l *Lane) GetWorkItemByID(workItemID string) *WorkItem {
 	} else {
 		return nil
 	}
+}
+
+// FilterWorkItems filters work items from a specific lane using a
+// condition DSL string.
+func (l *Lane) FilterWorkItems(cond string) ([]*WorkItem, error) {
+	node, err := condition.Parse(cond)
+	if err != nil {
+		return nil, err
+	}
+
+	var result []*WorkItem
+	for item := range l.WorkItems() {
+		if item.Attributes == nil {
+			continue
+		}
+		if condition.Evaluate(node, item.Attributes) {
+			result = append(result, item)
+		}
+	}
+
+	return result, nil
 }
 
 // HasWorkItems returns true if this lane has work items.
@@ -216,11 +238,12 @@ func (l *Lane) onFsysUpdate(ev FsysEvent) {
 
 		} else {
 			item = &WorkItem{
-				ID:    id,
-				Seq:   seq,
-				Name:  itemName,
-				Files: []string{},
-				Lane:  l,
+				ID:         id,
+				Seq:        seq,
+				Name:       itemName,
+				Files:      []string{},
+				Lane:       l,
+				Attributes: make(Attributes),
 			}
 		}
 
@@ -252,6 +275,7 @@ func (l *Lane) onFsysUpdate(ev FsysEvent) {
 			})
 			item.Files = files
 			item.ModTime = modTime
+			item.AttributesLoad()
 
 		} else if fileExtraPath != "" {
 			// is internal file or sub dir
@@ -274,6 +298,11 @@ func (l *Lane) onFsysUpdate(ev FsysEvent) {
 
 				item.Files = files
 				item.ModTime = time.Now()
+
+				if fileExtraPath == (itemName + ".yaml") {
+					// attributes removed
+					item.Attributes = make(Attributes)
+				}
 
 			} else if ev.Op == FsysOpCreate && ev.IsDir {
 				// sub dir created
@@ -309,15 +338,22 @@ func (l *Lane) onFsysUpdate(ev FsysEvent) {
 				item.Files = utils.Unique(files)
 				item.ModTime = modTime
 
-			} else if ev.Op == FsysOpCreate {
-				// file created
+			} else {
+				if ev.Op == FsysOpCreate {
+					// file created
 
-				rel, err := filepath.Rel(l.Module.Project.DirAbs, filepath.Clean(filepath.Join(l.DirAbs, itemName, fileExtraPath)))
-				if err != nil {
-					return
+					rel, err := filepath.Rel(l.Module.Project.DirAbs, filepath.Clean(filepath.Join(l.DirAbs, itemName, fileExtraPath)))
+					if err != nil {
+						return
+					}
+					files := utils.Unique(append(item.Files, filepath.ToSlash(rel)))
+					item.Files = files
 				}
-				files := utils.Unique(append(item.Files, filepath.ToSlash(rel)))
-				item.Files = files
+
+				if fileExtraPath == (itemName + ".yaml") {
+					// attributes created or updated
+					item.AttributesLoad()
+				}
 			}
 		}
 
@@ -348,11 +384,12 @@ func (l *Lane) onFsysUpdate(ev FsysEvent) {
 			}
 
 			item = &WorkItem{
-				ID:    id,
-				Seq:   0,
-				Name:  itemName,
-				Files: []string{filepath.ToSlash(rel)}, // single file
-				Lane:  l,
+				ID:         id,
+				Seq:        0,
+				Name:       itemName,
+				Files:      []string{filepath.ToSlash(rel)}, // single file
+				Lane:       l,
+				Attributes: make(Attributes),
 			}
 		}
 	}
