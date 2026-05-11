@@ -6,21 +6,56 @@
 
 The `mcp` package is the **bridge between AI agents and Orqen's filesystem-backed project state**. It:
 
-1. **Exposes operations as MCP tools** — Each tool (create item, move item, list lanes, etc.) is a well-defined function with typed input/output, discoverable by any MCP-compatible agent.
+1. **Exposes operations as MCP tools** — Each tool (create item, move item, search items, manage attributes, etc.) is a well-defined function with typed input/output, discoverable by any MCP-compatible agent.
 2. **Proxies agent-side calls to the host process** — When an agent runs in a subprocess, the stdio server forwards tool calls to the main process over HTTP.
 3. **Serves tools directly for remote agents** — When agents connect directly (e.g., running alongside Orqen), the Streamable HTTP handler dispatches tool calls without a proxy layer.
 
-The package does **not** manage project state — it delegates to `pkg/project`. It is purely a **protocol layer**: receive MCP tool calls, execute the corresponding project operation, return structured results.
+The package does **not** manage project state — it delegates to `pkg/engine`. It is purely a **protocol layer**: receive MCP tool calls, execute the corresponding project operation, return structured results.
 
 ## Files
 
 | File | Responsibility |
 |------|----------------|
-| `server.go` | Server creation (`createServer`), tool registration helpers (`addTool`, `addToolProject`, `addToolProxy`, `addToolProjecProxy`, `addToolProjecProxyWithJobId`), and proxy functions (`sseProxy`, `sseProxyWithJobId`) |
+| `server.go` | Server creation (`createServer`), tool registration map (`tools`), and handler adapter (`projectHandler2MCP`) |
 | `server_stdio.go` | Entry point for the stdio subprocess (`StartStdio`). Creates an MCP client that connects to the host's Streamable HTTP endpoint and registers all tools as proxies |
 | `server_http.go` | Entry point for the host's HTTP server (`ServerHttp`). Creates an `http.Handler` using `mcp.NewStreamableHTTPHandler` with all tools registered directly |
 | `tool_*.go` | Individual tool implementations — each defines `Input`/`Output` structs, a tool name constant, an `init()` registration, and a handler function |
-| `utils.go` | Shared utilities (e.g., `findModuleByJobID`) |
+| `utils.go` | Shared utilities (e.g., `findTargetModuleBy` for module resolution) |
+| `*_test.go` | Comprehensive test coverage for all tools with shared test helpers (`test_helpers_test.go`) |
+
+## Tools
+
+The package exposes **11 MCP tools** for work item and project management:
+
+### Work Item Operations
+
+| Tool Constant | Tool Name | Handler | Description |
+|---------------|-----------|---------|-------------|
+| `tnItemStatus` | `orqen_item_status` | `ItemStatusHandler` | Returns the current work item, lane, module, and project context for a running agent job. Requires `workitem_id`. |
+| `tnItemMove` | `orqen_item_move` | `ItemMoveHandler` | Moves a work item directory from one lane to another within a module. Updates internal state to reflect the new lane position. |
+| `tnItemCreate` | `orqen_item_create` | `ItemCreateHandler` | Creates a new work item in a specific lane of a module. Creates the directory following naming conventions (MOD_TYPE-NNNN-name) and an empty `.yaml` file. |
+| `tnItemSearch` | `orqen_item_search` | `ItemSearchHandler` | Searches for work items in a module or lane, optionally filtered by a condition SQL-like DSL string. Returns full WorkItem objects. |
+
+### Work Item Attribute Operations
+
+| Tool Constant | Tool Name | Handler | Description |
+|---------------|-----------|---------|-------------|
+| `tnItemAttrsSet` | `orqen_item_attrs_set` | `ItemAttrsSetHandler` | Updates attributes on a work item. Merges the provided attributes into the work item's existing attributes and persists them to disk. |
+| `tnItemAttrsDel` | `orqen_item_attrs_del` | `ItemAttrsDelHandler` | Removes specified attribute keys from a work item and persists the changes to disk. The "dependencies" key cannot be removed. |
+| `tnItemAttrsSchema` | `orqen_item_attrs_schema` | `ItemAttrSchemaHandler` | Returns all observed workitem attributes and their unique values (domains) across all workitems in a module. Use this to understand what metadata fields exist. |
+
+### Work Item Dependencies
+
+| Tool Constant | Tool Name | Handler | Description |
+|---------------|-----------|---------|-------------|
+| `tnItemDependencies` | `orqen_item_dependencies` | `ItemDependenciesHandler` | Checks dependency status for the current work item. Resolves them to actual work items with their status. |
+
+### Project & Lane Operations
+
+| Tool Constant | Tool Name | Handler | Description |
+|---------------|-----------|---------|-------------|
+| `tnLaneList` | `orqen_lane_list` | `LaneListHandler` | Lists all lanes in a module with their configuration, purpose, item counts, and availability. Use this to understand lane structure before creating or moving items. |
+| `tnProjectInfo` | `orqen_project_info` | `ProjectInfoHandler` | Returns the full project structure: modules, lanes, item counts, and configuration. Use this to understand the overall project layout. |
 
 ## Invocation Flow
 
@@ -29,41 +64,46 @@ The package does **not** manage project state — it delegates to `pkg/project`.
 Orqen uses MCP in two distinct roles within a single process:
 
 ```
-┌──────────────────────────────────────────────────────────────────┐
+┌───────────────────────────────────────────────────────────────────┐
 │                    Orqen Main Process                             │
-│                                                                    │
+│                                                                   │
 │  ┌─────────────────────────┐          ┌────────────────────────┐  │
-│  │  Streamable HTTP Server  │◄─────────│  ACP Agent Subprocess   │  │
-│  │  (server_http.go)        │  HTTP    │  (server_stdio.go)      │  │
-│  │  /mcp/http endpoint      │  POST    │  stdin/stdout           │  │
-│  │  Real tool handlers      │          │  Proxy tool handlers    │  │
+│  │  Streamable HTTP Server │◄─────────│  ACP Agent Subprocess  │  │
+│  │  (server_http.go)       │  HTTP    │  (server_stdio.go)     │  │
+│  │  /mcp/http endpoint     │  POST    │  stdin/stdout          │  │
+│  │  Real tool handlers     │          │  Proxy tool handlers   │  │
 │  └─────────────────────────┘          └───────────┬────────────┘  │
-│                                      ▲             │                │
-│                                      │             │                │
-│                            ┌─────────┴─────────────┴──────────┐   │
-│                            │        ACP Agent                  │   │
-│                            │  (spawned by agent.Exec)          │   │
-│                            │  Reads/writes via stdin/stdout    │   │
+│                                         ▲         │               │
+│                                         │         │               │
+│                            ┌────────────┴─────────┴───────────┐   │
+│                            │        ACP Agent                 │   │
+│                            │  (spawned by agent.Exec)         │   │
+│                            │  Reads/writes via stdin/stdout   │   │
 │                            └──────────────────────────────────┘   │
-│                                                                    │
-└──────────────────────────────────────────────────────────────────┘
+│                                                                   │
+└───────────────────────────────────────────────────────────────────┘
 ```
 
 ### Role 1: Host (Main Process) — `server_http.go`
 
-The main Orqen process starts an HTTP server (`pkg/service/http/http_service.go`) that registers the MCP endpoint at `/mcp/http`:
-
-```
-main.go → service.Start() → http_service.New() → mux.Handle("/mcp/http", mcp.ServerHttp(proj))
-```
-
-`ServerHttp()` creates an `mcp.Server`, registers all 10 tools directly (no proxy), and wraps it with `mcp.NewStreamableHTTPHandler`:
+The main Orqen process starts an HTTP server that registers the MCP endpoint:
 
 ```go
 func ServerHttp(proj *engine.Project) http.Handler {
     server := createServer()
-    addToolProject(server, tnMoveItem, MoveItemHandler, proj)
-    // ... 9 more tools
+    
+    // Register all 11 tools directly with project reference
+    addTool(server, tnItemStatus, ItemStatusHandler, proj)
+    addTool(server, tnItemMove, ItemMoveHandler, proj)
+    addTool(server, tnItemCreate, ItemCreateHandler, proj)
+    addTool(server, tnItemSearch, ItemSearchHandler, proj)
+    addTool(server, tnItemAttrsSet, ItemAttrsSetHandler, proj)
+    addTool(server, tnItemAttrsDel, ItemAttrsDelHandler, proj)
+    addTool(server, tnItemAttrsSchema, ItemAttrSchemaHandler, proj)
+    addTool(server, tnItemDependencies, ItemDependenciesHandler, proj)
+    addTool(server, tnLaneList, LaneListHandler, proj)
+    addTool(server, tnProjectInfo, ProjectInfoHandler, proj)
+    
     return mcp.NewStreamableHTTPHandler(func(request *http.Request) *mcp.Server {
         return server
     }, nil)
@@ -74,7 +114,7 @@ Each HTTP request to `/mcp/http` creates an independent MCP session. The handler
 
 ### Role 2: Proxy (Stdio Subprocess) — `server_stdio.go`
 
-When the main process invokes an ACP agent, it spawns a **subprocess** of itself with `--mcp --port=6180 --workitem=<workitem_id> --project=<project_id>`:
+When the main process invokes an ACP agent, it spawns a **subprocess** of itself:
 
 ```go
 // main.go — agent invoker
@@ -83,7 +123,7 @@ agent.Exec(cwd, prompt, command, []acp.McpServer{
         Stdio: &acp.McpServerStdio{
             Name:    "orqen",
             Command: orqenExec,
-            Args:    []string{"--mcp", "--port=6180", "--job=TASK-0001-xxx"},
+            Args:    []string{"--mcp", "--port=6180", "--workitem=TASK-0001-xxx"},
         },
     },
 })
@@ -99,16 +139,15 @@ The subprocess enters `StartStdio()`:
 5. Run the server over StdioTransport (stdin/stdout)
 ```
 
-The `*mcp.ClientSession` from step 3 is **shared across all 10 tool proxies**. Each proxy function follows the same pattern:
+The `*mcp.ClientSession` from step 3 is **shared across all tool proxies**. Each proxy function follows the same pattern:
 
 ```go
-func sseProxyWithJobId[In InputWithJobId, Out any](tool string, h, cs, workItemID) mcp.ToolHandlerFor[In, Out] {
+func sseProxy[In InputWithWorkItemID, Out any](
+    tool string, _ mcp.ToolHandlerFor[In, Out], cs *mcp.ClientSession, workItemID string,
+) mcp.ToolHandlerFor[In, Out] {
     return func(ctx, req, input) (result, output, err) {
         input.SetWorkItemID(workItemID)                // auto-inject workitem_id
         result, err = cs.CallTool(ctx, &CallToolParams{Name: tool, Arguments: input})
-        if err != nil {
-            logError(err, result)                      // log to .ignore/debug/mcp_error.txt
-        }
         return
     }
 }
@@ -142,11 +181,11 @@ Step  Agent (ACP)              Stdio Subprocess           Host Process
  2                             ── POST /mcp/http ───────▶
                                   {method: "tools/call",
                                    name: "orqen_move_item",
-                                   args: {item_id: 1, ...}}
+                                   args: {item_seq: 1, ...}}
 
- 3                                                          MoveItemHandler()
-                                                              → os.Rename(src, dst)
-                                                              → MoveItemOutput{Success: true}
+ 3                                                          ItemMoveHandler()
+                                                              → item.MoveTo("doing")
+                                                              → ItemMoveOutput{Success: true}
 
  4                             ◀── HTTP 200 ────────────────
                                   {content: [...],
@@ -183,7 +222,7 @@ Tools are registered in two ways depending on the role:
 ### Direct Registration (Host — `server_http.go`)
 
 ```go
-addToolProject(server, tnMoveItem, MoveItemHandler, proj)
+addTool(server, tnMoveItem, ItemMoveHandler, proj)
 ```
 
 The handler receives the real `*engine.Project` reference and operates on it directly.
@@ -191,28 +230,21 @@ The handler receives the real `*engine.Project` reference and operates on it dir
 ### Proxy Registration (Stdio — `server_stdio.go`)
 
 ```go
-addToolProjecProxyWithJobId(server, tnMoveItem, MoveItemHandler, session, jobId)
+addToolProxy(server, tnItemMove, ItemMoveHandler, session, workItemID)
 ```
 
-The handler is wrapped by `sseProxyWithJobId`, which:
-1. Auto-injects the `jobId` into the input via `input.SetWorkItemID(workItemID)`
+The handler is wrapped by `sseProxy`, which:
+1. Auto-injects the `workItemID` into the input via `input.SetWorkItemID(workItemID)`
 2. Forwards the call to the host via `cs.CallTool()`
-3. Logs errors to `.ignore/debug/mcp_error.txt`
-4. Returns the result (or error) back to the agent
+3. Returns the result (or error) back to the agent
 
-### Generic Proxy (`sseProxy`)
+### Generic Pattern
 
-For tools that don't need auto-injected `jobId`, the simpler `sseProxy` is used:
+All tools follow the same registration pattern in both host and proxy modes. The `addTool` and `addToolProxy` functions are generic wrappers that adapt the project handlers to the MCP SDK's `ToolHandlerFor` interface.
 
-```go
-addToolProxy(server, tnSomeTool, someHandler, session)
-```
+## WorkItemID Auto-Injection
 
-This forwards the call as-is without modification.
-
-## JobId Auto-Injection
-
-Most tools accept an optional `module` parameter, but when called from an agent subprocess, the module should be inferred from the agent's current job. The `InputWithJobId` interface enables this:
+Most tools accept an optional `module` parameter, but when called from an agent subprocess, the module should be inferred from the agent's current job. The `InputWithWorkItemID` interface enables this:
 
 ```go
 type InputWithWorkItemID interface {
@@ -228,21 +260,24 @@ func (i *MoveItemInput) SetWorkItemID(workItemID string) {
 }
 ```
 
-The proxy wrapper calls `SetWorkItemID(jobId)` before forwarding, so the agent never needs to pass `workitem_id` explicitly.
+The proxy wrapper calls `SetWorkItemID(workItemID)` before forwarding, so the agent never needs to pass `workitem_id` explicitly.
+
+## Module Resolution
+
+Tools use `findTargetModuleBy()` to resolve the target module:
+
+1. **Explicit module parameter** — If `module` is provided, use it directly
+2. **WorkItemID resolution** — If `workitem_id` is provided, scan all modules/lanes to find the item's module
+3. **Single module fallback** — If there's only one module in the project, use it
+4. **Ambiguous** — If none of the above succeed, return `nil` (handler reports error)
+
+This allows agents to call tools without explicitly specifying the module when the context is clear.
 
 ## Error Handling
 
 ### Transport Errors
 
-When the proxy's `cs.CallTool()` fails (e.g., HTTP connection error), the error is logged to `.ignore/debug/mcp_error.txt` via `logError()`:
-
-```go
-func logError(err error, result *mcp.CallToolResult) {
-    // Appends: ERROR, STACK, RESULT (as JSON), and two trailing newlines
-}
-```
-
-The error is then returned upstream. The SDK's `toolForErr` wrapper converts it into a `CallToolResult` with `IsError: true`, which the agent sees as a tool failure.
+When the proxy's `cs.CallTool()` fails (e.g., HTTP connection error), the error is returned upstream. The SDK's `toolForErr` wrapper converts it into a `CallToolResult` with `IsError: true`, which the agent sees as a tool failure.
 
 ### Tool Execution Errors
 
@@ -251,6 +286,20 @@ When a tool handler returns an error (e.g., "module not found"), the handler ret
 ### Nil Result Handling
 
 When a tool handler returns `result == nil` but `err == nil` (successful execution with no content), the SDK creates a default `CallToolResult` and populates it from the typed `Out` value via `structuredContent`.
+
+## Testing
+
+All tools have comprehensive test coverage in `*_test.go` files. The test suite uses shared helpers:
+
+- **`setupTestProject(t)`** — Creates a temporary project with `task` and `adr` modules, multiple lanes, and sample work items
+- **`callHandler(...)`** — Generic wrapper to invoke handlers and extract typed output
+- **`ptr(v)`** — Helper to create pointer values for optional fields
+
+Tests cover:
+- Happy path operations (create, move, search, attribute management)
+- Error scenarios (nil project, missing parameters, invalid values)
+- Edge cases (ambiguous module resolution, invalid conditions, kebab-case validation)
+- File system verification (directory creation, file existence, YAML content)
 
 ---
 

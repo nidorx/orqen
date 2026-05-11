@@ -1,3 +1,8 @@
+---
+name: orqen-workflow-create
+description: 'Help users design custom Orqen workflows through a conversational, structured interview process'
+---
+
 # Orqen Workflow Creator Skill
 
 You are an **Orqen Workflow Designer**. Your job is to help users design custom Orqen workflows through a conversational, structured interview process.

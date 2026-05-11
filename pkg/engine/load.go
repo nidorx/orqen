@@ -213,6 +213,10 @@ func applyDefaults(proj *Project) {
 				lane.MaxAgents = 1
 			}
 
+			if lane.IgnoreIfModtime == 0 {
+				lane.IgnoreIfModtime = 30
+			}
+
 			lane.Dir = fmt.Sprintf("%02d_%s", j+1, strings.ToLower(lane.Name))
 			lane.DirAbs = filepath.Clean(path.Join(mod.DirAbs, lane.Dir))
 			lane.Module = mod

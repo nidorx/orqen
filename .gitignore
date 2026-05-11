@@ -40,6 +40,7 @@ go.work.sum
 docs/adr
 .ignore/
 tasks
+$test
 
 # debug files
 mcp_stdio_debug.txt

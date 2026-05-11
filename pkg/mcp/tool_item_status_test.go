@@ -2,6 +2,8 @@ package mcp
 
 import (
 	"testing"
+
+	"github.com/nidorx/orqen/pkg/engine"
 )
 
 // ============================================================================
@@ -11,18 +13,23 @@ import (
 func TestStatusHandler(t *testing.T) {
 	proj, _ := setupTestProject(t)
 
-	// Set WorkItemID for WI-0001
+	// Get the actual work item from backlog lane (seq 1)
 	taskModule := proj.GetModule("task")
-	for _, lane := range taskModule.Lanes {
-		for item := range lane.WorkItems() {
-			if item.Seq == 1 {
-				item.ID = "test-job-status"
-			}
+	backlog := taskModule.GetLane("backlog")
+	var item1 *engine.WorkItem
+	for item := range backlog.WorkItems() {
+		if item.Seq == 1 {
+			item1 = item
+			break
 		}
 	}
 
 	t.Run("get status", func(t *testing.T) {
-		workItemID := "test-job-status"
+		if item1 == nil {
+			t.Fatal("item1 not found")
+		}
+
+		workItemID := item1.ID
 		input := &ItemStatusInput{WorkItemID: &workItemID}
 		out := callHandler(t, ItemStatusHandler, input, proj)
 
@@ -44,7 +51,8 @@ func TestStatusHandler(t *testing.T) {
 	})
 
 	t.Run("unknown id", func(t *testing.T) {
-		workItemID := "nonexistent"
+		// Use a hash that doesn't exist
+		workItemID := "nonexistent-id-12345"
 		input := &ItemStatusInput{WorkItemID: &workItemID}
 		out := callHandler(t, ItemStatusHandler, input, proj)
 
@@ -66,7 +74,7 @@ func TestStatusHandler(t *testing.T) {
 	})
 
 	t.Run("nil project", func(t *testing.T) {
-		workItemID := "test-job-status"
+		workItemID := "some-id"
 		input := &ItemStatusInput{WorkItemID: &workItemID}
 		out := callHandler(t, ItemStatusHandler, input, nil)
 

@@ -41,8 +41,9 @@ execution:
 
 modules:
   - name: task
+    prefix: "TASK"
     dir: "tasks"
-    order: ["doing", "ready", "inbox"]
+    order: ["inbox", "backlog", "doing", "done"]
     lanes:
       - name: "inbox"
         purpose: "User ideas"
@@ -54,6 +55,7 @@ modules:
         purpose: "Completed"
 
   - name: adr
+    prefix: "ADR"
     dir: "docs/adr"
     lanes:
       - name: "draft"
@@ -102,14 +104,14 @@ modules:
 		if draft != nil {
 			itemDir := filepath.Join(draft.DirAbs, "ADR-0001-use-go")
 			os.MkdirAll(itemDir, 0755)
-			os.WriteFile(filepath.Join(itemDir, "ADR-0001.md"), []byte("---\ntitle: Use Go\nstatus: draft\n---\n"), 0644)
+			os.WriteFile(filepath.Join(itemDir, "ADR-0001.yaml"), []byte("title: Use Go\nstatus: draft\n"), 0644)
 		}
 
 		accepted := adrModule.GetLane("accepted")
 		if accepted != nil {
 			itemDir := filepath.Join(accepted.DirAbs, "ADR-0002-use-postgres")
 			os.MkdirAll(itemDir, 0755)
-			os.WriteFile(filepath.Join(itemDir, "ADR-0002.md"), []byte("---\ntitle: Use PostgreSQL\nstatus: accepted\nauthor: nidorx\n---\n"), 0644)
+			os.WriteFile(filepath.Join(itemDir, "ADR-0002.yaml"), []byte("title: Use PostgreSQL\nstatus: accepted\nauthor: nidorx\n"), 0644)
 		}
 	}
 

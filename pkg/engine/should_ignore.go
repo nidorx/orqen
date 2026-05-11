@@ -3,7 +3,7 @@ package engine
 type ShouldIgnore func(item *WorkItem) bool
 
 var shouldIgnoreFns = []ShouldIgnore{
-	shouldIgnoreTimeAfter,
+	shouldIgnoreIfModtime,
 	shouldIgnoreIfExists,
 	shouldIgnoreIfNotExists,
 	shouldIgnoreIfDependency,

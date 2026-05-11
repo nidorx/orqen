@@ -2,6 +2,8 @@ package mcp
 
 import (
 	"testing"
+
+	"github.com/nidorx/orqen/pkg/engine"
 )
 
 // ============================================================================
@@ -10,6 +12,27 @@ import (
 
 func TestSchemaHandler(t *testing.T) {
 	proj, _ := setupTestProject(t)
+
+	// Set attributes on ADR items so schema has fields to detect
+	adrModule := proj.GetModule("adr")
+	draft := adrModule.GetLane("draft")
+	for item := range draft.WorkItems() {
+		item.AttributesLoad()
+		item.AttributesSave(engine.Attributes{
+			"title":  "Use Go",
+			"status": "draft",
+		})
+	}
+
+	accepted := adrModule.GetLane("accepted")
+	for item := range accepted.WorkItems() {
+		item.AttributesLoad()
+		item.AttributesSave(engine.Attributes{
+			"title":  "Use PostgreSQL",
+			"status": "accepted",
+			"author": "nidorx",
+		})
+	}
 
 	t.Run("schema for adr module", func(t *testing.T) {
 		input := &SchemaInput{

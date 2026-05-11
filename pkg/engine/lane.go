@@ -57,6 +57,7 @@ type Lane struct {
 	AgentBehavior      []string `yaml:"agent_behavior"`
 	CriticalRules      []string `yaml:"critical_rules"`
 	IgnoreIfAttr       string   `yaml:"ignore_if_attr"`       // ignore if work item attributes match a condition
+	IgnoreIfModtime    int      `yaml:"ignore_if_modtime"`    // ignore if recently updated
 	IgnoreIfExists     []string `yaml:"ignore_if_exists"`     // ignore if items exist in referenced lanes
 	IgnoreIfNotExists  []string `yaml:"ignore_if_not_exists"` // ignore if items/files don't exist in referenced lanes
 	IgnoreIfDependency []string `yaml:"ignore_if_dependency"` // ignore if item has dependencies in referenced lanes
