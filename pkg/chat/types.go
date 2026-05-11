@@ -3,6 +3,8 @@ package chat
 import (
 	"context"
 	"time"
+
+	"github.com/nidorx/orqen/pkg/engine"
 )
 
 // ── Constants ────────────────────────────────────────────────────────────────
@@ -79,11 +81,15 @@ func (p *PendingEdit) IsExpired() bool {
 // ── Command Routing ──────────────────────────────────────────────────────────
 
 // CommandHandler is the signature for deterministic command handlers.
-// MessageEvent is a placeholder until the Telegram library is integrated.
-type CommandHandler func(ctx context.Context, bot *TelegramBot, msg MessageEvent) error
+// Returns an error if the command fails; response is sent via the bot.
+type CommandHandler func(ctx context.Context, args string, bot *TelegramBot, userID string) (string, error)
 
-// TelegramBot is a forward declaration; the full struct lives in bot.go.
-type TelegramBot struct{}
+// TelegramBot holds the bot configuration and project references.
+type TelegramBot struct {
+	Project        *engine.Project
+	ChatStore      *ChatStore
+	SessionManager *SessionManager
+}
 
 // MessageEvent is a placeholder for the Telegram message event type.
 type MessageEvent struct {
