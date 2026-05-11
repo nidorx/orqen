@@ -3,6 +3,7 @@ package engine
 import (
 	"fmt"
 	"io/fs"
+	"iter"
 	"os"
 	"path"
 	"path/filepath"
@@ -65,11 +66,6 @@ type Lane struct {
 	workItemsByID *tinylfu.SyncCacheT[*WorkItem]
 }
 
-// WorkItems returns an iterator over all work items in this lane.
-func (l *Lane) WorkItems() func(func(*WorkItem) bool) {
-	return l.workItemsByID.Values()
-}
-
 // GetWorkItemByID returns a work item by its ID, or nil if not found.
 func (l *Lane) GetWorkItemByID(workItemID string) *WorkItem {
 	if item, exists := l.workItemsByID.Get(workItemID); exists {
@@ -79,25 +75,34 @@ func (l *Lane) GetWorkItemByID(workItemID string) *WorkItem {
 	}
 }
 
+// WorkItems returns an iterator over all work items in this lane.
+// https://go.dev/blog/range-functions
+func (l *Lane) WorkItems() iter.Seq[*WorkItem] {
+	return l.workItemsByID.Values()
+}
+
 // FilterWorkItems filters work items from a specific lane using a
 // condition DSL string.
-func (l *Lane) FilterWorkItems(cond string) ([]*WorkItem, error) {
+// https://go.dev/blog/range-functions
+func (l *Lane) FilterWorkItems(cond string) (iter.Seq[*WorkItem], error) {
 	node, err := condition.Parse(cond)
 	if err != nil {
 		return nil, err
 	}
 
-	var result []*WorkItem
-	for item := range l.WorkItems() {
-		if item.Attributes == nil {
-			continue
+	return func(yield func(*WorkItem) bool) {
+		for item := range l.WorkItems() {
+			if item.Attributes == nil {
+				continue
+			}
+			if condition.Evaluate(node, item.Attributes) {
+				if !yield(item) {
+					// yield returns false if the loop should stop (e.g., 'break' was called)
+					return
+				}
+			}
 		}
-		if condition.Evaluate(node, item.Attributes) {
-			result = append(result, item)
-		}
-	}
-
-	return result, nil
+	}, nil
 }
 
 // HasWorkItems returns true if this lane has work items.

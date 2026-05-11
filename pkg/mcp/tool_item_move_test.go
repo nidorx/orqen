@@ -14,13 +14,12 @@ func TestMoveItemHandler(t *testing.T) {
 	proj, _ := setupTestProject(t)
 
 	t.Run("move task from backlog to doing", func(t *testing.T) {
-		input := &MoveItemInput{
-			Module:   ptr("task"),
-			ItemSeq:  1,
-			FromLane: "backlog",
-			ToLane:   "doing",
+		input := &ItemMoveInput{
+			Module:  ptr("task"),
+			ItemSeq: 1,
+			ToLane:  "doing",
 		}
-		out := callHandler(t, MoveItemHandler, input, proj)
+		out := callHandler(t, ItemMoveHandler, input, proj)
 
 		if !out.Success {
 			t.Fatalf("expected success, got error: %s", out.Error)
@@ -49,13 +48,12 @@ func TestMoveItemHandler(t *testing.T) {
 	})
 
 	t.Run("move nonexistent item", func(t *testing.T) {
-		input := &MoveItemInput{
-			Module:   ptr("task"),
-			ItemSeq:  9999,
-			FromLane: "backlog",
-			ToLane:   "doing",
+		input := &ItemMoveInput{
+			Module:  ptr("task"),
+			ItemSeq: 9999,
+			ToLane:  "doing",
 		}
-		out := callHandler(t, MoveItemHandler, input, proj)
+		out := callHandler(t, ItemMoveHandler, input, proj)
 
 		if out.Error == "" {
 			t.Error("expected error for nonexistent item")
@@ -63,12 +61,11 @@ func TestMoveItemHandler(t *testing.T) {
 	})
 
 	t.Run("missing to_lane", func(t *testing.T) {
-		input := &MoveItemInput{
-			Module:   ptr("task"),
-			ItemSeq:  1,
-			FromLane: "backlog",
+		input := &ItemMoveInput{
+			Module:  ptr("task"),
+			ItemSeq: 1,
 		}
-		out := callHandler(t, MoveItemHandler, input, proj)
+		out := callHandler(t, ItemMoveHandler, input, proj)
 
 		if out.Error == "" {
 			t.Error("expected error for missing to_lane")
@@ -76,13 +73,12 @@ func TestMoveItemHandler(t *testing.T) {
 	})
 
 	t.Run("from lane not found", func(t *testing.T) {
-		input := &MoveItemInput{
-			Module:   ptr("task"),
-			ItemSeq:  1,
-			FromLane: "nonexistent",
-			ToLane:   "doing",
+		input := &ItemMoveInput{
+			Module:  ptr("task"),
+			ItemSeq: 1,
+			ToLane:  "doing",
 		}
-		out := callHandler(t, MoveItemHandler, input, proj)
+		out := callHandler(t, ItemMoveHandler, input, proj)
 
 		if out.Error == "" {
 			t.Error("expected error for nonexistent from_lane")
@@ -90,13 +86,12 @@ func TestMoveItemHandler(t *testing.T) {
 	})
 
 	t.Run("to lane not found", func(t *testing.T) {
-		input := &MoveItemInput{
-			Module:   ptr("task"),
-			ItemSeq:  1,
-			FromLane: "backlog",
-			ToLane:   "nonexistent",
+		input := &ItemMoveInput{
+			Module:  ptr("task"),
+			ItemSeq: 1,
+			ToLane:  "nonexistent",
 		}
-		out := callHandler(t, MoveItemHandler, input, proj)
+		out := callHandler(t, ItemMoveHandler, input, proj)
 
 		if out.Error == "" {
 			t.Error("expected error for nonexistent to_lane")
@@ -104,13 +99,12 @@ func TestMoveItemHandler(t *testing.T) {
 	})
 
 	t.Run("nil project", func(t *testing.T) {
-		input := &MoveItemInput{
-			Module:   ptr("task"),
-			ItemSeq:  1,
-			FromLane: "backlog",
-			ToLane:   "doing",
+		input := &ItemMoveInput{
+			Module:  ptr("task"),
+			ItemSeq: 1,
+			ToLane:  "doing",
 		}
-		out := callHandler(t, MoveItemHandler, input, nil)
+		out := callHandler(t, ItemMoveHandler, input, nil)
 
 		if out.Error == "" {
 			t.Error("expected error for nil project")

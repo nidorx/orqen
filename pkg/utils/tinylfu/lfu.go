@@ -16,6 +16,7 @@ package tinylfu
 
 import (
 	"container/list"
+	"iter"
 	"time"
 
 	"github.com/cespare/xxhash/v2"
@@ -27,7 +28,7 @@ type LFU interface {
 	Set(newItem *Item)
 	Del(key string)
 	Len() int
-	Values() func(func(any) bool)
+	Values() iter.Seq[any]
 }
 
 // Item represents a cache entry with optional expiration and eviction callback.
@@ -106,7 +107,7 @@ func (t *T) Len() int {
 }
 
 // Values https://go.dev/blog/range-functions
-func (t *T) Values() func(func(any) bool) {
+func (t *T) Values() iter.Seq[any] {
 	return func(yield func(any) bool) {
 		for key := range t.data {
 			if val, ok := t.Get(key); ok && !yield(val) {

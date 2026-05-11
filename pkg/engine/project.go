@@ -2,6 +2,7 @@ package engine
 
 import (
 	"fmt"
+	"iter"
 	"strings"
 	"sync"
 
@@ -35,6 +36,30 @@ func (p *Project) GetModule(name string) *Module {
 	for _, mod := range p.Modules {
 		if mod.Name == name {
 			return mod
+		}
+	}
+	return nil
+}
+
+// WorkItems returns all work items in this project.
+func (p *Project) WorkItems() iter.Seq[*WorkItem] {
+	return func(yield func(*WorkItem) bool) {
+		for _, mod := range p.Modules {
+			for item := range mod.WorkItems() {
+				if !yield(item) {
+					// yield returns false if the loop should stop (e.g., 'break' was called)
+					return
+				}
+			}
+		}
+	}
+}
+
+// GetWorkItemById finds a work item by its ID.
+func (p *Project) GetWorkItemById(workItemID string) *WorkItem {
+	for _, mod := range p.Modules {
+		if item := mod.GetWorkItemById(workItemID); item != nil {
+			return item
 		}
 	}
 	return nil
@@ -138,7 +163,7 @@ func agentInvoker(proj *Project, mod *Module, lane *Lane, item *WorkItem) (Invoc
 		prompt.WriteString(fmt.Sprintf("- lane_name: %s\n", lane.Name))
 		prompt.WriteString(fmt.Sprintf("- lane_dir: %s\n", lane.Dir))
 		if item.Seq == 0 {
-			prompt.WriteString("- item_id: NOT CREATED (0), see tool orqen_create_item from orqen MCP Server\n")
+			prompt.WriteString("- item_id: NOT CREATED (0), see tool orqen_item_create from orqen MCP Server\n")
 		} else {
 			prompt.WriteString(fmt.Sprintf("- item_id: %d\n", item.Seq))
 		}

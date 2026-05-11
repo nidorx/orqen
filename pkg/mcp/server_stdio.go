@@ -70,15 +70,16 @@ func StartStdio(orqenPort string, projectId string, workItemID string) {
 	}
 
 	// Tools that need workItemID (auto-injected)
-	addToolProxy(server, tnStatus, StatusHandler, session, workItemID)
-	addToolProxy(server, tnListItems, ListItemsHandler, session, workItemID)
-	addToolProxy(server, tnScanModule, ScanModuleHandler, session, workItemID)
-	addToolProxy(server, tnSchema, SchemaHandler, session, workItemID)
-	addToolProxy(server, tnMoveItem, MoveItemHandler, session, workItemID)
-	addToolProxy(server, tnDependencies, DependenciesHandler, session, workItemID)
+	addToolProxy(server, tnItemStatus, ItemStatusHandler, session, workItemID)
+	addToolProxy(server, tnItemMove, ItemMoveHandler, session, workItemID)
+	addToolProxy(server, tnItemCreate, ItemCreateHandler, session, workItemID)
+	addToolProxy(server, tnItemSearch, ItemSearchHandler, session, workItemID)
+	addToolProxy(server, tnItemAttrsSet, ItemAttrsSetHandler, session, workItemID)
+	addToolProxy(server, tnItemAttrsDel, ItemAttrsDelHandler, session, workItemID)
+	addToolProxy(server, tnItemAttrsSchema, ItemAttrSchemaHandler, session, workItemID)
+	addToolProxy(server, tnItemDependencies, ItemDependenciesHandler, session, workItemID)
+	addToolProxy(server, tnLaneList, LaneListHandler, session, workItemID)
 	addToolProxy(server, tnProjectInfo, ProjectInfoHandler, session, workItemID)
-	addToolProxy(server, tnCreateItem, CreateItemHandler, session, workItemID)
-	addToolProxy(server, tnListLanes, ListLanesHandler, session, workItemID)
 	if DEBUG_STDIO {
 		debugAny("MCP_TOOLS_ADDED", time.Now())
 	}

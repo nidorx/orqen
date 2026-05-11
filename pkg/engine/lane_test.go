@@ -3,6 +3,7 @@ package engine
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"testing"
 	"time"
@@ -11,15 +12,6 @@ import (
 // ============================================================================
 // Test Helpers
 // ============================================================================
-
-// collectWorkItems collects all items from the WorkItems iterator into a slice
-func collectWorkItems(iter func(func(*WorkItem) bool)) []*WorkItem {
-	var items []*WorkItem
-	for item := range iter {
-		items = append(items, item)
-	}
-	return items
-}
 
 // scanLaneDirectory simulates the file system scan by calling onFsysUpdate for each entry
 // This is needed because tests create directories after the project is loaded
@@ -72,7 +64,7 @@ func TestLaneListItems(t *testing.T) {
 	}
 
 	// Initially should be empty
-	items := collectWorkItems(readyLane.WorkItems())
+	items := slices.Collect(readyLane.WorkItems())
 	if len(items) != 0 {
 		t.Errorf("expected 0 items, got %d", len(items))
 	}
@@ -85,7 +77,7 @@ func TestLaneListItems(t *testing.T) {
 	// Scan to populate cache
 	scanLaneDirectory(readyLane)
 
-	items = collectWorkItems(readyLane.WorkItems())
+	items = slices.Collect(readyLane.WorkItems())
 	if len(items) != 2 {
 		t.Errorf("expected 2 items, got %d", len(items))
 	}
@@ -153,7 +145,7 @@ func TestLaneActiveItemCount(t *testing.T) {
 	}
 
 	// Get items and mark them as in progress
-	items := collectWorkItems(doingLane.WorkItems())
+	items := slices.Collect(doingLane.WorkItems())
 	if len(items) != 2 {
 		t.Fatalf("expected 2 items, got %d", len(items))
 	}
@@ -187,7 +179,7 @@ func TestLaneHasAvailableSlot(t *testing.T) {
 	// Scan to populate cache
 	scanLaneDirectory(doingLane)
 
-	items := collectWorkItems(doingLane.WorkItems())
+	items := slices.Collect(doingLane.WorkItems())
 	if len(items) != 1 {
 		t.Fatalf("expected 1 item, got %d", len(items))
 	}
@@ -211,7 +203,7 @@ func TestLaneHasAvailableSlot(t *testing.T) {
 	// Scan to populate cache
 	scanLaneDirectory(doingLane)
 
-	items = collectWorkItems(doingLane.WorkItems())
+	items = slices.Collect(doingLane.WorkItems())
 	for _, item := range items {
 		item.InProgress = true
 	}
@@ -391,7 +383,7 @@ func TestHasDependencyInReferencedLanes(t *testing.T) {
 	// Scan to populate cache
 	scanLaneDirectory(doingLane)
 
-	items := collectWorkItems(doingLane.WorkItems())
+	items := slices.Collect(doingLane.WorkItems())
 	if len(items) == 0 {
 		t.Fatal("expected item in doing lane")
 	}

@@ -43,7 +43,7 @@ agents:
 
 ### Notes
 
-- The agent command is invoked as a subprocess. The agent receives synthesized prompts and interacts with the project via MCP tools (`orqen_status`, `orqen_create_item`, `orqen_move_item`, etc.).
+- The agent command is invoked as a subprocess. The agent receives synthesized prompts and interacts with the project via MCP tools (`orqen_status`, `orqen_item_create`, `orqen_item_move`, etc.).
 - You can define multiple agent clients and override the default per-lane using the `agent` attribute on a lane.
 
 ---

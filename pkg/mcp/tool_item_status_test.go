@@ -23,30 +23,30 @@ func TestStatusHandler(t *testing.T) {
 
 	t.Run("get status", func(t *testing.T) {
 		workItemID := "test-job-status"
-		input := &StatusInput{WorkItemID: &workItemID}
-		out := callHandler(t, StatusHandler, input, proj)
+		input := &ItemStatusInput{WorkItemID: &workItemID}
+		out := callHandler(t, ItemStatusHandler, input, proj)
 
 		if !out.Found {
 			t.Fatal("expected item to be found")
 		}
 
-		if out.ItemID != 1 {
-			t.Errorf("item_id = %d, want 1", out.ItemID)
+		if out.Item.Seq != 1 {
+			t.Errorf("item_id = %d, want 1", out.Item.Seq)
 		}
 
-		if out.CurrentLane.Name != "backlog" {
-			t.Errorf("current_lane.name = %q, want 'backlog'", out.CurrentLane.Name)
+		if out.Item.Lane.Name != "backlog" {
+			t.Errorf("current_lane.name = %q, want 'backlog'", out.Item.Lane.Name)
 		}
 
-		if out.CurrentLane.Module != "task" {
-			t.Errorf("current_lane.module = %q, want 'task'", out.CurrentLane.Module)
+		if out.Item.Lane.Module.Name != "task" {
+			t.Errorf("current_lane.module = %q, want 'task'", out.Item.Lane.Module.Name)
 		}
 	})
 
-	t.Run("unknown job id", func(t *testing.T) {
+	t.Run("unknown id", func(t *testing.T) {
 		workItemID := "nonexistent"
-		input := &StatusInput{WorkItemID: &workItemID}
-		out := callHandler(t, StatusHandler, input, proj)
+		input := &ItemStatusInput{WorkItemID: &workItemID}
+		out := callHandler(t, ItemStatusHandler, input, proj)
 
 		if out.Found {
 			t.Error("expected not found")
@@ -56,19 +56,19 @@ func TestStatusHandler(t *testing.T) {
 		}
 	})
 
-	t.Run("no job id", func(t *testing.T) {
-		input := &StatusInput{}
-		out := callHandler(t, StatusHandler, input, proj)
+	t.Run("no id", func(t *testing.T) {
+		input := &ItemStatusInput{}
+		out := callHandler(t, ItemStatusHandler, input, proj)
 
 		if out.Error == "" {
-			t.Error("expected error for missing job id")
+			t.Error("expected error for missing id")
 		}
 	})
 
 	t.Run("nil project", func(t *testing.T) {
 		workItemID := "test-job-status"
-		input := &StatusInput{WorkItemID: &workItemID}
-		out := callHandler(t, StatusHandler, input, nil)
+		input := &ItemStatusInput{WorkItemID: &workItemID}
+		out := callHandler(t, ItemStatusHandler, input, nil)
 
 		if out.Error == "" {
 			t.Error("expected error for nil project")

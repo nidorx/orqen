@@ -15,6 +15,7 @@
 package tinylfu
 
 import (
+	"iter"
 	"math/rand"
 	"time"
 )
@@ -78,7 +79,7 @@ func (c *CacheT[V]) Len() int {
 }
 
 // Values https://go.dev/blog/range-functions
-func (c *CacheT[V]) Values() func(func(V) bool) {
+func (c *CacheT[V]) Values() iter.Seq[V] {
 	return func(yield func(V) bool) {
 		for key := range c.lfu.data {
 			if val, ok := c.lfu.Get(key); ok && !yield(val.(V)) {

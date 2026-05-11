@@ -226,7 +226,7 @@ executor.go → agentInvoker:
      --mcp --port=6180 --workitem=<workitem_id> --project=<project_id>
   5. Agent process starts MCP Stdio server (server_stdio.go)
   6. Stdio server connects to Orqen's Streamable HTTP endpoint
-  7. Agent calls tools (orqen_status, orqen_create_item, etc.) via HTTP proxy
+  7. Agent calls tools (orqen_status, orqen_item_create, etc.) via HTTP proxy
 
 server_stdio.go:
   8. Receives tool calls from agent over stdin/stdout
@@ -243,7 +243,7 @@ http_service.go:
 
 Remote agent:
   3. Connects to http://<orqen-host>:<port>/mcp/http
-  4. Calls tools directly (orqen_list_items, orqen_move_item, etc.)
+  4. Calls tools directly (orqen_item_create, orqen_item_move, etc.)
 ```
 
 ### Why Streamable HTTP (not SSE)
@@ -264,10 +264,9 @@ in one does not affect subsequent calls.
 | Tool | Purpose |
 |------|---------|
 | `orqen_status` | Get current work item context by workitem_id |
-| `orqen_create_item` | Create a new work item in a lane (directory + .md file) |
-| `orqen_move_item` | Move a work item directory from one lane to another |
-| `orqen_list_items` | List all work items in a lane |
-| `orqen_list_lanes` | List available lanes in a module |
+| `orqen_item_create` | Create a new work item in a lane (directory + .md file) |
+| `orqen_item_move` | Move a work item directory from one lane to another |
+| `orqen_lane_list` | List available lanes in a module |
 | `orqen_scan_module` | Scan all lanes in a module for items |
 | `orqen_dependencies` | Manage dependency files (DEP_XXX) |
 | `orqen_project_info` | Get project metadata |
@@ -315,7 +314,7 @@ acp.McpServer{
 }
 ```
 
-This gives the executing agent access to Orqen's MCP tools (`orqen_create_item`, `orqen_move_item`, etc.) during its invocation.
+This gives the executing agent access to Orqen's MCP tools (`orqen_item_create`, `orqen_item_move`, etc.) during its invocation.
 
 ## Filesystem Layout
 

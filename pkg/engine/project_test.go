@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"sync"
 	"testing"
@@ -199,7 +200,7 @@ func TestProjectActiveAgentCount(t *testing.T) {
 	// Scan to populate cache
 	scanLaneDirectory(doingLane)
 
-	items := collectWorkItems(doingLane.WorkItems())
+	items := slices.Collect(doingLane.WorkItems())
 	if len(items) > 0 {
 		items[0].InProgress = true
 	}
@@ -246,7 +247,7 @@ func TestProjectHasAvailableSlot(t *testing.T) {
 	// Scan to populate cache
 	scanLaneDirectory(doingLane)
 
-	items := collectWorkItems(doingLane.WorkItems())
+	items := slices.Collect(doingLane.WorkItems())
 	for _, item := range items {
 		item.InProgress = true
 	}
@@ -428,7 +429,7 @@ func TestExecutorCleanupCompleted(t *testing.T) {
 
 	// Check that the item is no longer in progress
 	scanLaneDirectory(readyLane)
-	items := collectWorkItems(readyLane.WorkItems())
+	items := slices.Collect(readyLane.WorkItems())
 	if len(items) != 1 {
 		t.Fatalf("expected 1 item, got %d", len(items))
 	}
@@ -536,13 +537,13 @@ func TestIgnoreIfDependency(t *testing.T) {
 
 	// The dependency is simulated by adding it to the item's Dependencies field
 	// First, we need to list items in the prioritized lane to get the dependency item
-	prioritizedItems := collectWorkItems(prioritizedLane.WorkItems())
+	prioritizedItems := slices.Collect(prioritizedLane.WorkItems())
 	if len(prioritizedItems) == 0 {
 		t.Fatal("expected at least one item in prioritized lane")
 	}
 
 	// Now list items in ready lane and set the dependency
-	readyItems := collectWorkItems(readyLane.WorkItems())
+	readyItems := slices.Collect(readyLane.WorkItems())
 	if len(readyItems) == 0 {
 		t.Fatal("expected at least one item in ready lane")
 	}

@@ -30,7 +30,7 @@ This directory contains an automated management system designed for AI agents to
 The REQUIRED ACTION is defined by the EXECUTION CONTEXT and lane instructions.
 
 It may include:
-- Calling a tool (e.g., orqen_create_item)
+- Calling a tool (e.g., orqen_item_create)
 - Creating or updating files
 - Moving files between directories
 - Generating structured content

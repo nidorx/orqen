@@ -129,28 +129,6 @@ func TestFilterWorkItems_ParseError(t *testing.T) {
 	}
 }
 
-func TestFilterWorkItemsByLane(t *testing.T) {
-	lane1 := &Lane{Name: "tasks"}
-	lane2 := &Lane{Name: "bugs"}
-
-	items := []*WorkItem{
-		{Name: "WI-001", Lane: lane1, Attributes: Attributes{"severity": int64(3)}},
-		{Name: "WI-002", Lane: lane2, Attributes: Attributes{"severity": int64(8)}},
-		{Name: "WI-003", Lane: lane1, Attributes: Attributes{"severity": int64(9)}},
-	}
-
-	result, err := FilterWorkItemsByLane(items, "tasks", "severity > 5")
-	if err != nil {
-		t.Fatalf("FilterWorkItemsByLane error: %v", err)
-	}
-	if len(result) != 1 {
-		t.Fatalf("expected 1 item, got %d", len(result))
-	}
-	if result[0].Name != "WI-003" {
-		t.Errorf("expected WI-003, got %s", result[0].Name)
-	}
-}
-
 func TestWorkItemMatches(t *testing.T) {
 	item := &WorkItem{
 		Name:       "WI-001",

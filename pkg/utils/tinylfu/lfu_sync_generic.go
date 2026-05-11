@@ -15,6 +15,7 @@
 package tinylfu
 
 import (
+	"iter"
 	"math/rand"
 	"sync"
 	"time"
@@ -78,7 +79,7 @@ func (c *SyncCacheT[V]) Len() int {
 }
 
 // Values https://go.dev/blog/range-functions
-func (c *SyncCacheT[V]) Values() func(func(V) bool) {
+func (c *SyncCacheT[V]) Values() iter.Seq[V] {
 	return func(yield func(V) bool) {
 		c.mu.Lock()
 		defer c.mu.Unlock()

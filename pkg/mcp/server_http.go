@@ -12,15 +12,16 @@ func ServerHttp(proj *engine.Project) http.Handler {
 	server := createServer()
 
 	// Register real handlers with project reference
-	addTool(server, tnStatus, StatusHandler, proj)
-	addTool(server, tnListItems, ListItemsHandler, proj)
-	addTool(server, tnScanModule, ScanModuleHandler, proj)
-	addTool(server, tnSchema, SchemaHandler, proj)
-	addTool(server, tnMoveItem, MoveItemHandler, proj)
-	addTool(server, tnDependencies, DependenciesHandler, proj)
+	addTool(server, tnItemStatus, ItemStatusHandler, proj)
+	addTool(server, tnItemMove, ItemMoveHandler, proj)
+	addTool(server, tnItemCreate, ItemCreateHandler, proj)
+	addTool(server, tnItemSearch, ItemSearchHandler, proj)
+	addTool(server, tnItemAttrsSet, ItemAttrsSetHandler, proj)
+	addTool(server, tnItemAttrsDel, ItemAttrsDelHandler, proj)
+	addTool(server, tnItemAttrsSchema, ItemAttrSchemaHandler, proj)
+	addTool(server, tnItemDependencies, ItemDependenciesHandler, proj)
+	addTool(server, tnLaneList, LaneListHandler, proj)
 	addTool(server, tnProjectInfo, ProjectInfoHandler, proj)
-	addTool(server, tnCreateItem, CreateItemHandler, proj)
-	addTool(server, tnListLanes, ListLanesHandler, proj)
 
 	return mcp.NewStreamableHTTPHandler(func(request *http.Request) *mcp.Server {
 		return server

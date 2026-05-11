@@ -2,6 +2,9 @@ package engine
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
+	"iter"
 	"os"
 	"path/filepath"
 	"time"
@@ -89,22 +92,104 @@ func (item *WorkItem) AttributesDel(keys []string) error {
 	return item.Attributes.SaveToYAML(path)
 }
 
-type ShouldIgnore func(item *WorkItem) bool
+func (item *WorkItem) Dependencies() iter.Seq[*WorkItem] {
+	return func(yield func(*WorkItem) bool) {
+		for _, dep := range item.Attributes.StringArray("dependencies") {
+			depModuleName, depSeq := dependencyParseReference(dep)
+			if depSeq <= 0 {
+				continue
+			}
 
-var shouldIgnoreFns = []ShouldIgnore{
-	shouldIgnoreTimeAfter,
-	shouldIgnoreIfExists,
-	shouldIgnoreIfNotExists,
-	shouldIgnoreIfDependency,
-	shouldIgnoreIfAttr,
-}
+			var refModule *Module
+			if depModuleName == "" {
+				refModule = item.Lane.Module
+			} else {
+				refModule = item.Lane.Module.Project.GetModule(depModuleName)
+			}
+			if refModule == nil {
+				continue
+			}
 
-// shouldIgnore checks if a work item should be skipped based on ignore rules
-func (item *WorkItem) shouldIgnore() bool {
-	for _, shouldIgnore := range shouldIgnoreFns {
-		if shouldIgnore(item) {
-			return true
+			if depWorkItem := refModule.GetWorkItemBySeq(depSeq); depWorkItem == nil {
+				continue
+			} else if depWorkItem != item {
+				if !yield(depWorkItem) {
+					// yield returns false if the loop should stop (e.g., 'break' was called)
+					return
+				}
+			}
 		}
 	}
-	return false
+}
+
+func (item *WorkItem) Dependents() iter.Seq[*WorkItem] {
+	return func(yield func(*WorkItem) bool) {
+		if item.Seq <= 0 {
+			return
+		}
+
+		for other := range item.Lane.Module.Project.WorkItems() {
+			if other == item {
+				continue
+			}
+
+			for _, dep := range other.Attributes.StringArray("dependencies") {
+				depModuleName, depSeq := dependencyParseReference(dep)
+				if depSeq <= 0 {
+					continue
+				}
+
+				var refModule *Module
+				if depModuleName == "" {
+					refModule = other.Lane.Module
+				} else {
+					refModule = other.Lane.Module.Project.GetModule(depModuleName)
+				}
+				if refModule == nil || refModule != item.Lane.Module || depSeq != item.Seq {
+					continue
+				}
+
+				if !yield(other) {
+					// yield returns false if the loop should stop (e.g., 'break' was called)
+					return
+				}
+			}
+		}
+	}
+}
+
+func (item *WorkItem) MoveTo(laneName string) error {
+	if item.Seq <= 0 {
+		return nil
+	}
+
+	fromLane := item.Lane
+
+	toLane := item.Lane.Module.GetLane(laneName)
+	if toLane == nil {
+		return errors.New("to_lane not found: " + laneName)
+	}
+
+	if fromLane == toLane {
+		return nil
+	}
+
+	// Build source and destination paths
+	srcDir := filepath.Join(fromLane.DirAbs, item.Name)
+	dstDir := filepath.Join(toLane.DirAbs, item.Name)
+
+	// Move the directory
+	if err := os.Rename(srcDir, dstDir); err != nil {
+		return fmt.Errorf("failed to move item directory: %v", err)
+	}
+
+	ts := time.Now()
+	for {
+		time.Sleep(5 * time.Millisecond)
+		if item.Lane != fromLane || ts.Add(2*time.Second).Before(time.Now()) {
+			break
+		}
+	}
+
+	return nil
 }

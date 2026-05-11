@@ -15,7 +15,7 @@ func TestSchemaHandler(t *testing.T) {
 		input := &SchemaInput{
 			Module: ptr("adr"),
 		}
-		out := callHandler(t, SchemaHandler, input, proj)
+		out := callHandler(t, ItemAttrSchemaHandler, input, proj)
 
 		if out.Module != "adr" {
 			t.Errorf("module = %q, want 'adr'", out.Module)
@@ -38,7 +38,7 @@ func TestSchemaHandler(t *testing.T) {
 		input := &SchemaInput{
 			Module: ptr("nonexistent"),
 		}
-		out := callHandler(t, SchemaHandler, input, proj)
+		out := callHandler(t, ItemAttrSchemaHandler, input, proj)
 
 		if out.Error == "" {
 			t.Error("expected error for nonexistent module")
@@ -49,7 +49,7 @@ func TestSchemaHandler(t *testing.T) {
 		input := &SchemaInput{
 			Module: ptr("adr"),
 		}
-		out := callHandler(t, SchemaHandler, input, nil)
+		out := callHandler(t, ItemAttrSchemaHandler, input, nil)
 
 		if out.Error == "" {
 			t.Error("expected error for nil project")

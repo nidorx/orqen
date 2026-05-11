@@ -98,3 +98,10 @@ func (h InvocationHandle) IsComplete() bool {
 		return false
 	}
 }
+
+// SchemaField describes an observed front matter field across a module.
+type SchemaField struct {
+	Field  string   `json:"field"`  // field name
+	Types  []string `json:"types"`  // observed Go/YAML types (string, bool, int, list, map)
+	Values []any    `json:"values"` // unique observed values (up to schemaMaxValues)
+}

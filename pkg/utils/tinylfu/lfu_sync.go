@@ -15,6 +15,7 @@
 package tinylfu
 
 import (
+	"iter"
 	"sync"
 )
 
@@ -46,7 +47,7 @@ func (s *SyncT) Len() int {
 }
 
 // Values https://go.dev/blog/range-functions
-func (s *SyncT) Values() func(func(any) bool) {
+func (s *SyncT) Values() iter.Seq[any] {
 	return func(yield func(any) bool) {
 		s.mu.Lock()
 		defer s.mu.Unlock()

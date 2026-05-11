@@ -9,33 +9,33 @@ import (
 	"github.com/nidorx/orqen/pkg/engine"
 )
 
-type CreateItemInput struct {
-	WorkItemID *string `json:"workitem_id,omitempty" jsonschema:"job id (auto-injected)"`
+type ItemCreateInput struct {
+	WorkItemID *string `json:"workitem_id,omitempty" jsonschema:"Work Item ID (auto-injected)"`
 	Module     *string `json:"module" jsonschema:"module name (e.g., task, adr, learning)"`
 	Lane       string  `json:"lane" jsonschema:"destination lane name"`
 	SimpleName string  `json:"simple_name" jsonschema:"kebab-case descriptive name for the item"`
 }
 
-func (i *CreateItemInput) SetWorkItemID(workItemID string) {
+func (i *ItemCreateInput) SetWorkItemID(workItemID string) {
 	i.WorkItemID = &workItemID
 }
 
-type CreateItemOutput struct {
+type ItemCreateOutput struct {
 	Success  bool             `json:"success"`
 	WorkItem *engine.WorkItem `json:"workitem"`
 	Error    string           `json:"error,omitempty"`
 }
 
-const tnCreateItem = "orqen_create_item"
+const tnItemCreate = "orqen_item_create"
 
 func init() {
-	tools[tnCreateItem] = &mcp.Tool{
+	tools[tnItemCreate] = &mcp.Tool{
 		Description: "Creates a new work item in a specific lane of a module. Creates the directory following naming conventions (MOD_TYPE-NNNN-name) and an empty .yaml file.",
 	}
 }
 
-func CreateItemHandler(ctx context.Context, req *mcp.CallToolRequest, input *CreateItemInput, proj *engine.Project) (*mcp.CallToolResult, CreateItemOutput, error) {
-	out := CreateItemOutput{}
+func ItemCreateHandler(ctx context.Context, req *mcp.CallToolRequest, input *ItemCreateInput, proj *engine.Project) (*mcp.CallToolResult, ItemCreateOutput, error) {
+	out := ItemCreateOutput{}
 
 	if proj == nil {
 		out.Error = "project not available"

@@ -3,6 +3,7 @@ package engine
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 	"time"
 )
@@ -89,12 +90,12 @@ func TestModuleActiveItemCount(t *testing.T) {
 	}
 
 	// Mark items as in progress
-	items := collectWorkItems(doingLane.WorkItems())
+	items := slices.Collect(doingLane.WorkItems())
 	if len(items) > 0 {
 		items[0].InProgress = true
 	}
 
-	items = collectWorkItems(readyLane.WorkItems())
+	items = slices.Collect(readyLane.WorkItems())
 	if len(items) > 0 {
 		items[0].InProgress = true
 	}
@@ -131,7 +132,7 @@ func TestModuleListItems(t *testing.T) {
 	scanLaneDirectory(doingLane)
 	scanLaneDirectory(readyLane)
 
-	items := taskModule.ListWorkItems()
+	items := slices.Collect(taskModule.WorkItems())
 	if len(items) != 2 {
 		t.Errorf("expected 2 items across all lanes, got %d", len(items))
 	}
@@ -211,7 +212,7 @@ func TestModuleHasAvailableSlot(t *testing.T) {
 			// Scan to populate cache
 			scanLaneDirectory(lane)
 			// Mark the inbox item as in progress
-			items := collectWorkItems(lane.WorkItems())
+			items := slices.Collect(lane.WorkItems())
 			if len(items) > 0 {
 				items[0].InProgress = true
 			}
@@ -221,7 +222,7 @@ func TestModuleHasAvailableSlot(t *testing.T) {
 		createWorkItemDir(t, lane, "TASK-001-test")
 		// Scan to populate cache
 		scanLaneDirectory(lane)
-		items := collectWorkItems(lane.WorkItems())
+		items := slices.Collect(lane.WorkItems())
 		if len(items) > 0 {
 			items[0].InProgress = true
 		}

@@ -3,46 +3,39 @@ package mcp
 import (
 	"context"
 	"fmt"
-	"os"
-	"path/filepath"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/nidorx/orqen/pkg/engine"
 )
 
-// ── orqen_move_item ────────────────────────────────────────────────
-// Moves a work item directory from one lane to another within a module.
-// Updates internal state to reflect the new lane position.
-
-type MoveItemInput struct {
+type ItemMoveInput struct {
 	WorkItemID *string `json:"workitem_id" jsonschema:"Work Item ID (auto-injected)"`
 	Module     *string `json:"module,omitempty" jsonschema:"module name (omit for current module)"`
 	ItemSeq    int     `json:"item_seq" jsonschema:"sequential ID of the work item to move"`
-	FromLane   string  `json:"from_lane" jsonschema:"current lane name"`
 	ToLane     string  `json:"to_lane" jsonschema:"destination lane name"`
 }
 
-func (i *MoveItemInput) SetWorkItemID(workItemID string) {
+func (i *ItemMoveInput) SetWorkItemID(workItemID string) {
 	i.WorkItemID = &workItemID
 }
 
-type MoveItemOutput struct {
+type ItemMoveOutput struct {
 	Success bool   `json:"success"`
 	From    string `json:"from,omitempty"`
 	To      string `json:"to,omitempty"`
 	Error   string `json:"error,omitempty"`
 }
 
-const tnMoveItem = "orqen_move_item"
+const tnItemMove = "orqen_item_move"
 
 func init() {
-	tools[tnMoveItem] = &mcp.Tool{
+	tools[tnItemMove] = &mcp.Tool{
 		Description: "Moves a work item directory from one lane to another within a module. Updates internal state to reflect the new lane position.",
 	}
 }
 
-func MoveItemHandler(ctx context.Context, req *mcp.CallToolRequest, input *MoveItemInput, proj *engine.Project) (*mcp.CallToolResult, MoveItemOutput, error) {
-	out := MoveItemOutput{}
+func ItemMoveHandler(ctx context.Context, req *mcp.CallToolRequest, input *ItemMoveInput, proj *engine.Project) (*mcp.CallToolResult, ItemMoveOutput, error) {
+	out := ItemMoveOutput{}
 
 	if proj == nil {
 		out.Error = "project not available"
@@ -64,20 +57,6 @@ func MoveItemHandler(ctx context.Context, req *mcp.CallToolRequest, input *MoveI
 		return nil, out, nil
 	}
 
-	// Resolve from lane
-	fromLane := targetModule.GetLane(input.FromLane)
-	if fromLane == nil {
-		out.Error = "from_lane not found: " + input.FromLane
-		return nil, out, nil
-	}
-
-	// Resolve to lane
-	toLane := targetModule.GetLane(input.ToLane)
-	if toLane == nil {
-		out.Error = "to_lane not found: " + input.ToLane
-		return nil, out, nil
-	}
-
 	// Find the work item
 	var item *engine.WorkItem
 	if input.ItemSeq > 0 {
@@ -94,31 +73,16 @@ func MoveItemHandler(ctx context.Context, req *mcp.CallToolRequest, input *MoveI
 		return nil, out, nil
 	}
 
-	// Build source and destination paths
-	srcDir := filepath.Join(fromLane.DirAbs, item.Name)
-	dstDir := filepath.Join(toLane.DirAbs, item.Name)
+	fromLane := item.Lane
 
-	// Verify source exists
-	if _, err := os.Stat(srcDir); os.IsNotExist(err) {
-		out.Error = fmt.Sprintf("source directory not found: %s", srcDir)
-		return nil, out, nil
-	}
-
-	// Ensure destination lane directory exists
-	if err := os.MkdirAll(toLane.DirAbs, 0755); err != nil {
-		out.Error = fmt.Sprintf("failed to create destination lane directory: %v", err)
-		return nil, out, nil
-	}
-
-	// Move the directory
-	if err := os.Rename(srcDir, dstDir); err != nil {
-		out.Error = fmt.Sprintf("failed to move item directory: %v", err)
+	if err := item.MoveTo(input.ToLane); err != nil {
+		out.Error = fmt.Sprintf("failed to move item: %v", err)
 		return nil, out, nil
 	}
 
 	out.Success = true
 	out.From = fromLane.Dir
-	out.To = toLane.Dir
+	out.To = item.Lane.Dir
 
 	return nil, out, nil
 }

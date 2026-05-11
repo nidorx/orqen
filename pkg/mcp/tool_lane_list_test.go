@@ -12,8 +12,8 @@ func TestListLanesHandler(t *testing.T) {
 	proj, _ := setupTestProject(t)
 
 	t.Run("list lanes for task module", func(t *testing.T) {
-		input := &ListLanesInput{Module: ptr("task")}
-		out := callHandler(t, ListLanesHandler, input, proj)
+		input := &LaneListInput{Module: ptr("task")}
+		out := callHandler(t, LaneListHandler, input, proj)
 
 		if out.Module != "task" {
 			t.Errorf("module = %q, want 'task'", out.Module)
@@ -30,8 +30,8 @@ func TestListLanesHandler(t *testing.T) {
 	})
 
 	t.Run("list lanes for adr module", func(t *testing.T) {
-		input := &ListLanesInput{Module: ptr("adr")}
-		out := callHandler(t, ListLanesHandler, input, proj)
+		input := &LaneListInput{Module: ptr("adr")}
+		out := callHandler(t, LaneListHandler, input, proj)
 
 		if out.Module != "adr" {
 			t.Errorf("module = %q, want 'adr'", out.Module)
@@ -44,8 +44,8 @@ func TestListLanesHandler(t *testing.T) {
 	})
 
 	t.Run("module not found", func(t *testing.T) {
-		input := &ListLanesInput{Module: ptr("nonexistent")}
-		out := callHandler(t, ListLanesHandler, input, proj)
+		input := &LaneListInput{Module: ptr("nonexistent")}
+		out := callHandler(t, LaneListHandler, input, proj)
 
 		if out.Error == "" {
 			t.Error("expected error for nonexistent module")
@@ -53,8 +53,8 @@ func TestListLanesHandler(t *testing.T) {
 	})
 
 	t.Run("nil project", func(t *testing.T) {
-		input := &ListLanesInput{Module: ptr("task")}
-		out := callHandler(t, ListLanesHandler, input, nil)
+		input := &LaneListInput{Module: ptr("task")}
+		out := callHandler(t, LaneListHandler, input, nil)
 
 		if out.Error == "" {
 			t.Error("expected error for nil project")

@@ -7,19 +7,19 @@ import (
 )
 
 // ============================================================================
-// Test orqen_create_item
+// Test orqen_item_create
 // ============================================================================
 
 func TestCreateItemHandler(t *testing.T) {
 	proj, _ := setupTestProject(t)
 
 	t.Run("create task in backlog", func(t *testing.T) {
-		input := &CreateItemInput{
+		input := &ItemCreateInput{
 			Module:     ptr("task"),
 			Lane:       "backlog",
 			SimpleName: "implement-auth",
 		}
-		out := callHandler(t, CreateItemHandler, input, proj)
+		out := callHandler(t, ItemCreateHandler, input, proj)
 
 		if !out.Success {
 			t.Fatalf("expected success, got error: %s", out.Error)
@@ -57,12 +57,12 @@ func TestCreateItemHandler(t *testing.T) {
 	})
 
 	t.Run("create adr in draft", func(t *testing.T) {
-		input := &CreateItemInput{
+		input := &ItemCreateInput{
 			Module:     ptr("adr"),
 			Lane:       "draft",
 			SimpleName: "use-redis-cache",
 		}
-		out := callHandler(t, CreateItemHandler, input, proj)
+		out := callHandler(t, ItemCreateHandler, input, proj)
 
 		if !out.Success {
 			t.Fatalf("expected success, got error: %s", out.Error)
@@ -74,12 +74,12 @@ func TestCreateItemHandler(t *testing.T) {
 	})
 
 	t.Run("module not found", func(t *testing.T) {
-		input := &CreateItemInput{
+		input := &ItemCreateInput{
 			Module:     ptr("nonexistent"),
 			Lane:       "backlog",
 			SimpleName: "test",
 		}
-		out := callHandler(t, CreateItemHandler, input, proj)
+		out := callHandler(t, ItemCreateHandler, input, proj)
 
 		if out.Error == "" {
 			t.Error("expected error for nonexistent module")
@@ -87,12 +87,12 @@ func TestCreateItemHandler(t *testing.T) {
 	})
 
 	t.Run("lane not found", func(t *testing.T) {
-		input := &CreateItemInput{
+		input := &ItemCreateInput{
 			Module:     ptr("task"),
 			Lane:       "nonexistent",
 			SimpleName: "test",
 		}
-		out := callHandler(t, CreateItemHandler, input, proj)
+		out := callHandler(t, ItemCreateHandler, input, proj)
 
 		if out.Error == "" {
 			t.Error("expected error for nonexistent lane")
@@ -100,12 +100,12 @@ func TestCreateItemHandler(t *testing.T) {
 	})
 
 	t.Run("invalid kebab-case name", func(t *testing.T) {
-		input := &CreateItemInput{
+		input := &ItemCreateInput{
 			Module:     ptr("task"),
 			Lane:       "backlog",
 			SimpleName: "Invalid Name With Spaces",
 		}
-		out := callHandler(t, CreateItemHandler, input, proj)
+		out := callHandler(t, ItemCreateHandler, input, proj)
 
 		if out.Error == "" {
 			t.Error("expected error for invalid kebab-case name")
@@ -113,12 +113,12 @@ func TestCreateItemHandler(t *testing.T) {
 	})
 
 	t.Run("uppercase name should be lowercased", func(t *testing.T) {
-		input := &CreateItemInput{
+		input := &ItemCreateInput{
 			Module:     ptr("task"),
 			Lane:       "backlog",
 			SimpleName: "MY-FEATURE",
 		}
-		out := callHandler(t, CreateItemHandler, input, proj)
+		out := callHandler(t, ItemCreateHandler, input, proj)
 
 		if !out.Success {
 			t.Fatalf("expected success, got error: %s", out.Error)
@@ -131,11 +131,11 @@ func TestCreateItemHandler(t *testing.T) {
 	})
 
 	t.Run("missing module", func(t *testing.T) {
-		input := &CreateItemInput{
+		input := &ItemCreateInput{
 			Lane:       "backlog",
 			SimpleName: "test",
 		}
-		out := callHandler(t, CreateItemHandler, input, proj)
+		out := callHandler(t, ItemCreateHandler, input, proj)
 
 		// Should resolve from single module or fail if ambiguous
 		// With 2 modules, should fail without explicit module
@@ -145,11 +145,11 @@ func TestCreateItemHandler(t *testing.T) {
 	})
 
 	t.Run("missing lane", func(t *testing.T) {
-		input := &CreateItemInput{
+		input := &ItemCreateInput{
 			Module:     ptr("task"),
 			SimpleName: "test",
 		}
-		out := callHandler(t, CreateItemHandler, input, proj)
+		out := callHandler(t, ItemCreateHandler, input, proj)
 
 		if out.Error == "" {
 			t.Error("expected error for missing lane")
@@ -157,11 +157,11 @@ func TestCreateItemHandler(t *testing.T) {
 	})
 
 	t.Run("missing simple name", func(t *testing.T) {
-		input := &CreateItemInput{
+		input := &ItemCreateInput{
 			Module: ptr("task"),
 			Lane:   "backlog",
 		}
-		out := callHandler(t, CreateItemHandler, input, proj)
+		out := callHandler(t, ItemCreateHandler, input, proj)
 
 		if out.Error == "" {
 			t.Error("expected error for missing simple_name")
@@ -169,12 +169,12 @@ func TestCreateItemHandler(t *testing.T) {
 	})
 
 	t.Run("nil project", func(t *testing.T) {
-		input := &CreateItemInput{
+		input := &ItemCreateInput{
 			Module:     ptr("task"),
 			Lane:       "backlog",
 			SimpleName: "test",
 		}
-		out := callHandler(t, CreateItemHandler, input, nil)
+		out := callHandler(t, ItemCreateHandler, input, nil)
 
 		if out.Error == "" {
 			t.Error("expected error for nil project")

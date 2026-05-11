@@ -1,12 +1,18 @@
 package engine
 
 import (
+	"fmt"
+	"iter"
 	"path/filepath"
+	"slices"
+	"sort"
 	"strconv"
 	"sync"
 
 	"github.com/nidorx/orqen/pkg/utils/tinylfu"
 )
+
+const schemaMaxValues = 50 // max unique values per field in schema
 
 // Module represents a project module configuration (e.g., task, adr, learning).
 //
@@ -104,31 +110,44 @@ func (m *Module) GetLanesInOrder() []*Lane {
 	return ordered
 }
 
-// ListWorkItems returns all work items across all lanes in this module.
-func (m *Module) ListWorkItems() []*WorkItem {
-	var items []*WorkItem
-	for _, lane := range m.Lanes {
-		for item := range lane.WorkItems() {
-			items = append(items, item)
+// WorkItems returns all work items across all lanes in this module.
+func (m *Module) WorkItems() iter.Seq[*WorkItem] {
+	return func(yield func(*WorkItem) bool) {
+		for _, lane := range m.Lanes {
+			for item := range lane.WorkItems() {
+				if !yield(item) {
+					// yield returns false if the loop should stop (e.g., 'break' was called)
+					return
+				}
+			}
 		}
 	}
-	return items
 }
 
 // FilterWorkItems filters work items from a module using a
 // condition DSL string.
-func (m *Module) FilterWorkItems(cond string) ([]*WorkItem, error) {
+func (m *Module) FilterWorkItems(cond string) (iter.Seq[*WorkItem], error) {
 
-	var result []*WorkItem
+	var iterators []iter.Seq[*WorkItem]
+
 	for _, lane := range m.Lanes {
-		if items, err := lane.FilterWorkItems(cond); err != nil {
+		if iterator, err := lane.FilterWorkItems(cond); err != nil {
 			return nil, err
 		} else {
-			result = append(result, items...)
+			iterators = append(iterators, iterator)
 		}
 	}
 
-	return result, nil
+	return func(yield func(*WorkItem) bool) {
+		for _, items := range iterators {
+			for item := range items {
+				if !yield(item) {
+					// yield returns false if the loop should stop (e.g., 'break' was called)
+					return
+				}
+			}
+		}
+	}, nil
 }
 
 // GetWorkItemBySeq finds a work item by its sequential id across all lanes.
@@ -209,4 +228,63 @@ func (m *Module) TxNewWorkItem(fn func(nextSeq int) error) error {
 	}
 
 	return fn(maxSeq + 1)
+}
+
+// Schema scans a module directory and returns all observed front matter
+// fields with their types and unique values (domains).
+func (m *Module) Schema() []SchemaField {
+	fieldData := make(map[string]*SchemaField)
+	fieldValues := make(map[string]map[string]bool) // track unique values
+
+	for item := range m.WorkItems() {
+		for field, val := range item.Attributes {
+			if _, exists := fieldData[field]; !exists {
+				fieldData[field] = &SchemaField{Field: field}
+				fieldValues[field] = map[string]bool{}
+			}
+
+			sd := fieldData[field]
+			typeName := yamlTypeName(val)
+			if !slices.Contains(sd.Types, typeName) {
+				sd.Types = append(sd.Types, typeName)
+			}
+
+			valKey := fmt.Sprintf("%v", val)
+			if !fieldValues[field][valKey] && len(sd.Values) < schemaMaxValues {
+				fieldValues[field][valKey] = true
+				sd.Values = append(sd.Values, val)
+			}
+		}
+	}
+
+	var fields []SchemaField
+	for _, f := range fieldData {
+		fields = append(fields, *f)
+	}
+
+	sort.Slice(fields, func(i, j int) bool {
+		return fields[i].Field < fields[j].Field
+	})
+
+	return fields
+}
+
+// yamlTypeName returns the YAML type name for a value.
+func yamlTypeName(val any) string {
+	switch val.(type) {
+	case bool:
+		return "bool"
+	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
+		return "int"
+	case float32, float64:
+		return "float"
+	case string:
+		return "string"
+	case []any:
+		return "list"
+	case map[string]any:
+		return "map"
+	default:
+		return "unknown"
+	}
 }

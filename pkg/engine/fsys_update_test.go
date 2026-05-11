@@ -3,6 +3,7 @@ package engine
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 	"time"
 )
@@ -225,7 +226,7 @@ func TestOnFsysUpdate_InboxFile(t *testing.T) {
 		t.Errorf("expected 1 item, got %d", inboxLane.CountWorkItems())
 	}
 
-	items := collectWorkItems(inboxLane.WorkItems())
+	items := slices.Collect(inboxLane.WorkItems())
 	if len(items) != 1 {
 		t.Fatalf("expected 1 item")
 	}
