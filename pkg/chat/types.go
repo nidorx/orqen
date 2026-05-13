@@ -3,8 +3,6 @@ package chat
 import (
 	"context"
 	"time"
-
-	"github.com/nidorx/orqen/pkg/engine"
 )
 
 // ── Constants ────────────────────────────────────────────────────────────────
@@ -19,18 +17,6 @@ const (
 const PendingEditTTL = 10 * time.Minute
 
 // ── Configuration ────────────────────────────────────────────────────────────
-
-// ChatConfig holds the top-level chat configuration, parsed from orqen.yaml
-// under the "chat:" key.
-type ChatConfig struct {
-	Agent    string         `yaml:"agent"`
-	Telegram TelegramConfig `yaml:"telegram"`
-}
-
-// TelegramConfig holds the Telegram bot token configuration.
-type TelegramConfig struct {
-	Token string `yaml:"token"`
-}
 
 // ── Session & Message types ──────────────────────────────────────────────────
 
@@ -83,18 +69,6 @@ func (p *PendingEdit) IsExpired() bool {
 // CommandHandler is the signature for deterministic command handlers.
 // Returns an error if the command fails; response is sent via the bot.
 type CommandHandler func(ctx context.Context, args string, bot *TelegramBot, userID string) (string, error)
-
-// TelegramBot holds the bot configuration and project references.
-type TelegramBot struct {
-	Project        *engine.Project
-	ChatStore      *ChatStore
-	SessionManager *SessionManager
-}
-
-// MessageEvent is a placeholder for the Telegram message event type.
-type MessageEvent struct {
-	Text string
-}
 
 // CommandDef registers a command name, description, and its handler.
 type CommandDef struct {

@@ -31,6 +31,13 @@ func Get(id string) *Project {
 	return projects[id]
 }
 
+// Unregister removes a project from the global registry. Useful for test cleanup.
+func Unregister(id string) {
+	projectsMu.Lock()
+	defer projectsMu.Unlock()
+	delete(projects, id)
+}
+
 // Load loads and validates the project configuration from the given project directory.
 // It expects the file .orqen/orqen.yaml to exist within the directory.
 func Load(projectDir string) (*Project, error) {

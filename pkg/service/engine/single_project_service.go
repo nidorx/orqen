@@ -1,4 +1,4 @@
-package project
+package engine
 
 import (
 	"bufio"
@@ -8,6 +8,7 @@ import (
 
 	"github.com/coder/acp-go-sdk"
 	"github.com/nidorx/orqen/pkg/agent"
+	"github.com/nidorx/orqen/pkg/chat"
 	"github.com/nidorx/orqen/pkg/cli"
 	"github.com/nidorx/orqen/pkg/conf"
 	"github.com/nidorx/orqen/pkg/engine"
@@ -103,6 +104,11 @@ func New() *Service {
 	return &Service{}
 }
 
+// GetProject returns the loaded project instance.
+func (s *Service) GetProject() *engine.Project {
+	return s.proj
+}
+
 // loadProject prompts the user for a project directory path, validates it,
 // and loads the project configuration. Returns the validated project directory path.
 func loadProject() *engine.Project {
@@ -142,6 +148,12 @@ func loadProject() *engine.Project {
 					orqenPort,
 					proj.Id,
 				)
+
+				// 3. ChatService — needs project loaded and HTTP port known
+				chatSrv := chat.New(proj)
+				if err := chatSrv.OnStart(); err != nil {
+					panic(err)
+				}
 				return proj
 			} else {
 				cli.Printf(messages, "error_loading", err)

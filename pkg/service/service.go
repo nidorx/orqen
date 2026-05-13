@@ -4,8 +4,8 @@ import (
 	"log"
 	"sync"
 
-	"github.com/nidorx/orqen/pkg/service/http"
-	"github.com/nidorx/orqen/pkg/service/project"
+	"github.com/nidorx/orqen/pkg/service/engine"
+	httpservice "github.com/nidorx/orqen/pkg/service/http"
 )
 
 var (
@@ -24,14 +24,15 @@ type Service interface {
 func Start() []Service {
 	_onceStart.Do(func() {
 
+		// Build service list with only non-nil services
 		_services = []Service{
-			project.New(),
-			http.New(),
+			engine.New(),
+			httpservice.New(),
 		}
 
-		for _, service := range _services {
-			if err := service.OnStart(); err != nil {
-				log.Fatalf("start %s service error: %s", service.Name(), err)
+		for _, s := range _services {
+			if err := s.OnStart(); err != nil {
+				log.Fatalf("[service] start %s service error: %s", s.Name(), err)
 			}
 		}
 	})
@@ -43,8 +44,11 @@ func Start() []Service {
 func Stop() {
 	_onceStop.Do(func() {
 		for index := len(_services) - 1; index >= 0; index-- {
+			if _services[index] == nil {
+				continue
+			}
 			if err := _services[index].OnStop(); err != nil {
-				log.Fatalf("start %s service error: %s", _services[index].Name(), err)
+				log.Fatalf("[service] stop %s service error: %s", _services[index].Name(), err)
 			}
 		}
 	})

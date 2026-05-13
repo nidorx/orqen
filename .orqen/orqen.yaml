@@ -40,6 +40,11 @@ execution:
   max_agents: 10
   sleep_interval_seconds: 60
 
+chat:
+  telegram:
+    secret: "123"
+    token: "***"
+
 modules:                        # ira expor tools mcp para cada módulo
   - name: task
     dir: "tasks"

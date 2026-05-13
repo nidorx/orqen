@@ -9,10 +9,23 @@ import (
 	"github.com/nidorx/orqen/pkg/memory/store"
 )
 
+// Chat holds the top-level chat configuration, parsed from orqen.yaml
+// under the "chat:" key.
+type Chat struct {
+	Agent    string   `yaml:"agent"`
+	Telegram Telegram `yaml:"telegram"`
+}
+
+// Telegram holds the Telegram bot token configuration.
+type Telegram struct {
+	Token string `yaml:"token"`
+}
+
 // Project represents the top-level project configuration (.orqen/orqen.yaml).
 type Project struct {
 	Id        string     `yaml:"-"` // directory hash
 	DirAbs    string     `yaml:"-"` // absolute directory path
+	Chat      *Chat      `yaml:"chat"`
 	Agents    Agent      `yaml:"agents"`
 	Execution *Execution `yaml:"execution"`
 	Modules   []*Module  `yaml:"modules"`

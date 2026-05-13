@@ -356,8 +356,9 @@ func (as *AgentSession) ensureSession(process *agentProcess) error {
 	mcpServers := []acp.McpServer{
 		{
 			Http: &acp.McpServerHttpInline{
-				Name: "Orqen Chat MCP",
-				Url:  as.chatMCPURL,
+				Name:    "Orqen Chat MCP",
+				Url:     as.chatMCPURL,
+				Headers: make([]acp.HttpHeader, 0),
 			},
 		},
 	}
