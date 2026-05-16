@@ -1,0 +1,148 @@
+# Orqen Workflow — Criação de Conteúdo para LinkedIn
+# Pipeline: Ideação → Rascunho → Revisão → Publicação
+#
+# Este workflow demonstra o Orqen aplicado à criação de conteúdo técnico.
+# Cada lane é uma etapa do funil: ideia bruta entra, conteúdo pronto sai.
+# Checkpoints humanos garantem qualidade e autenticidade.
+
+agents:
+  default: "qwen"
+  clients:
+    qwen:
+      command: ["qwen", "--yolo", "--acp"]
+
+execution:
+  max_agents: 3
+  sleep_interval_seconds: 30
+
+modules:
+  - name: conteudo
+    dir: "./conteudo"
+    prefix: "CNT"
+    order: ["revisao", "rascunho", "ideacao", "publicacao"]
+    extra_prompt: |
+      **CONTEXTO**: Este workflow automatiza a criação de conteúdo técnico para LinkedIn.
+      O objetivo é produzir posts que posicionem o autor como autoridade em engenharia
+      de software, AI e liderança técnica.
+
+      **PÚBLICO-ALVO**: CTOs, VPs de Engenharia, Diretores de Tecnologia, Staff Engineers,
+      Tech Leads e recrutadores executivos.
+
+      **TOM**: Direto, estratégico, fundamentado em experiência real. Sem clichês de LinkedIn,
+      sem linguagem genérica de IA. Soar como um engenheiro sênior escrevendo para outro
+      engenheiro sênior.
+
+      **IDIOMA**: TODO conteúdo deve ser em PORTUGUÊS DO BRASIL (pt-BR).
+
+      **TEMPLATES**: Para cada artefato gerado, USE O TEMPLATE CORRESPONDENTE no diretório
+      `.orqen/conteudo/prompts/` como base estrutural. Preencha todas as seções do template.
+      Os templates são:
+      - IDEIA.md        → Análise de ideia com ângulo estratégico
+      - RASCUNHO.md     → Conteúdo pronto para revisão
+      - REVISAO.md      → Checklist de revisão e feedback
+      - PUBLICACAO.md   → Estratégia de distribuição e checklist
+
+    lanes:
+      # ── 00_ideacao ─────────────────────────────────────────────
+      - name: "ideacao"
+        purpose: "Capturar ideias brutas — temas, reações a eventos da indústria, insights técnicos que merecem ser explorados"
+        user_action: "criar ideias"
+        artifacts: ["IDEIA"]
+        max_agents: 1
+        agent_behavior:
+          - "Leia o arquivo de ideação para entender a ideia bruta compartilhada"
+          - "Se a ideia for muito vaga ou ambígua, escreva perguntas esclarecedoras no próprio arquivo e finalize — não avance"
+          - "Use o tool orqen_create_item (orqen MCP Server) para criar um novo item na lane revisar_ideia"
+          - "Classifique o tema em uma categoria: Arquitetura de Software, Liderança Técnica, IA/ML, Segurança, Platform Engineering, Cultura de Engenharia, Carreira"
+          - "Defina a 'hipótese de valor' — por que esse tema importa e qual ângulo o torna único"
+          - "Liste 3-5 ângulos ou ganchos possíveis para abordar o tema"
+          - "Escreva a análise estruturada no arquivo CNT-${SEQUENCE}-IDEIA.md usando o template em '.orqen/conteudo/prompts/IDEIA.md'"
+          - "Mova o arquivo de ideação para o diretório do item criado na lane revisar_ideia"
+          - "Finalize a execução"
+        critical_rules:
+          - "NUNCA inventar conceitos técnicos ou dados — tudo deve ser fundamentado em experiência real ou fatos verificáveis"
+          - "TODO conteúdo em PORTUGUÊS DO BRASIL"
+          - "Se a ideia for muito vaga, faça perguntas esclarecedoras antes de avançar"
+        extra_prompt: |
+          Cada ideia deve ser avaliada pelo seu potencial de posicionamento estratégico.
+          Pergunte-se: "Isso demonstra visão de liderança ou apenas conhecimento técnico?"
+
+      # ── 01_revisar_ideia ───────────────────────────────────────
+      - name: "revisar_ideia"
+        purpose: "Usuário revisa a análise de tema e aprova antes de avançar para rascunho"
+        user_action: "revisar e aprovar ideia"
+
+      # ── 02_rascunho ────────────────────────────────────────────
+      - name: "rascunho"
+        purpose: "Gerar conteúdo completo e pronto para revisão — post LinkedIn, carrossel ou artigo"
+        artifacts: ["RASCUNHO"]
+        max_agents: 1
+        ignore_if_dependency: ["ideacao"]
+        agent_behavior:
+          - "Leia CNT-${SEQUENCE}-IDEIA.md para entender o tema, ângulo e ganchos aprovados"
+          - "Decida o formato ideal baseado no tema: post único, carrossel (4-8 slides), thread ou artigo longo"
+          - "Escreva o conteúdo completo seguindo a estrutura: Gancho → Contexto → Insight Principal → Evidência → Conclusão/CTA"
+          - "Mantenha tom autêntico, confiante e estratégico — soe como um líder que pensa"
+          - "Evite clichês, frases motivacionais vazias e linguagem genérica de IA"
+          - "Compile o conteúdo no arquivo CNT-${SEQUENCE}-RASCUNHO.md usando o template em '.orqen/conteudo/prompts/RASCUNHO.md'"
+          - "Use o tool orqen_move_item (orqen MCP Server) para mover o item da lane rascunho para revisao"
+          - "Finalize a execução"
+        critical_rules:
+          - "TODO conteúdo em PORTUGUÊS DO BRASIL"
+          - "NUNCA usar construções contrastivas ('Isso não é X, é Y') — vá direto ao ponto"
+          - "NUNCA usar travessões (— ou –) — use vírgula, ponto e vírgula ou reescreva"
+          - "Conteúdo deve estar PRONTO PARA REVISÃO — sem placeholders ou TODOs"
+          - "Manter ordem direta: sujeito + verbo + complemento"
+        extra_prompt: |
+          **REGRAS DE TOM E ESTILO**:
+          - ORDEM DIRETA: sujeito + verbo + complemento. Sempre.
+          - ZERO travessões. ZERO construções contrastivas. ZERO negação retórica.
+          - VOZ ATIVA sempre, salvo impossibilidade gramatical.
+          - Primeira pessoa para opinião/experiência: "Eu vi...", "Na minha experiência..."
+          - Terceira pessoa para dados: "Um estudo mostrou..."
+          - Sem emojis, sem tabelas, sem headers estilo marketing.
+
+      # ── 03_revisao ─────────────────────────────────────────────
+      - name: "revisao"
+        purpose: "Usuário revisa o conteúdo, faz ajustes e aprova para publicação"
+        artifacts: ["REVISAO"]
+        max_agents: 1
+        agent_behavior:
+          - "Leia CNT-${SEQUENCE}-RASCUNHO.md para entender o conteúdo produzido"
+          - "Valide: o gancho captura atenção em 2 segundos? O conteúdo entrega valor real? O CTA é claro?"
+          - "Verifique: há afirmações sem fundamento? Dados sem fonte? Linguagem genérica de IA?"
+          - "Sugira melhorias específicas se necessário"
+          - "Escreva o feedback no arquivo CNT-${SEQUENCE}-REVISAO.md usando o template em '.orqen/conteudo/prompts/REVISAO.md'"
+          - "Se o conteúdo for APROVADO, use o tool orqen_move_item para mover para publicacao"
+          - "Se o conteúdo PRECISAR DE AJUSTES, mova de volta para rascunho com o feedback"
+          - "Finalize a execução"
+        critical_rules:
+          - "NUNCA aprovar conteúdo com referências inventadas ou dados sem fonte"
+          - "Se houver dúvidas sobre autenticidade, solicite ajustes"
+        extra_prompt: |
+          Esta é a lane de qualidade. O conteúdo aqui deve soar como se viesse de uma pessoa
+          com experiência real, não de um gerador de texto.
+
+      # ── 04_publicacao ──────────────────────────────────────────
+      - name: "publicacao"
+        purpose: "Definir estratégia de distribuição — quando, onde e como publicar"
+        artifacts: ["PUBLICACAO"]
+        max_agents: 1
+        agent_behavior:
+          - "Leia CNT-${SEQUENCE}-RASCUNHO.md e CNT-${SEQUENCE}-REVISAO.md para entender o conteúdo final"
+          - "Sugira 5-8 hashtags relevantes (mistura de amplas e nichadas)"
+          - "Recomende dia e horário ideais para publicar conteúdo técnico"
+          - "Defina uma CTA (chamada para ação) clara que incentive engajamento"
+          - "Se for série de múltiplos posts, especifique ordem e espaçamento"
+          - "Compile o checklist de publicação no arquivo CNT-${SEQUENCE}-PUBLICACAO.md usando o template em '.orqen/conteudo/prompts/PUBLICACAO.md'"
+          - "Use o tool orqen_move_item (orqen MCP Server) para mover o item da lane publicacao para publicado"
+          - "Finalize a execução"
+        critical_rules:
+          - "Hashtags devem ser relevantes e específicas — não genéricas demais"
+          - "TODO conteúdo em PORTUGUÊS DO BRASIL"
+          - "CTA deve incentivar engajamento e discussão, não auto-promoção vazia"
+
+      # ── 05_publicado ───────────────────────────────────────────
+      - name: "publicado"
+        purpose: "Arquivo de conteúdo publicado — referência para futuros posts"
+        user_action: "arquivar"

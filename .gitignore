@@ -52,6 +52,10 @@ mcp_stdio_debug.txt
 
 # etc
 TODO.md
+.TASKS/
+**/generated/
 
 # agents
 .qwen
+
+

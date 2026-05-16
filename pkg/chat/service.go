@@ -1,6 +1,7 @@
 package chat
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -8,6 +9,10 @@ import (
 	"path/filepath"
 	"sync"
 
+	"github.com/nidorx/orqen/pkg/chat/conn/telegram"
+	"github.com/nidorx/orqen/pkg/chat/dialog"
+	"github.com/nidorx/orqen/pkg/chat/mcp"
+	"github.com/nidorx/orqen/pkg/chat/memory"
 	"github.com/nidorx/orqen/pkg/conf"
 	"github.com/nidorx/orqen/pkg/engine"
 )
@@ -17,13 +22,13 @@ import (
 // Telegram bot, and MCP HTTP server.
 type ChatService struct {
 	mu         sync.Mutex
-	bot        *TelegramBot
 	proj       *engine.Project
 	config     *engine.Chat
+	dialog     *dialog.Dialog
 	started    bool
-	chatStore  *ChatStore
-	sessionMgr *SessionManager
-	confirmMgr ConfirmationManager
+	chatStore  *memory.ChatStore
+	sessionMgr *memory.SessionManager
+	confirmMgr memory.ConfirmationManager
 	mcpHandler http.Handler
 	chatMCPURL string
 }
@@ -40,7 +45,7 @@ func Get(projectId string) *ChatService {
 }
 
 // New creates a new ChatService with the given project and configuration.
-// Dependencies are NOT initialized here — they are deferred to OnStart().
+// Dependencies are NOT initialized here - they are deferred to OnStart().
 func New(proj *engine.Project) *ChatService {
 	chatsMu.Lock()
 	defer chatsMu.Unlock()
@@ -77,7 +82,7 @@ func (s *ChatService) OnStart() error {
 
 	// Check if Telegram token is configured
 	if s.config.Telegram.Token == "" {
-		slog.Warn("Telegram token not configured — chat service running without Telegram bot.")
+		slog.Warn("Telegram token not configured - chat service running without Telegram bot.")
 	}
 
 	// Initialize ChatStore
@@ -86,17 +91,17 @@ func (s *ChatService) OnStart() error {
 		return fmt.Errorf("chat: create .orqen directory: %w", err)
 	}
 
-	store, err := NewChatStore(dbPath)
+	store, err := memory.NewChatStore(dbPath)
 	if err != nil {
 		return fmt.Errorf("chat: initialize store: %w", err)
 	}
 	s.chatStore = store
 
 	// Initialize SessionManager
-	s.sessionMgr = NewSessionManager(s.chatStore, SessionTTL)
+	s.sessionMgr = memory.NewSessionManager(s.chatStore, memory.SessionTTL)
 
 	// Initialize ConfirmationManager
-	s.confirmMgr = NewConfirmationManager(s.chatStore, s.proj)
+	s.confirmMgr = memory.NewConfirmationManager(s.chatStore, s.proj)
 
 	// Build Chat MCP URL
 	httpCfg := conf.GetHttpServer()
@@ -107,28 +112,29 @@ func (s *ChatService) OnStart() error {
 	s.chatMCPURL = fmt.Sprintf("http://127.0.0.1:%d/chat/mcp/%s", port, s.proj.Id)
 
 	// Create Chat MCP Server
-	s.mcpHandler = NewChatMCPServer(s.proj, s.chatStore, s.sessionMgr)
+	s.mcpHandler = mcp.NewChatMCPServer(s.proj, s.chatStore, s.sessionMgr)
+
+	s.dialog = dialog.New(
+		s.proj,
+		s.sessionMgr,
+		s.confirmMgr,
+		s.chatMCPURL,   // URL to chat MCP server
+		s.config.Agent, // Agent to use for chat conversations
+	)
 
 	// Initialize Telegram Bot (if token configured)
 	if s.config.Telegram.Token != "" {
-		bot, err := NewTelegramBot(
-			s.config.Telegram.Token,
-			s.proj,
-			s.chatStore,
-			s.sessionMgr,
-			s.confirmMgr,
-			s.chatMCPURL,
-			s.config.Agent,
-		)
+		tb, err := telegram.New(s.config.Telegram.Token)
 		if err != nil {
 			return fmt.Errorf("chat: initialize telegram bot: %w", err)
 		}
-		s.bot = bot
 
-		// Start bot in goroutine
-		if err := bot.Start(nil); err != nil {
-			return fmt.Errorf("chat: start telegram bot: %w", err)
-		}
+		s.dialog.Register(tb)
+	}
+
+	// Start dialog service
+	if err := s.dialog.Start(context.Background()); err != nil {
+		return fmt.Errorf("chat: start dialog service: %w", err)
 	}
 
 	s.started = true
@@ -155,18 +161,16 @@ func (s *ChatService) OnStop() error {
 		return nil
 	}
 
-	// Stop Telegram bot (if running)
-	if s.bot != nil {
-		if err := s.bot.Stop(); err != nil {
-			slog.Error("chat: stop telegram bot", "error", err)
+	// Stop dialog service (if running)
+	if s.dialog != nil {
+		if err := s.dialog.Stop(); err != nil {
+			slog.Error("chat: stop dialog", "error", err)
 		}
 	}
 
 	// Cleanup expired edits
 	if s.confirmMgr != nil {
-		if cm, ok := s.confirmMgr.(*confirmationManager); ok {
-			_, _ = cm.CleanupExpiredEdits()
-		}
+		_, _ = s.confirmMgr.CleanupExpiredEdits()
 	}
 
 	// Close chat store
@@ -196,7 +200,7 @@ func (s *ChatService) GetProjectID() string {
 func (s *ChatService) validateAgent() error {
 	if s.config.Agent == "" {
 		// Use first agent from project
-		if s.proj.Agents.Clients != nil && len(s.proj.Agents.Clients) > 0 {
+		if len(s.proj.Agents.Clients) > 0 {
 			// Get first key from map
 			for name := range s.proj.Agents.Clients {
 				s.config.Agent = name

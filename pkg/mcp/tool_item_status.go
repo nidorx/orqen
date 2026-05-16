@@ -8,7 +8,7 @@ import (
 	"github.com/nidorx/orqen/pkg/engine"
 )
 
-// ── orqen_status ───────────────────────────────────────────────────
+// orqen_status
 // Returns the current work item, lane, module, and project context
 // for the running agent job. Requires workItemID.
 

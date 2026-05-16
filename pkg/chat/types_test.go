@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"github.com/goccy/go-yaml"
+	"github.com/nidorx/orqen/pkg/chat/memory"
+	"github.com/nidorx/orqen/pkg/engine"
 )
 
 func TestChatConfig_Parsing(t *testing.T) {
@@ -15,7 +17,7 @@ chat:
     token: "123456:ABC-DEF"
 `
 	var raw struct {
-		Chat ChatConfig `yaml:"chat"`
+		Chat engine.Chat `yaml:"chat"`
 	}
 	if err := yaml.Unmarshal([]byte(data), &raw); err != nil {
 		t.Fatalf("failed to unmarshal: %v", err)
@@ -35,7 +37,7 @@ func TestChatConfig_ZeroValue(t *testing.T) {
 some_other_key: value
 `
 	var raw struct {
-		Chat ChatConfig `yaml:"chat"`
+		Chat engine.Chat `yaml:"chat"`
 	}
 	if err := yaml.Unmarshal([]byte(data), &raw); err != nil {
 		t.Fatalf("failed to unmarshal: %v", err)
@@ -57,7 +59,7 @@ chat:
     token: "only-token"
 `
 	var raw struct {
-		Chat ChatConfig `yaml:"chat"`
+		Chat engine.Chat `yaml:"chat"`
 	}
 	if err := yaml.Unmarshal([]byte(data), &raw); err != nil {
 		t.Fatalf("failed to unmarshal: %v", err)
@@ -73,68 +75,65 @@ chat:
 }
 
 func TestMessageRole_Constants(t *testing.T) {
-	if string(RoleUser) != "user" {
-		t.Errorf("RoleUser = %q, want %q", RoleUser, "user")
+	if string(memory.RoleUser) != "user" {
+		t.Errorf("RoleUser = %q, want %q", memory.RoleUser, "user")
 	}
-	if string(RoleAssistant) != "assistant" {
-		t.Errorf("RoleAssistant = %q, want %q", RoleAssistant, "assistant")
+	if string(memory.RoleAssistant) != "assistant" {
+		t.Errorf("RoleAssistant = %q, want %q", memory.RoleAssistant, "assistant")
 	}
-	if string(RoleSystem) != "system" {
-		t.Errorf("RoleSystem = %q, want %q", RoleSystem, "system")
+	if string(memory.RoleSystem) != "system" {
+		t.Errorf("RoleSystem = %q, want %q", memory.RoleSystem, "system")
 	}
 }
 
 func TestConstants_Values(t *testing.T) {
-	if SessionTTL != 24*time.Hour {
-		t.Errorf("SessionTTL = %v, want %v", SessionTTL, 24*time.Hour)
+	if memory.SessionTTL != 24*time.Hour {
+		t.Errorf("SessionTTL = %v, want %v", memory.SessionTTL, 24*time.Hour)
 	}
-	if HistoryLimit != 50 {
-		t.Errorf("HistoryLimit = %d, want 50", HistoryLimit)
+	if memory.HistoryLimit != 50 {
+		t.Errorf("HistoryLimit = %d, want 50", memory.HistoryLimit)
 	}
-	if SearchLimit != 10 {
-		t.Errorf("SearchLimit = %d, want 10", SearchLimit)
-	}
-	if MaxMessageLen != 4096 {
-		t.Errorf("MaxMessageLen = %d, want 4096", MaxMessageLen)
+	if memory.SearchLimit != 10 {
+		t.Errorf("SearchLimit = %d, want 10", memory.SearchLimit)
 	}
 }
 
 func TestPendingEdit_IsExpired(t *testing.T) {
 	now := time.Now()
 
-	// Fresh edit — should not be expired
-	fresh := PendingEdit{ID: 1, CreatedAt: now}
+	// Fresh edit - should not be expired
+	fresh := memory.PendingEdit{ID: 1, CreatedAt: now}
 	if fresh.IsExpired() {
 		t.Error("fresh PendingEdit should not be expired")
 	}
 
-	// 1 second before TTL — should not be expired
-	before := PendingEdit{ID: 2, CreatedAt: now.Add(-PendingEditTTL + time.Second)}
+	// 1 second before TTL - should not be expired
+	before := memory.PendingEdit{ID: 2, CreatedAt: now.Add(-memory.PendingEditTTL + time.Second)}
 	if before.IsExpired() {
 		t.Error("PendingEdit 1s before TTL should not be expired")
 	}
 
-	// Exactly at TTL — edge case; time.Since may be exactly TTL, so not > TTL
-	at := PendingEdit{ID: 3, CreatedAt: now.Add(-PendingEditTTL)}
+	// Exactly at TTL - edge case; time.Since may be exactly TTL, so not > TTL
+	at := memory.PendingEdit{ID: 3, CreatedAt: now.Add(-memory.PendingEditTTL)}
 	// At exactly TTL, time.Since == TTL, so IsExpired (which uses >) is false.
 	// However, due to timing, we just check it doesn't panic.
 	_ = at.IsExpired()
 
-	// 1 second after TTL — should be expired
-	after := PendingEdit{ID: 4, CreatedAt: now.Add(-PendingEditTTL - time.Second)}
+	// 1 second after TTL - should be expired
+	after := memory.PendingEdit{ID: 4, CreatedAt: now.Add(-memory.PendingEditTTL - time.Second)}
 	if !after.IsExpired() {
 		t.Error("PendingEdit 1s after TTL should be expired")
 	}
 
-	// Well past TTL — should be expired
-	old := PendingEdit{ID: 5, CreatedAt: now.Add(-2 * PendingEditTTL)}
+	// Well past TTL - should be expired
+	old := memory.PendingEdit{ID: 5, CreatedAt: now.Add(-2 * memory.PendingEditTTL)}
 	if !old.IsExpired() {
 		t.Error("old PendingEdit should be expired")
 	}
 }
 
 func TestPendingEditTTL_Constant(t *testing.T) {
-	if PendingEditTTL != 10*time.Minute {
-		t.Errorf("PendingEditTTL = %v, want %v", PendingEditTTL, 10*time.Minute)
+	if memory.PendingEditTTL != 10*time.Minute {
+		t.Errorf("PendingEditTTL = %v, want %v", memory.PendingEditTTL, 10*time.Minute)
 	}
 }

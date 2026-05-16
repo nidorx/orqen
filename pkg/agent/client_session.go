@@ -13,32 +13,44 @@ var (
 	sessionsMu sync.Mutex
 )
 
-func sessionDelClient(sid acp.SessionId) {
+func ClientSessionDel(sid acp.SessionId) {
 	sessionsMu.Lock()
 	defer sessionsMu.Unlock()
 	delete(sessions, sid)
 }
 
-func sessionSetClient(sid acp.SessionId, session *ClientSession) {
+func ClientSessionSet(sid acp.SessionId, session *ClientSession) {
 	sessionsMu.Lock()
 	defer sessionsMu.Unlock()
 	sessions[sid] = session
 }
 
-func sessionGetClient(sid acp.SessionId) *ClientSession {
+func ClientSessionGet(sid acp.SessionId) *ClientSession {
 	sessionsMu.Lock()
 	defer sessionsMu.Unlock()
 	return sessions[sid]
 }
 
+func ClientSessionNew(logger Logger, onSessionUpdate func(ctx context.Context, params acp.SessionNotification)) *ClientSession {
+	return &ClientSession{
+		logger:          logger,
+		toolCallById:    make(map[acp.ToolCallId]*acp.SessionUpdateToolCall),
+		AgentChunk:      &Chunk{logger: logger},
+		UserChunk:       &Chunk{logger: logger, prefix: "User"},
+		ThoughtChunk:    &Chunk{logger: logger, prefix: "Thinking"},
+		onSessionUpdate: onSessionUpdate,
+	}
+}
+
 // Client implements the ACP client interface, providing tool execution,
 // file operations, and terminal management capabilities.
 type ClientSession struct {
-	logger       Logger
-	agentChunk   *Chunk
-	userChunk    *Chunk
-	thoughtChunk *Chunk
-	toolCallById map[acp.ToolCallId]*acp.SessionUpdateToolCall
+	logger          Logger
+	AgentChunk      *Chunk
+	UserChunk       *Chunk
+	ThoughtChunk    *Chunk
+	toolCallById    map[acp.ToolCallId]*acp.SessionUpdateToolCall
+	onSessionUpdate func(ctx context.Context, params acp.SessionNotification)
 }
 
 func (c *ClientSession) SessionUpdate(ctx context.Context, params acp.SessionNotification) error {
@@ -48,42 +60,42 @@ func (c *ClientSession) SessionUpdate(ctx context.Context, params acp.SessionNot
 	case u.AgentThoughtChunk != nil:
 		// A chunk of the agent's internal reasoning being streamed.
 
-		c.userChunk.stop()
-		c.agentChunk.stop()
+		c.UserChunk.stop()
+		c.AgentChunk.stop()
 
 		content := u.AgentThoughtChunk.Content
 		if content.Text != nil {
-			c.thoughtChunk.add(content.Text.Text)
+			c.ThoughtChunk.add(content.Text.Text)
 		}
 
 	case u.UserMessageChunk != nil:
 		// A chunk of the user's message being streamed.
 
-		c.agentChunk.stop()
-		c.thoughtChunk.stop()
+		c.AgentChunk.stop()
+		c.ThoughtChunk.stop()
 
 		content := u.UserMessageChunk.Content
 		if content.Text != nil {
-			c.userChunk.add(content.Text.Text)
+			c.UserChunk.add(content.Text.Text)
 		}
 
 	case u.AgentMessageChunk != nil:
 		// A chunk of the agent's response being streamed.
 
-		c.userChunk.stop()
-		c.thoughtChunk.stop()
+		c.UserChunk.stop()
+		c.ThoughtChunk.stop()
 
 		content := u.AgentMessageChunk.Content
 		if content.Text != nil {
-			c.agentChunk.add(content.Text.Text)
+			c.AgentChunk.add(content.Text.Text)
 		}
 
 	case u.ToolCall != nil:
 		// Notification that a new tool call has been initiated.
 
-		c.userChunk.stop()
-		c.agentChunk.stop()
-		c.thoughtChunk.stop()
+		c.UserChunk.stop()
+		c.AgentChunk.stop()
+		c.ThoughtChunk.stop()
 
 		c.logger.Log("\033[90m(Tool call %s)\033[0m %s\n", u.ToolCall.Status, u.ToolCall.Title)
 
@@ -92,9 +104,9 @@ func (c *ClientSession) SessionUpdate(ctx context.Context, params acp.SessionNot
 	case u.ToolCallUpdate != nil:
 		// Update on the status or results of a tool call.
 
-		c.userChunk.stop()
-		c.agentChunk.stop()
-		c.thoughtChunk.stop()
+		c.UserChunk.stop()
+		c.AgentChunk.stop()
+		c.ThoughtChunk.stop()
 
 		uToolCall := u.ToolCallUpdate
 		sToolCall, exists := c.toolCallById[uToolCall.ToolCallId]
@@ -140,9 +152,9 @@ func (c *ClientSession) SessionUpdate(ctx context.Context, params acp.SessionNot
 		// The agent's execution plan for complex tasks.
 		// See protocol docs: [Agent Plan](https://agentclientprotocol.com/protocol/agent-plan)
 
-		c.userChunk.stop()
-		c.agentChunk.stop()
-		c.thoughtChunk.stop()
+		c.UserChunk.stop()
+		c.AgentChunk.stop()
+		c.ThoughtChunk.stop()
 
 		c.logger.Log("Plan updated\n")
 
@@ -175,6 +187,10 @@ func (c *ClientSession) SessionUpdate(ctx context.Context, params acp.SessionNot
 		// Context window and cost update for the session.
 
 		c.logger.Log("UsageUpdate\n")
+	}
+
+	if c.onSessionUpdate != nil {
+		c.onSessionUpdate(ctx, params)
 	}
 
 	return nil

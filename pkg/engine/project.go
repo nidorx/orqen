@@ -5,8 +5,6 @@ import (
 	"iter"
 	"strings"
 	"sync"
-
-	"github.com/nidorx/orqen/pkg/memory/store"
 )
 
 // Chat holds the top-level chat configuration, parsed from orqen.yaml
@@ -33,15 +31,9 @@ type Project struct {
 	// Runtime state (not serialized)
 	mu       sync.Mutex
 	fsys     *Fsys
-	memory   *store.Store
 	running  bool
 	executor *Executor
 	invoker  AgentInvoker
-}
-
-// Memory returns the project's memory store.
-func (p *Project) Memory() *store.Store {
-	return p.memory
 }
 
 // GetModule returns a module by name, or nil if not found.

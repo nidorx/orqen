@@ -30,7 +30,7 @@ func nextColor() string {
 	return colors[i%uint64(len(colors))]
 }
 
-func newLogger(agent, details string) Logger {
+func NewLogger(agent, details string) Logger {
 	// [•_•] [claude] [inbox] [create-new-task]
 	// [•_•] [qwen] [review] [WI-0001-add-new-agent] : tool call -
 	return Logger(nextColor() + fmt.Sprintf("[%s]\033[90m%s - \033[0m", agent, details))

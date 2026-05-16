@@ -7,7 +7,7 @@ import (
 	"github.com/nidorx/orqen/pkg/engine"
 )
 
-// ── orqen_project_info ─────────────────────────────────────────────
+// orqen_project_info
 // Returns the full project structure: modules, lanes, prompts, agent
 // behaviors, critical rules, and configuration.
 

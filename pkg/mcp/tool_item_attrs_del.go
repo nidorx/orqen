@@ -7,7 +7,7 @@ import (
 	"github.com/nidorx/orqen/pkg/engine"
 )
 
-// ── orqen_item_attrs_del ───────────────────────────────────────────────
+// orqen_item_attrs_del
 // Removes specified attribute keys from a work item and persists
 // the changes to disk. The "dependencies" key cannot be removed.
 

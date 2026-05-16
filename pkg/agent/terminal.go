@@ -15,9 +15,9 @@ import (
 // TerminalManager manages the lifecycle of terminal sessions created via the
 // ACP terminal protocol. It is safe for concurrent use.
 type TerminalManager struct {
-	mu   sync.RWMutex
+	mu       sync.RWMutex
 	sessions map[string]*TerminalSession
-	nextID atomic.Uint64
+	nextID   atomic.Uint64
 }
 
 // NewTerminalManager creates a ready-to-use terminal session manager.
@@ -36,23 +36,23 @@ type TerminalSession struct {
 	stdout bytes.Buffer
 	stderr bytes.Buffer
 
-	exited       chan struct{}
-	exitCode     *int
-	exitSignal   *string
-	released     bool
+	exited     chan struct{}
+	exitCode   *int
+	exitSignal *string
+	released   bool
 
 	outputByteLimit int
 	truncated       bool
 }
 
-// createSession spawns a new terminal session, starts the process, and
+// CreateSession spawns a new terminal session, starts the process, and
 // registers it in the manager. The command runs in the background; stdout
 // and stderr are captured in memory buffers and never leak to the parent
 // process's terminal.
 //
 // The returned terminal ID is unique and stable for the lifetime of the
 // session.
-func (tm *TerminalManager) createSession(
+func (tm *TerminalManager) CreateSession(
 	ctx context.Context,
 	command string,
 	args []string,
@@ -134,9 +134,9 @@ func (tm *TerminalManager) createSession(
 	return terminalID, nil
 }
 
-// getTerminal retrieves a session by ID. Returns an error if the terminal
+// GetTerminal retrieves a session by ID. Returns an error if the terminal
 // does not exist or has been released.
-func (tm *TerminalManager) getTerminal(terminalID string) (*TerminalSession, error) {
+func (tm *TerminalManager) GetTerminal(terminalID string) (*TerminalSession, error) {
 	tm.mu.RLock()
 	defer tm.mu.RUnlock()
 
@@ -156,12 +156,12 @@ func (tm *TerminalManager) getTerminal(terminalID string) (*TerminalSession, err
 	return s, nil
 }
 
-// killTerminal sends a termination signal to the process. On Unix-like systems
+// KillTerminal sends a termination signal to the process. On Unix-like systems
 // it sends SIGINT first, then SIGKILL after a short grace period. On Windows
 // it calls Process.Kill() directly. The terminal ID remains valid after kill;
 // call releaseTerminal to free resources.
-func (tm *TerminalManager) killTerminal(terminalID string) error {
-	s, err := tm.getTerminal(terminalID)
+func (tm *TerminalManager) KillTerminal(terminalID string) error {
+	s, err := tm.GetTerminal(terminalID)
 	if err != nil {
 		return err
 	}
@@ -204,10 +204,10 @@ func (tm *TerminalManager) killTerminal(terminalID string) error {
 	return nil
 }
 
-// releaseTerminal kills the running process (if active), marks the session
+// ReleaseTerminal kills the running process (if active), marks the session
 // as released, and removes it from the manager. The terminal ID is
 // permanently invalidated after this call.
-func (tm *TerminalManager) releaseTerminal(terminalID string) error {
+func (tm *TerminalManager) ReleaseTerminal(terminalID string) error {
 	tm.mu.Lock()
 	s, ok := tm.sessions[terminalID]
 	if !ok {
@@ -243,14 +243,14 @@ func (tm *TerminalManager) releaseTerminal(terminalID string) error {
 	return nil
 }
 
-// terminalOutput reads the captured output buffer for a terminal session.
+// TerminalOutput reads the captured output buffer for a terminal session.
 // If the process has exited, exitStatus is populated. The output is
 // truncated from the beginning if it exceeds the configured byte limit.
-func (tm *TerminalManager) terminalOutput(terminalID string) (output string, truncated bool, exitStatus *struct {
+func (tm *TerminalManager) TerminalOutput(terminalID string) (output string, truncated bool, exitStatus *struct {
 	ExitCode *int
 	Signal   *string
 }, err error) {
-	s, err := tm.getTerminal(terminalID)
+	s, err := tm.GetTerminal(terminalID)
 	if err != nil {
 		return "", false, nil, err
 	}
@@ -288,10 +288,10 @@ func (tm *TerminalManager) terminalOutput(terminalID string) (output string, tru
 	return output, truncated, exitStatus, nil
 }
 
-// waitForExit blocks until the terminal process exits or the context is
+// WaitForExit blocks until the terminal process exits or the context is
 // cancelled. Returns the exit code and signal that terminated the process.
-func (tm *TerminalManager) waitForExit(ctx context.Context, terminalID string) (exitCode *int, signal *string, err error) {
-	s, err := tm.getTerminal(terminalID)
+func (tm *TerminalManager) WaitForExit(ctx context.Context, terminalID string) (exitCode *int, signal *string, err error) {
+	s, err := tm.GetTerminal(terminalID)
 	if err != nil {
 		return nil, nil, err
 	}

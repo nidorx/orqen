@@ -49,25 +49,41 @@ func (c *Client) RequestPermission(ctx context.Context, params acp.RequestPermis
 
 func (c *Client) SessionUpdate(ctx context.Context, params acp.SessionNotification) error {
 	u := params.Update
-	cs := sessionGetClient(params.SessionId)
+	cs := ClientSessionGet(params.SessionId)
 
 	switch {
 	case u.AgentThoughtChunk != nil:
-		cs.SessionUpdate(ctx, params)
+		if cs != nil {
+			cs.SessionUpdate(ctx, params)
+		}
 	case u.UserMessageChunk != nil:
-		cs.SessionUpdate(ctx, params)
+		if cs != nil {
+			cs.SessionUpdate(ctx, params)
+		}
 	case u.AgentMessageChunk != nil:
-		cs.SessionUpdate(ctx, params)
+		if cs != nil {
+			cs.SessionUpdate(ctx, params)
+		}
 	case u.ToolCall != nil:
-		cs.SessionUpdate(ctx, params)
+		if cs != nil {
+			cs.SessionUpdate(ctx, params)
+		}
 	case u.ToolCallUpdate != nil:
-		cs.SessionUpdate(ctx, params)
+		if cs != nil {
+			cs.SessionUpdate(ctx, params)
+		}
 	case u.SessionInfoUpdate != nil:
-		cs.SessionUpdate(ctx, params)
+		if cs != nil {
+			cs.SessionUpdate(ctx, params)
+		}
 	case u.Plan != nil:
-		cs.SessionUpdate(ctx, params)
+		if cs != nil {
+			cs.SessionUpdate(ctx, params)
+		}
 	case u.AvailableCommandsUpdate != nil:
-		cs.SessionUpdate(ctx, params)
+		if cs != nil {
+			cs.SessionUpdate(ctx, params)
+		}
 
 	case u.CurrentModeUpdate != nil:
 		// The current mode of the session has changed
@@ -207,7 +223,7 @@ func (c *Client) CreateTerminal(ctx context.Context, params acp.CreateTerminalRe
 		cwd = *params.Cwd
 	}
 
-	terminalID, err := c.terminals.createSession(
+	terminalID, err := c.terminals.CreateSession(
 		ctx,
 		params.Command,
 		params.Args,
@@ -229,7 +245,7 @@ func (c *Client) CreateTerminal(ctx context.Context, params acp.CreateTerminalRe
 //
 // See protocol docs: [Terminal Output](https://agentclientprotocol.com/protocol/terminals)
 func (c *Client) TerminalOutput(ctx context.Context, params acp.TerminalOutputRequest) (acp.TerminalOutputResponse, error) {
-	output, truncated, exitStatusInternal, err := c.terminals.terminalOutput(params.TerminalId)
+	output, truncated, exitStatusInternal, err := c.terminals.TerminalOutput(params.TerminalId)
 	if err != nil {
 		return acp.TerminalOutputResponse{}, err
 	}
@@ -255,7 +271,7 @@ func (c *Client) TerminalOutput(ctx context.Context, params acp.TerminalOutputRe
 //
 // See protocol docs: [Terminal Release](https://agentclientprotocol.com/protocol/terminals)
 func (c *Client) ReleaseTerminal(ctx context.Context, params acp.ReleaseTerminalRequest) (acp.ReleaseTerminalResponse, error) {
-	if err := c.terminals.releaseTerminal(params.TerminalId); err != nil {
+	if err := c.terminals.ReleaseTerminal(params.TerminalId); err != nil {
 		return acp.ReleaseTerminalResponse{}, err
 	}
 	return acp.ReleaseTerminalResponse{}, nil
@@ -268,7 +284,7 @@ func (c *Client) ReleaseTerminal(ctx context.Context, params acp.ReleaseTerminal
 //
 // See protocol docs: [Terminal Wait For Exit](https://agentclientprotocol.com/protocol/terminals)
 func (c *Client) WaitForTerminalExit(ctx context.Context, params acp.WaitForTerminalExitRequest) (acp.WaitForTerminalExitResponse, error) {
-	exitCode, signal, err := c.terminals.waitForExit(ctx, params.TerminalId)
+	exitCode, signal, err := c.terminals.WaitForExit(ctx, params.TerminalId)
 	if err != nil {
 		return acp.WaitForTerminalExitResponse{}, err
 	}
@@ -286,7 +302,7 @@ func (c *Client) WaitForTerminalExit(ctx context.Context, params acp.WaitForTerm
 //
 // See protocol docs: [Terminal Kill](https://agentclientprotocol.com/protocol/terminals)
 func (c *Client) KillTerminal(ctx context.Context, params acp.KillTerminalRequest) (acp.KillTerminalResponse, error) {
-	if err := c.terminals.killTerminal(params.TerminalId); err != nil {
+	if err := c.terminals.KillTerminal(params.TerminalId); err != nil {
 		return acp.KillTerminalResponse{}, err
 	}
 	return acp.KillTerminalResponse{}, nil

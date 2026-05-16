@@ -15,6 +15,10 @@ type Chunk struct {
 	lastMsg time.Time
 }
 
+func (c *Chunk) Content() string {
+	return strings.TrimSpace(strings.Join(c.parts, ""))
+}
+
 func (c *Chunk) add(text string) {
 	if !c.started {
 		c.started = true

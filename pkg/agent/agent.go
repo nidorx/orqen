@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"sync"
+	"time"
 
 	"github.com/coder/acp-go-sdk"
 	"github.com/nidorx/orqen/pkg/cli"
@@ -24,23 +25,73 @@ var messages = cli.Messages{
 }
 
 var (
-	agents   = map[string]*Agent{}
-	agentsMu sync.Mutex
+	agents        = map[string]*Agent{}
+	agentsMu      sync.Mutex
+	agentsIdleTms = map[string]*time.Timer{}
 )
 
 type Agent struct {
+	id     string
 	ctx    context.Context
 	cmd    *exec.Cmd // defer cmd.Process.Kill()
 	client *Client
 	conn   *acp.ClientSideConnection
 }
 
-func getAgent(projectId string, agentName string, command []string) (*Agent, error) {
+func (a *Agent) NewSession(ctx context.Context, params acp.NewSessionRequest) (acp.NewSessionResponse, error) {
+	return a.conn.NewSession(ctx, params)
+}
+
+func (a *Agent) Cancel(ctx context.Context, params acp.CancelNotification) error {
+	return a.conn.Cancel(ctx, params)
+}
+
+func (a *Agent) CloseSession(ctx context.Context, params acp.CloseSessionRequest) (acp.CloseSessionResponse, error) {
+	return a.conn.CloseSession(ctx, params)
+}
+
+func (a *Agent) Prompt(ctx context.Context, params acp.PromptRequest) (acp.PromptResponse, error) {
+	return a.conn.Prompt(ctx, params)
+}
+
+// ScheduleIdle sets a timer to kill the subprocess after the idle timeout.
+func (a *Agent) ScheduleIdle(timeout time.Duration) {
+	agentId := a.id
+
+	agentsMu.Lock()
+	defer agentsMu.Unlock()
+
+	// Don't schedule if there are active sessions
+	if _, exists := agents[agentId]; exists {
+		timer := time.AfterFunc(timeout, func() {
+			agentsMu.Lock()
+			defer agentsMu.Unlock()
+			// Double-check: maybe a new session started while waiting
+			if p, stillExists := agents[agentId]; stillExists {
+				if p.cmd != nil && p.cmd.Process != nil {
+					_ = p.cmd.Process.Kill()
+				}
+				delete(agents, agentId)
+			}
+			delete(agentsIdleTms, agentId)
+		})
+		agentsIdleTms[agentId] = timer
+	}
+}
+
+// GetAgent returns a cached agent subprocess or spawns a new one.
+func GetAgent(projectId string, agentName string, command []string) (*Agent, error) {
 
 	agentId := utils.HashXxh64([]byte(fmt.Sprintf("%s-%s", agentName, projectId)))
 
 	agentsMu.Lock()
 	defer agentsMu.Unlock()
+
+	// Cancel idle timer if running
+	if timer, exists := agentsIdleTms[agentId]; exists {
+		timer.Stop()
+		delete(agentsIdleTms, agentId)
+	}
 
 	agent, exists := agents[agentId]
 	if exists {
@@ -48,7 +99,7 @@ func getAgent(projectId string, agentName string, command []string) (*Agent, err
 	}
 
 	ctx := context.Background()
-	logger := newLogger(agentName, "")
+	logger := NewLogger(agentName, "")
 
 	cmd := exec.CommandContext(ctx, command[0], command[1:]...)
 	cmd.Stderr = os.Stderr

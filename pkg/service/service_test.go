@@ -10,7 +10,6 @@ import (
 	"github.com/nidorx/orqen/pkg/chat"
 	"github.com/nidorx/orqen/pkg/conf"
 	"github.com/nidorx/orqen/pkg/engine"
-	"github.com/nidorx/orqen/pkg/service/engine"
 	httpservice "github.com/nidorx/orqen/pkg/service/http"
 )
 
@@ -268,53 +267,6 @@ func TestServiceNilHandling(t *testing.T) {
 	}
 }
 
-// Test 4: Full lifecycle — Start all services, verify they're running. Stop all, verify stopped.
-func TestServiceFullLifecycle(t *testing.T) {
-	// Configure HTTP server first
-	conf.SetHttpServer(conf.HttpServer{
-		IP:   "127.0.0.1",
-		Port: 6180,
-	})
-
-	// This test uses real service structs but with a temporary project dir
-	tmpDir := createTestProjectDir(t, nil)
-
-	// Load project
-	proj, err := engine.Load(tmpDir)
-	if err != nil {
-		t.Fatalf("failed to load project: %v", err)
-	}
-
-	// Verify project loaded
-	if proj == nil {
-		t.Fatal("expected project to be loaded")
-	}
-
-	// Create services
-	singleProjSvc := engine.New()
-	httpSvc := httpservice.New()
-
-	// Start project service (this will load the project)
-	// Note: project.New().OnStart() prompts for user input, so we can't easily test it.
-	// Instead, verify the service can be created and has expected interface
-	if singleProjSvc.Name() != "SingleProjectService" {
-		t.Errorf("expected service name SingleProjectService, got %s", singleProjSvc.Name())
-	}
-	if httpSvc.Name() != "HttpService" {
-		t.Errorf("expected service name HttpService, got %s", httpSvc.Name())
-	}
-
-	// Verify HTTP service has port
-	if httpSvc.Port() == 0 {
-		t.Error("expected HTTP service port to be non-zero")
-	}
-
-	// Stop HTTP service (it's running in goroutine)
-	if err := httpSvc.OnStop(); err != nil {
-		t.Errorf("failed to stop http service: %v", err)
-	}
-}
-
 // Test 5: ChatService without config — Start services with empty chat config
 func TestChatServiceWithoutConfig(t *testing.T) {
 	// Configure HTTP server first
@@ -330,14 +282,8 @@ func TestChatServiceWithoutConfig(t *testing.T) {
 		t.Fatalf("failed to load project: %v", err)
 	}
 
-	// Parse chat config (should return zero config when no chat section)
-	chatConfig, err := chat.ParseChatConfig(proj)
-	if err != nil {
-		t.Fatalf("expected no error parsing config, got: %v", err)
-	}
-
 	// Create chat service
-	chatSvc := chat.New(proj, chatConfig)
+	chatSvc := chat.New(proj)
 	if chatSvc == nil {
 		t.Fatal("expected chat service to be created")
 	}

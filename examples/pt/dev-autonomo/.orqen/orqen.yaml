@@ -1,0 +1,181 @@
+# Orqen Workflow — Desenvolvimento Autônomo (Loop Fechado)
+# Pipeline: Objetivo → Decomposição → Implementação → Testes → Commit
+#
+# Este workflow demonstra o tipo "loop fechado" da taxonomia Orqen:
+# o agente recebe um objetivo, decompõe em tarefas, implementa, testa
+# e faz commit — sem intervenção humana durante o ciclo.
+#
+# Ideal para projetos menos críticos onde a velocidade importa mais
+# que a revisão prévia. O humano intervém apenas para definir o
+# objetivo inicial e revisar o resultado final.
+#
+# Este é o "Tipo 9" — Portal Autônomo em miniatura.
+
+agents:
+  default: "qwen"
+  clients:
+    qwen:
+      command: ["qwen", "--yolo", "--acp"]
+
+execution:
+  max_agents: 5
+  sleep_interval_seconds: 15
+
+modules:
+  - name: task
+    dir: "./tasks"
+    prefix: "AUTO"
+    order: ["implementando", "testando", "decomposicao", "objetivo", "commit_realizado"]
+    extra_prompt: |
+      **CONTEXTO**: Workflow de desenvolvimento autônomo em loop fechado.
+      O agente recebe um objetivo e executa TODAS as etapas até o commit
+      sem intervenção humana.
+
+      **ESCOPO**: Use este workflow APENAS para projetos menos críticos onde
+      a velocidade é mais importante que revisão prévia. Exemplos:
+      - Scripts de automação interna
+      - Refatorações mecânicas (renomear, mover arquivos)
+      - Geração de código boilerplate
+      - Atualizações de documentação
+
+      **SEGURANÇA**: Mesmo em modo autônomo, o agente DEVE:
+      - Executar todos os testes antes de commitar
+      - Não introduzir breaking changes em APIs públicas
+      - Documentar o que foi feito no SUMMARY
+
+      **TEMPLATES**: Para cada artefato gerado, USE O TEMPLATE CORRESPONDENTE no diretório
+      `.orqen/task/prompts/` como base estrutural. Preencha todas as seções do template.
+      Os templates são:
+      - OBJETIVO.md     → Definição do objetivo e escopo
+      - PLANO.md        → Decomposição em subtarefas
+      - SUMMARY.md      → Resumo da implementação completa
+
+    lanes:
+      # ── 00_objetivo ────────────────────────────────────────────
+      - name: "objetivo"
+        purpose: "Definir o objetivo de alto nível — o que precisa ser alcançado, sem especificar como"
+        user_action: "definir objetivo"
+        artifacts: ["OBJETIVO"]
+        max_agents: 1
+        agent_behavior:
+          - "Leia o arquivo de objetivo para entender a intenção do usuário"
+          - "Se o objetivo for ambíguo, escreva perguntas de esclarecimento no arquivo e finalize"
+          - "Defina o escopo: o que está INCLUÍDO e o que está EXCLUÍDO"
+          - "Identifique critérios de sucesso verificáveis (como saber que o objetivo foi alcançado?)"
+          - "Avalie riscos: esta mudança pode quebrar algo existente?"
+          - "Escreva a definição no arquivo AUTO-${SEQUENCE}-OBJETIVO.md usando o template em '.orqen/task/prompts/OBJETIVO.md'"
+          - "Use o tool orqen_move_item (orqen MCP Server) para mover o item da lane objetivo para decomposicao"
+          - "Finalize a execução"
+        critical_rules:
+          - "Se o objetivo envolver breaking changes em APIs públicas, alerte no arquivo e finalize — não avance"
+          - "Se o escopo for grande demais (mais de 5 subtarefas anticipated), sugira dividir em objetivos menores"
+        extra_prompt: |
+          Esta é a ÚNICA interação humana neste workflow. O objetivo deve ser claro o suficiente
+          para que o agente execute sem perguntas.
+
+      # ── 01_decomposicao ────────────────────────────────────────
+      - name: "decomposicao"
+        purpose: "Decompor o objetivo em subtarefas executáveis — cada tarefa deve ser independente e testável"
+        artifacts: ["PLANO"]
+        max_agents: 1
+        agent_behavior:
+          - "Leia AUTO-${SEQUENCE}-OBJETIVO.md para entender o objetivo"
+          - "Decomponha o objetivo em subtarefas independentes — cada uma deve entregar valor testável"
+          - "Para cada subtarefa, defina: escopo, arquivos afetados, critérios de aceite"
+          - "Ordene as subtarefas por dependência — o que precisa ser feito primeiro?"
+          - "Estime a complexidade de cada subtarefa"
+          - "Escreva o plano no arquivo AUTO-${SEQUENCE}-PLANO.md usando o template em '.orqen/task/prompts/PLANO.md'"
+          - "Use o tool orqen_move_item (orqen MCP Server) para mover o item da lane decomposicao para implementando"
+          - "Finalize a execução"
+        critical_rules:
+          - "Cada subtarefa DEVE ser testável independentemente"
+          - "Não crie mais de 5 subtarefas por objetivo — se precisar de mais, o escopo está grande demais"
+        extra_prompt: |
+          A decomposição é o coração do loop autônomo. Tarefas bem decompostas permitem
+          que o agente trabalhe em paralelo e avance mesmo se uma subtarefa falhar.
+
+      # ── 02_implementando ───────────────────────────────────────
+      - name: "implementando"
+        purpose: "Implementar as subtarefas do plano — código, testes e documentação"
+        artifacts: ["SUMMARY"]
+        max_agents: 3
+        ignore_if_dependency: ["objetivo"]
+        agent_behavior:
+          - "Leia AUTO-${SEQUENCE}-OBJETIVO.md e AUTO-${SEQUENCE}-PLANO.md"
+          - "Implemente cada subtarefa do plano na ordem definida"
+          - "Para cada subtarefa: escreva código, escreva testes, execute testes"
+          - "Se uma subtarefa falhar, tente uma abordagem alternativa — documente no SUMMARY"
+          - "Após implementar todas as subtarefas, execute a suite completa de testes do projeto"
+          - "Execute linting e formatação"
+          - "Crie o resumo da implementação no arquivo AUTO-${SEQUENCE}-SUMMARY.md usando o template em '.orqen/task/prompts/SUMMARY.md'"
+          - "Use o tool orqen_move_item (orqen MCP Server) para mover o item da lane implementando para testando"
+          - "Finalize a execução"
+        critical_rules:
+          - "NUNCA avançar para a próxima subtarefa sem que a anterior esteja testando passando"
+          - "Se TODAS as abord alternativas falharem para uma subtarefa, documente no SUMMARY e mova para falha"
+          - "TODO código novo DEVE ter testes"
+        extra_prompt: |
+          Modo autônomo: você tem autonomia para tomar decisões de implementação.
+          Se a spec do plano não for clara o suficiente, use seu julgamento — mas documente
+          a decisão no SUMMARY.
+
+      # ── 03_testando ────────────────────────────────────────────
+      - name: "testando"
+        purpose: "Validação final — executar todos os testes do projeto e verificar integridade"
+        max_agents: 1
+        agent_behavior:
+          - "Leia AUTO-${SEQUENCE}-OBJETIVO.md, AUTO-${SEQUENCE}-PLANO.md e AUTO-${SEQUENCE}-SUMMARY.md"
+          - "Execute a suite completa de testes do projeto (não apenas os testes da tarefa)"
+          - "Verifique que nenhum teste existente foi quebrado"
+          - "Execute linting e verificação de estilo"
+          - "Verifique que a build do projeto passa (go build, npm build, etc.)"
+          - "Se TUDO passar, use o tool orqen_move_item para mover para commit_realizado"
+          - "Se ALGO falhar, mova para falha com detalhes do erro"
+          - "Finalize a execução"
+        critical_rules:
+          - "NUNCA aprovar se qualquer teste do projeto falhar"
+          - "NUNCA aprovar se a build falhar"
+        extra_prompt: |
+          Gate de qualidade final. Mesmo em modo autônomo, a integridade do projeto
+          deve ser preservada.
+
+      # ── 04_falha ───────────────────────────────────────────────
+      - name: "falha"
+        purpose: "Tarefas que falharam na implementação ou nos testes — requer intervenção humana"
+        user_action: "analisar falha e decidir: reintentar ou cancelar"
+        artifacts: ["FAIL"]
+        agent_behavior:
+          - "Leia AUTO-${SEQUENCE}-OBJETIVO.md, AUTO-${SEQUENCE}-PLANO.md e AUTO-${SEQUENCE}-SUMMARY.md"
+          - "Identifique a causa raiz da falha"
+          - "Documente detalhadamente: o que foi tentado, qual foi o erro, o que é necessário para prosseguir"
+          - "Sugira próximos passos: reintentar com outra abordagem, dividir em tarefas menores, ou cancelar"
+          - "Escreva o relatório de falha no arquivo AUTO-${SEQUENCE}-FAIL.md usando o template FAIL do projeto"
+          - "Finalize a execução"
+        critical_rules:
+          - "Seja específico sobre a causa raiz — não diga apenas 'não funcionou'"
+          - "Inclua logs, stack traces ou mensagens de erro relevantes"
+
+      # ── 05_commit_realizado ────────────────────────────────────
+      - name: "commit_realizado"
+        purpose: "Gerar commit message e executar o commit — loop fechado completo"
+        max_agents: 1
+        agent_behavior:
+          - "Leia AUTO-${SEQUENCE}-OBJETIVO.md, AUTO-${SEQUENCE}-PLANO.md e AUTO-${SEQUENCE}-SUMMARY.md"
+          - "Gere uma commit message convencional baseada nas mudanças realizadas"
+          - "Execute: git add . && git commit -m 'mensagem'"
+          - "Se houver push remoto configurado, execute: git push"
+          - "Atualize o SUMMARY com o hash do commit"
+          - "Use o tool orqen_move_item (orqen MCP Server) para mover para concluido"
+          - "Finalize a execução"
+        critical_rules:
+          - "Use commit messages convencionais: tipo(escopo): descrição"
+          - "NUNCA force push"
+          - "Se o commit falhar, documente o erro no SUMMARY"
+        extra_prompt: |
+          Último passo do loop fechado. O commit deve ser limpo, descritivo e seguir
+          as convenções do projeto.
+
+      # ── 06_concluido ───────────────────────────────────────────
+      - name: "concluido"
+        purpose: "Tarefas concluídas com sucesso — commit realizado e testes passando"
+        user_action: "revisar resultado e arquivar"

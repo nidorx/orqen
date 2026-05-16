@@ -9,7 +9,7 @@ import (
 	"github.com/nidorx/orqen/pkg/engine"
 )
 
-// ── orqen_item_search ────────────────────────────────────────────────
+// orqen_item_search
 // Searches for work items in a module or lane, optionally filtered by
 // a condition DSL string. Returns full WorkItem objects.
 

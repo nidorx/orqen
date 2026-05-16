@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/goccy/go-yaml"
-	"github.com/nidorx/orqen/pkg/memory/store"
 	"github.com/nidorx/orqen/pkg/utils"
 	"github.com/nidorx/orqen/pkg/utils/tinylfu"
 )
@@ -461,15 +460,6 @@ func initialize(proj *Project) error {
 				}
 			}
 		}
-	}
-
-	// initalize memory DB
-	if FLAG_USE_MEMORY {
-		memory, err := store.New(store.DefaultConfig(proj.DirAbs))
-		if err != nil {
-			return err
-		}
-		proj.memory = memory
 	}
 
 	return initializeFsys(proj)
