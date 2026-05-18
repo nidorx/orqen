@@ -1,4 +1,4 @@
-# Architecture — Orqen
+# Architecture - Orqen
 
 > **For developers and AI agents.** This document describes the current system design.
 
@@ -8,11 +8,11 @@ Orqen is a Go-based workflow orchestration engine that manages projects, modules
 
 ## Design Principles
 
-1. **Filesystem-First** — All state (tasks, ADRs, learnings) persists as structured files. No database.
-2. **State-Driven** — Everything is explicit. No hidden state, no prompt chaos.
-3. **Agent-Agnostic** — Works with any ACP-compatible agent via standardized protocol.
-4. **Concurrent** — Multi-module, multi-lane execution with configurable concurrency limits.
-5. **Deterministic** — Predictable behavior, auditable outcomes.
+1. **Filesystem-First** - All state (tasks, ADRs, learnings) persists as structured files. No database.
+2. **State-Driven** - Everything is explicit. No hidden state, no prompt chaos.
+3. **Agent-Agnostic** - Works with any ACP-compatible agent via standardized protocol.
+4. **Concurrent** - Multi-module, multi-lane execution with configurable concurrency limits.
+5. **Deterministic** - Predictable behavior, auditable outcomes.
 
 ## High-Level Architecture
 
@@ -170,13 +170,13 @@ type WorkItem struct {
 The execution cycle in `executor.go`:
 
 ```
-1. cleanupCompleted()  — Remove finished invocations from tracking
-2. check slots         — Verify project and lane concurrency limits
-3. scan lanes          — Iterate modules in order, lanes in priority order
-4. filter items        — Apply ignore rules (ignore_if_exists, ignore_if_dependency)
-5. invoke agent        — Call agentInvoker with synthesized prompt
-6. track invocation    — Register InvocationHandle for async completion
-7. sleep               — Wait for sleep_interval_seconds, then repeat
+1. cleanupCompleted()  - Remove finished invocations from tracking
+2. check slots         - Verify project and lane concurrency limits
+3. scan lanes          - Iterate modules in order, lanes in priority order
+4. filter items        - Apply ignore rules (ignore_if_exists, ignore_if_dependency)
+5. invoke agent        - Call agentInvoker with synthesized prompt
+6. track invocation    - Register InvocationHandle for async completion
+7. sleep               - Wait for sleep_interval_seconds, then repeat
 ```
 
 ### Agent Invocation
@@ -185,13 +185,13 @@ When `agentInvoker` is called (in `project.go`), it assembles a prompt from thre
 
 ```
 1. Module Prompt (mod.Prompt)
-   — HEADER.md content with artifact naming conventions, extra_prompt context
+   - HEADER.md content with artifact naming conventions, extra_prompt context
 
 2. Lane Prompt (lan.Prompt)
-   — Workflow definition, agent behavior steps, critical rules, lane-specific extra_prompt
+   - Workflow definition, agent behavior steps, critical rules, lane-specific extra_prompt
 
 3. Pre-Execution Context
-   — Recommended action, related resource files
+   - Recommended action, related resource files
 ```
 
 The assembled prompt is passed to `agent.Exec()` along with the agent command and MCP server configuration.
@@ -239,7 +239,7 @@ server_stdio.go:
 ```
 http_service.go:
   1. Exposes /mcp/http endpoint via chain router
-  2. Registers MCP tools directly (no proxy) — tools operate on the loaded Project
+  2. Registers MCP tools directly (no proxy) - tools operate on the loaded Project
 
 Remote agent:
   3. Connects to http://<orqen-host>:<port>/mcp/http
@@ -256,7 +256,7 @@ succeeding on the server side but losing their response during transport back to
 
 Streamable HTTP resolves this: each tool call is an independent HTTP request/response pair.
 There is no long-lived streaming connection, so `WriteTimeout` only applies to the actual
-response write (milliseconds), not to idle waiting time. Tool calls are isolated — a failure
+response write (milliseconds), not to idle waiting time. Tool calls are isolated - a failure
 in one does not affect subsequent calls.
 
 ### MCP Tools
@@ -343,8 +343,8 @@ Inbox lanes use **single files** (not directories) as work items:
 ### Module Prompts
 
 During initialization (`load.go → initialize()`), Orqen creates prompt templates:
-- `HEADER.md` — Module-level context (artifact naming, extra_prompt)
-- `NN_LANE_NAME.md` — Per-lane workflow definition (agent behavior, critical rules)
+- `HEADER.md` - Module-level context (artifact naming, extra_prompt)
+- `NN_LANE_NAME.md` - Per-lane workflow definition (agent behavior, critical rules)
 
 These are generated from embedded defaults unless user-customized versions already exist.
 
@@ -367,4 +367,4 @@ Errors are explicit and surfaced at multiple levels:
 
 ---
 
-**Orqen © 2026 — Execution layer for AI workflows**
+**Orqen © 2026 - Execution layer for AI workflows**

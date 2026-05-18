@@ -1,4 +1,4 @@
-# Branding — Orqen
+# Branding - Orqen
 
 > Visual identity, design system, and brand guidelines.
 
@@ -7,12 +7,12 @@
 - **Name:** Orqen (from *orchestrate + engine*)
 - **Domain:** `orqen.ia.br`
 - **Tagline:** *"Execution layer for AI workflows"*
-- **Archetype:** Engine invisible — sistema operacional de workflows — infraestrutura cognitiva
+- **Archetype:** Engine invisible - sistema operacional de workflows - infraestrutura cognitiva
 - **Tone:** Técnico, preciso, determinístico, confiável, silencioso
 
 ## Positioning
 
-Orqen is the **execution layer** — the nervous system that turns AI capability into structured, repeatable systems.
+Orqen is the **execution layer** - the nervous system that turns AI capability into structured, repeatable systems.
 
 Orqen should feel infrastructure-grade: predictable, calm, and trustworthy.
 
@@ -21,45 +21,47 @@ Orqen should feel infrastructure-grade: predictable, calm, and trustworthy.
 | Element | Orqen Style |
 |---------|-------------|
 | Role | Execution / Orchestration |
-| Style | Clean / system / industrial |
-| Color base | Deep blue / technical purple |
-| Interface | Modern / minimal |
-| Emotion | Reliable, deterministic |
+| Style | Clean / technical / structured |
+| Color base | Soft white / technical purple / light cyan |
+| Interface | Modern / minimal / engineering-first |
+| Emotion | Reliable, deterministic, calm |
 
 ## Colors
 
 | Role | Name | Hex | Usage |
 |------|------|-----|-------|
-| Background | Deep Navy | `#0F1720` | Page background |
-| Surface | Blue-Gray | `#1E2A38` | Cards, panels |
-| Surface 2 | Steel Blue | `#243447` | Secondary surfaces |
-| Primary | Technical Purple | `#6C5CE7` | Primary actions, links |
+| Background | Soft White | `#F7F8FC` | Main page background |
+| Surface | Light Surface | `#FFFFFF` | Cards, panels |
+| Surface 2 | Soft Gray | `#F1F3F8` | Secondary surfaces |
+| Primary | Technical Purple | `#6c5ce7` | Primary actions, highlights |
 | Primary Hover | Deep Purple | `#5A4BD1` | Hover state for primary |
-| Accent | Light Cyan | `#00D1FF` | Highlights, focus indicators |
+| Accent | Light Cyan | `#00d1ff` | Highlights, focus indicators |
 | Success | Green | `#00C853` | Completed, passing |
 | Warning | Amber | `#FFB300` | Caution, pending review |
 | Error | Red | `#FF5252` | Failure, blocked |
-| Text | Light Gray | `#E6EDF3` | Primary text |
-| Text Muted | Medium Gray | `#9FB3C8` | Secondary text, labels |
-| Border | Dark Gray | `#2F3E4D` | Dividers, borders |
+| Text | Deep Navy | `#1B2436` | Primary text |
+| Text Muted | Slate Gray | `#6B7280` | Secondary text, labels |
+| Border | Soft Border | `#E3E7EF` | Dividers, borders |
 
 ## Typography
 
-- **Font family:** Inter, IBM Plex Sans, sans-serif
+- **Font family:** Gordita, Inter, sans-serif
 - **Weights:**
-  - Regular (400) — body text, descriptions
-  - Medium (500) — labels, metadata
-  - Semibold (600) — headings, emphasis
+  - Regular (400) - body text, descriptions
+  - Medium (500) - labels, metadata
+  - Semibold (600) - headings, emphasis
+  - Bold (700) - hero titles
 
 ### Type Scale
 
 | Token | Size | Usage |
 |-------|------|-------|
 | `--font-size-xs` | 12px | Metadata, badges |
-| `--font-size-sm` | 13px | Small labels |
-| `--font-size-md` | 14px | Body text (default) |
-| `--font-size-lg` | 16px | Subheadings |
-| `--font-size-xl` | 20px | Section headings |
+| `--font-size-sm` | 14px | Small labels |
+| `--font-size-md` | 16px | Body text (default) |
+| `--font-size-lg` | 20px | Subheadings |
+| `--font-size-xl` | 32px | Section headings |
+| `--font-size-2xl` | 64px | Hero titles |
 
 ## Spacing
 
@@ -78,13 +80,13 @@ Orqen should feel infrastructure-grade: predictable, calm, and trustworthy.
 |-------|-------|-------|
 | `--radius-sm` | 6px | Badges, small elements |
 | `--radius-md` | 10px | Cards, panels |
-| `--radius-lg` | 14px | Large containers |
+| `--radius-lg` | 16px | Large containers |
 
 ## Logo
 
 ### Concept
 
-**Core + Orbits** — a central node with orbiting nodes connected by thin lines, representing workflow orchestration and task coordination.
+**Core + Orbits** - a central node with orbiting nodes connected by thin lines, representing workflow orchestration and task coordination.
 
 ### Guidelines
 
@@ -112,7 +114,7 @@ Orqen should feel infrastructure-grade: predictable, calm, and trustworthy.
 
 > **Deterministic over decorative.**
 
-When choosing between "beautiful" and "legible," always choose legible. The interface should feel infrastructure-grade — predictable, calm, and trustworthy.
+When choosing between "beautiful" and "legible," always choose legible. The interface should feel infrastructure-grade - predictable, calm, and trustworthy.
 
 ## Icons
 
@@ -121,4 +123,4 @@ When choosing between "beautiful" and "legible," always choose legible. The inte
 
 ---
 
-**Orqen © 2026 — Execution layer for AI workflows**
+**Orqen © 2026 - Execution layer for AI workflows**

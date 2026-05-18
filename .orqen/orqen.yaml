@@ -43,7 +43,7 @@ execution:
 chat:
   telegram:
     secret: "123"
-    token: "8279208708:AAEsv8mjOvW76g4kZQmISayPKcSSWnP7n_0"
+    token: "***"
 
 modules:                        # ira expor tools mcp para cada módulo
   - name: task

@@ -21,7 +21,7 @@ modules:     # Workflow modules (task, adr, learning, etc.)
 
 ---
 
-## `agents` — Agent Client Configuration
+## `agents` - Agent Client Configuration
 
 Defines which AI agents are available and how to invoke them.
 
@@ -37,9 +37,9 @@ agents:
 
 | Attribute | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
-| `default` | string | Yes | — | Name of the default agent client. Must match a key under `clients`. |
-| `clients` | map | Yes | — | Map of agent client definitions. Each key is the agent name. |
-| `clients.<name>.command` | array of string | Yes | — | Shell command (executable + arguments) used to invoke the agent. Must include flags that enable autonomous mode (e.g., `--yolo`) and ACP protocol support (e.g., `--acp`). |
+| `default` | string | Yes | - | Name of the default agent client. Must match a key under `clients`. |
+| `clients` | map | Yes | - | Map of agent client definitions. Each key is the agent name. |
+| `clients.<name>.command` | array of string | Yes | - | Shell command (executable + arguments) used to invoke the agent. Must include flags that enable autonomous mode (e.g., `--yolo`) and ACP protocol support (e.g., `--acp`). |
 
 ### Notes
 
@@ -48,7 +48,7 @@ agents:
 
 ---
 
-## `execution` — Runtime Settings
+## `execution` - Runtime Settings
 
 Controls how the engine runs across all modules.
 
@@ -65,7 +65,7 @@ execution:
 
 ---
 
-## `modules` — Workflow Modules
+## `modules` - Workflow Modules
 
 Modules group related work items into lanes within a dedicated directory. Each module defines its own workflow pipeline.
 
@@ -84,12 +84,12 @@ modules:
 
 | Attribute | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
-| `name` | string | Yes | — | Unique module name. Used in cross-module lane references (e.g., `task.doing`). |
-| `dir` | string | Yes | — | Directory path **relative to the project root** where the module's lanes and work items are stored. For example, `dir: "tasks"` with project root at `/home/user/project` creates lanes at `/home/user/project/tasks/01_inbox/`, `/home/user/project/tasks/02_backlog/`, etc. |
+| `name` | string | Yes | - | Unique module name. Used in cross-module lane references (e.g., `task.doing`). |
+| `dir` | string | Yes | - | Directory path **relative to the project root** where the module's lanes and work items are stored. For example, `dir: "tasks"` with project root at `/home/user/project` creates lanes at `/home/user/project/tasks/01_inbox/`, `/home/user/project/tasks/02_backlog/`, etc. |
 | `prefix` | string | No | `WI` | Prefix used in work item directory and file names. Normalized to uppercase with spaces and `-` removed. For example, `prefix: "task"` produces `TASK-0001-implement-auth` directories and `TASK-0001.yaml` attribute files. Custom prefixes like `LKN` produce `LKN-0001-automacao-diaria`. |
 | `order` | array of string | No | Lane declaration order | List of lane names that defines the priority order for work selection. The engine checks lanes in this order when looking for available work. Lanes not listed are appended at the end in declaration order. |
-| `extra_prompt` | string | No | — | Additional context injected into the module's `HEADER.md` file. This is **not** step-by-step instructions — use it for domain knowledge, constraints, or references (e.g., "Consult ADRs before refining", "All content must be in pt-BR"). |
-| `lanes` | array | Yes | — | List of lane definitions (see [Lane Attributes](#lanes--lane-configuration) below). |
+| `extra_prompt` | string | No | - | Additional context injected into the module's `HEADER.md` file. This is **not** step-by-step instructions - use it for domain knowledge, constraints, or references (e.g., "Consult ADRs before refining", "All content must be in pt-BR"). |
+| `lanes` | array | Yes | - | List of lane definitions (see [Lane Attributes](#lanes--lane-configuration) below). |
 
 ### How `dir` and `prefix` Work
 
@@ -110,7 +110,7 @@ All lanes within the module are created as subdirectories (`NN_name` format) ins
 
 ---
 
-## `lanes` — Lane Configuration
+## `lanes` - Lane Configuration
 
 A lane represents a stage in a workflow pipeline (e.g., `inbox`, `doing`, `review`, `done`). Lanes define **what** the agent should do, **when** it should skip work, and **how** to behave.
 
@@ -139,19 +139,19 @@ lanes:
 
 | Attribute | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
-| `name` | string | Yes | — | Lane name. The engine creates directories as `NN_name` (e.g., `05_doing`). Must be kebab-case: lowercase letters, numbers, and hyphens. |
-| `purpose` | string | Yes | — | Description of the lane's purpose. **Injected into the agent prompt** so the agent understands what this lane is for. |
+| `name` | string | Yes | - | Lane name. The engine creates directories as `NN_name` (e.g., `05_doing`). Must be kebab-case: lowercase letters, numbers, and hyphens. |
+| `purpose` | string | Yes | - | Description of the lane's purpose. **Injected into the agent prompt** so the agent understands what this lane is for. |
 | `agent` | string | No | Project default | Overrides the default agent client for this lane. Must match a key under `agents.clients`. |
 | `max_agents` | int | No | 0 (unlimited) | Maximum number of agents working simultaneously in this lane. When the limit is reached, the lane is skipped for work selection. |
-| `artifacts` | array of string | No | — | Artifact types the agent **may** create when executing this lane (e.g., `SUMMARY`, `FAIL`, `REFINEMENT`). The engine uses this to render naming convention instructions in `HEADER.md`. |
-| `user_action` | string | No | — | Short label describing the expected user action when a work item reaches this lane (e.g., `"approve"`, `"archive"`, `"review and accept"`). Displayed in UI/CLI to guide the user. |
-| `agent_behavior` | array of string | No | — | **Sequential steps** the agent follows. Each item becomes a numbered step (`1.`, `2.`, `3.`) in the final prompt. Describe **what the agent does** with the work item it already received — not how to find or scan the lane. |
-| `critical_rules` | array of string | No | — | **Absolute, non-negotiable rules**. Rendered in a highlighted, separate section in the final prompt. Use for rules that must **never** be ignored (e.g., "ALL tasks must be created from this single inbox file"). |
-| `extra_prompt` | string | No | — | Additional context injected **after** `agent_behavior` in the lane prompt. Use for knowledge that is **not** step-by-step: how to consult ADRs, confidence levels, validation criteria, trade-offs, domain constraints. |
-| `ignore_if_exists` | array of string | No | — | Skip this lane if **any items exist** in the referenced lanes. Supports lane names (`"draft"`), cross-module references (`"adr.draft"`), and file patterns (`"file:draft.*.md"`, glob supported). |
-| `ignore_if_not_exists` | array of string | No | — | Skip this lane if **no items or files exist** in the referenced lanes. Same reference format as `ignore_if_exists`. Useful for lanes that should only activate when a prerequisite file exists (e.g., `"metricas.md"`). |
-| `ignore_if_dependency` | array of string | No | — | Skip a work item if it has **dependencies** attribute pointing to items in the referenced lanes. Prevents the agent from working on items whose prerequisites are still in progress. |
-| `ignore_if_attr` | string | No | — | Skip work items whose **attributes** match the condition. Uses a SQL-like DSL (see [Condition Language](#condition-language-for-ignore_if_attr)). Evaluated against each work item's YAML attribute file. |
+| `artifacts` | array of string | No | - | Artifact types the agent **may** create when executing this lane (e.g., `SUMMARY`, `FAIL`, `REFINEMENT`). The engine uses this to render naming convention instructions in `HEADER.md`. |
+| `user_action` | string | No | - | Short label describing the expected user action when a work item reaches this lane (e.g., `"approve"`, `"archive"`, `"review and accept"`). Displayed in UI/CLI to guide the user. |
+| `agent_behavior` | array of string | No | - | **Sequential steps** the agent follows. Each item becomes a numbered step (`1.`, `2.`, `3.`) in the final prompt. Describe **what the agent does** with the work item it already received - not how to find or scan the lane. |
+| `critical_rules` | array of string | No | - | **Absolute, non-negotiable rules**. Rendered in a highlighted, separate section in the final prompt. Use for rules that must **never** be ignored (e.g., "ALL tasks must be created from this single inbox file"). |
+| `extra_prompt` | string | No | - | Additional context injected **after** `agent_behavior` in the lane prompt. Use for knowledge that is **not** step-by-step: how to consult ADRs, confidence levels, validation criteria, trade-offs, domain constraints. |
+| `ignore_if_exists` | array of string | No | - | Skip this lane if **any items exist** in the referenced lanes. Supports lane names (`"draft"`), cross-module references (`"adr.draft"`), and file patterns (`"file:draft.*.md"`, glob supported). |
+| `ignore_if_not_exists` | array of string | No | - | Skip this lane if **no items or files exist** in the referenced lanes. Same reference format as `ignore_if_exists`. Useful for lanes that should only activate when a prerequisite file exists (e.g., `"metricas.md"`). |
+| `ignore_if_dependency` | array of string | No | - | Skip a work item if it has **dependencies** attribute pointing to items in the referenced lanes. Prevents the agent from working on items whose prerequisites are still in progress. |
+| `ignore_if_attr` | string | No | - | Skip work items whose **attributes** match the condition. Uses a SQL-like DSL (see [Condition Language](#condition-language-for-ignore_if_attr)). Evaluated against each work item's YAML attribute file. |
 
 ### Reference Format for Ignore Rules
 
@@ -166,10 +166,10 @@ The `ignore_if_exists` and `ignore_if_not_exists` attributes support three refer
 
 ### How Ignore Rules Work Together
 
-- **`ignore_if_exists`**: "Don't work here if there's already something in X." — Prevents parallel work on conflicting lanes.
-- **`ignore_if_not_exists`**: "Don't work here unless X exists." — Activates lanes only when prerequisites are present.
-- **`ignore_if_dependency`**: "Don't work on this item if its dependencies are still in X." — Ensures prerequisites are resolved.
-- **`ignore_if_attr`**: "Don't work on this item if its attributes match this condition." — Enables dynamic, attribute-based filtering.
+- **`ignore_if_exists`**: "Don't work here if there's already something in X." - Prevents parallel work on conflicting lanes.
+- **`ignore_if_not_exists`**: "Don't work here unless X exists." - Activates lanes only when prerequisites are present.
+- **`ignore_if_dependency`**: "Don't work on this item if its dependencies are still in X." - Ensures prerequisites are resolved.
+- **`ignore_if_attr`**: "Don't work on this item if its attributes match this condition." - Enables dynamic, attribute-based filtering.
 
 All ignore rules are evaluated per work item. If any rule triggers, the item is skipped for selection.
 
@@ -326,7 +326,7 @@ modules:
           - "Validate ALL DoD items are satisfied"
           - "Review code quality, security, and performance"
         extra_prompt: |
-          If validation PASSES, approve the task — no artifact is created.
+          If validation PASSES, approve the task - no artifact is created.
           If validation FAILS, create the FAIL artifact with rejection reasons.
 
       - name: "done"
@@ -343,7 +343,7 @@ modules:
           - "When any ADR exists in draft, the agent MUST respond with COMPLETE and perform NO task work"
 
       - name: "accepted"
-        purpose: "User accepted ADRs — active decisions that constrain work"
+        purpose: "User accepted ADRs - active decisions that constrain work"
 
       - name: "rejected"
         purpose: "ADRs rejected by the user"
