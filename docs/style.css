@@ -225,6 +225,7 @@ section.content .markdown-section {
     content: '';
     display: block;
     width: 10%;
+    min-width: 100px;
     border-bottom: 2px solid;
     border-image: var(--gradient) 1;   
 }

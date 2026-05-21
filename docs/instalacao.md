@@ -27,7 +27,7 @@ Orqen é distribuído como um **binário standalone** - sem dependências extern
   </a>
 </div>
 
-Você encontra outras opções para download na [página de Releases do GitHub](https://github.com/nidorx/orqen/releases).
+Você encontra outras opções para download na [página de Releases do GitHub](https://github.com/nidorx/orqen/releases/tag/v1.0.0).
 
 ## Outras opções
 
