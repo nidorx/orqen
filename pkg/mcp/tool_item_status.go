@@ -21,9 +21,9 @@ func (i *ItemStatusInput) SetWorkItemID(workItemID string) {
 }
 
 type ItemStatusOutput struct {
-	Found bool             `json:"found"`
-	Item  *engine.WorkItem `json:"item,omitempty"`
-	Error string           `json:"error,omitempty"`
+	Found bool                  `json:"found"`
+	Item  *engine.WorkItemAlias `json:"item,omitempty"`
+	Error string                `json:"error,omitempty"`
 }
 
 const tnItemStatus = "orqen_item_status"
@@ -57,6 +57,6 @@ func ItemStatusHandler(ctx context.Context, req *mcp.CallToolRequest, input *Ite
 	}
 
 	out.Found = true
-	out.Item = item
+	out.Item = item.Alias()
 	return nil, out, nil
 }

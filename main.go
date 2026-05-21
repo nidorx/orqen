@@ -16,6 +16,8 @@ import (
 	"github.com/nidorx/orqen/pkg/service"
 )
 
+var Version = "v0.0.1"
+
 const banner = `
  ██████╗ ██████╗  ██████╗ ███████╗███╗   ██╗
 ██╔═══██╗██╔══██╗██╔═══██╗██╔════╝████╗  ██║
@@ -45,7 +47,7 @@ var messages = cli.Messages{
 func main() {
 
 	conf.SetInfo(conf.Info{
-		Version: "v0.0.1",
+		Version: Version,
 		Website: "https://github.com/nidorx/orqen", // https://orqen.ai.br
 	})
 

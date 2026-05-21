@@ -153,7 +153,7 @@ func (l *Lane) CreateWorkItem(simpleNameP string) (wi *WorkItem, err error) {
 		wiDirPath := filepath.Join(l.DirAbs, fmt.Sprintf("%s-%04d-%s", l.Module.Prefix, nextSeq, simpleName))
 
 		defer func() {
-			if err != nil {
+			if e != nil {
 				_ = os.RemoveAll(wiDirPath)
 			}
 		}()
@@ -233,6 +233,7 @@ func (l *Lane) onFsysUpdate(ev FsysEvent) {
 
 		if existingLaneItem, exists := l.workItemsByID.Get(id); exists {
 			item = existingLaneItem
+			item.Lane = l
 
 		} else if existingUnstashedItem := l.Module.unstash(seq); existingUnstashedItem != nil {
 			item = existingUnstashedItem
@@ -403,6 +404,8 @@ func (l *Lane) onFsysUpdate(ev FsysEvent) {
 	if item == nil {
 		return
 	}
+
+	item.Lane = l
 
 	if ev.FileInfo != nil {
 		if modTime := ev.FileInfo.ModTime(); modTime.After(item.ModTime) {

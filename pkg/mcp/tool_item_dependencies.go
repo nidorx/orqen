@@ -7,6 +7,7 @@ import (
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/nidorx/orqen/pkg/engine"
+	"github.com/nidorx/orqen/pkg/utils"
 )
 
 type DependenciesInput struct {
@@ -18,10 +19,10 @@ func (i *DependenciesInput) SetWorkItemID(workItemID string) {
 }
 
 type DependenciesOutput struct {
-	Item         *engine.WorkItem   `json:"item"`
-	Dependents   []*engine.WorkItem `json:"dependents"`
-	Dependencies []*engine.WorkItem `json:"dependencies"`
-	Error        string             `json:"error,omitempty"`
+	Item         *engine.WorkItemAlias   `json:"item"`
+	Dependents   []*engine.WorkItemAlias `json:"dependents"`
+	Dependencies []*engine.WorkItemAlias `json:"dependencies"`
+	Error        string                  `json:"error,omitempty"`
 }
 
 const tnItemDependencies = "orqen_item_dependencies"
@@ -62,9 +63,12 @@ func ItemDependenciesHandler(ctx context.Context, req *mcp.CallToolRequest, inpu
 		return nil, out, nil
 	}
 
-	out.Item = currentItem
-	out.Dependents = slices.Collect(currentItem.Dependents())
-	out.Dependencies = slices.Collect(currentItem.Dependencies())
-
+	out.Item = currentItem.Alias()
+	out.Dependents = utils.Map(slices.Collect(currentItem.Dependents()), workItem2Alias)
+	out.Dependencies = utils.Map(slices.Collect(currentItem.Dependencies()), workItem2Alias)
 	return nil, out, nil
+}
+
+func workItem2Alias(i *engine.WorkItem) *engine.WorkItemAlias {
+	return i.Alias()
 }

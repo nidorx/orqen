@@ -80,12 +80,19 @@ func (c *SyncCacheT[V]) Len() int {
 
 // Values https://go.dev/blog/range-functions
 func (c *SyncCacheT[V]) Values() iter.Seq[V] {
-	return func(yield func(V) bool) {
-		c.mu.Lock()
-		defer c.mu.Unlock()
+	// Snapshot keys under lock to avoid holding the mutex during iteration.
+	// This prevents blocking concurrent Set/Get/Del operations while the
+	// caller iterates over values.
+	c.mu.Lock()
+	keys := make([]string, 0, len(c.lfu.data))
+	for key := range c.lfu.data {
+		keys = append(keys, key)
+	}
+	c.mu.Unlock()
 
-		for key := range c.lfu.data {
-			if val, ok := c.lfu.Get(key); ok && !yield(val.(V)) {
+	return func(yield func(V) bool) {
+		for _, key := range keys {
+			if val, ok := c.Get(key); ok && !yield(val) {
 				// yield returns false if the loop should stop (e.g., 'break' was called)
 				return
 			}

@@ -23,14 +23,13 @@ modules:
   - name: conteudo
     dir: "./conteudo"
     prefix: "MED"
-    order: ["revisao", "rascunho", "pesquisa", "ideacao", "publicacao"]
+    order: ["revisao", "rascunho", "pesquisa", "inbox", "publicacao"]
     extra_prompt: |
       **CONTEXTO**: Este workflow automatiza a criação de artigos longos para o Medium.
       O objetivo é produzir artigos profundos, bem pesquisados e estrategicamente
-      posicionados que reforcem a autoridade do autor em engenharia de software,
-      AI e liderança técnica.
+      posicionados que reforcem a autoridade do autor.
 
-      **DIFERENÇA vs LINKEDIN**: Artigos do Medium são longos (8-15 min de leitura),
+      Artigos do Medium são longos (8-15 min de leitura),
       com profundidade técnica real. Não são posts expandidos — são peças originais
       com pesquisa, exemplos de código, diagramas e referências.
 
@@ -38,7 +37,7 @@ modules:
       arquitetos, CTOs, VPs de Engenharia e tomadores de decisão técnica.
 
       **TOM**: Analítico, fundamentado, baseado em experiência real. Soar como
-      um Staff Engineer escrevendo um post de engenharia para o blog da empresa —
+      um especialista escrevendo um post de engenharia para o blog da empresa —
       não como um tutorial genérico.
 
       **IDIOMA**: TODO conteúdo deve ser em PORTUGUÊS DO BRASIL (pt-BR).
@@ -61,8 +60,8 @@ modules:
       - PUBLICACAO.md   → Estratégia de publicação e SEO
 
     lanes:
-      # ── 00_ideacao ─────────────────────────────────────────────
-      - name: "ideacao"
+      # ── 01_inbox ─────────────────────────────────────────────
+      - name: "inbox"
         purpose: "Capturar ideias brutas para artigos — temas, análises profundas, estudos de caso que merecem formato longo"
         user_action: "criar ideias"
         artifacts: ["IDEIA"]
@@ -87,12 +86,12 @@ modules:
           mas não encontram resposta em tutoriais. Avalie: "Isso é algo que eu gostaria de
           ter lido antes de tomar uma decisão técnica?"
 
-      # ── 01_revisar_ideia ───────────────────────────────────────
+      # ── 02_revisar_ideia ───────────────────────────────────────
       - name: "revisar_ideia"
         purpose: "Usuário revisa a análise de tema e aprova antes de avançar para pesquisa"
         user_action: "revisar e aprovar ideia"
 
-      # ── 02_pesquisa ────────────────────────────────────────────
+      # ── 03_pesquisa ────────────────────────────────────────────
       - name: "pesquisa"
         purpose: "Pesquisa profunda — reunir referências, dados, exemplos de código, estudos de caso e contra-argumentos para embasar o artigo"
         artifacts: ["PESQUISA"]
@@ -118,7 +117,7 @@ modules:
           A pesquisa de um artigo é mais profunda que a de um post. Aqui você está construindo
           a base intelectual que sustenta 3000-6000 palavras. Seja exaustivo.
 
-      # ── 03_rascunho ────────────────────────────────────────────
+      # ── 04_rascunho ────────────────────────────────────────────
       - name: "rascunho"
         purpose: "Escrever o artigo completo — estrutura, conteúdo, exemplos de código, formatação para Medium"
         artifacts: ["RASCUNHO"]
@@ -133,7 +132,7 @@ modules:
           - "Sugira imagem de capa (descrição para o usuário criar ou buscar)"
           - "Estime o tempo de leitura"
           - "Compile o artigo completo no arquivo MED-${SEQUENCE}-RASCUNHO.md usando o template em '.orqen/conteudo/prompts/RASCUNHO.md'"
-          - "Use o tool orqen_move_item (orqen MCP Server) para mover o item da lane rascunho para revisao"
+          - "Use o tool orqen_move_item (orqen MCP Server) para mover o item da lane rascunho para revisar_conteudo"
           - "Finalize a execução"
         critical_rules:
           - "TODO conteúdo em PORTUGUÊS DO BRASIL"
@@ -160,39 +159,18 @@ modules:
           4. Conclusão (1-2 parágrafos — takeaway e call to thought)
           5. Referências (links para fontes citadas)
 
-      # ── 04_revisao ─────────────────────────────────────────────
-      - name: "revisao"
+      # ── 05_revisar_conteudo ─────────────────────────────────────────────
+      - name: "revisar_conteudo"
         purpose: "Usuário revisa o artigo, faz ajustes e aprova para publicação"
-        artifacts: ["REVISAO"]
-        max_agents: 1
-        agent_behavior:
-          - "Leia MED-${SEQUENCE}-RASCUNHO.md para entender o artigo produzido"
-          - "Valide: o gancho da introdução captura em 2 parágrafos? O artigo entrega profundidade real?"
-          - "Verifique: há afirmações sem fundamento? Referências sem link? Código não testado?"
-          - "Verifique a progressão lógica: cada seção constrói sobre a anterior?"
-          - "Verifique o tom: soa como experiência real ou como texto de IA?"
-          - "Sugira melhorias específicas se necessário"
-          - "Escreva o feedback no arquivo MED-${SEQUENCE}-REVISAO.md usando o template em '.orqen/conteudo/prompts/REVISAO.md'"
-          - "Se o artigo for APROVADO, use o tool orqen_move_item para mover para publicacao"
-          - "Se o artigo PRECISAR DE AJUSTES, mova de volta para rascunho com o feedback"
-          - "Finalize a execução"
-        critical_rules:
-          - "NUNCA aprovar artigo com referências inventadas ou código não funcional"
-          - "Se o artigo for superficial, solicite aprofundamento"
-        extra_prompt: |
-          Revisão de artigo longo é diferente de revisão de post. Verifique:
-          - Coerência ao longo de todo o texto
-          - Progressão lógica entre seções
-          - Se os exemplos de código realmente ilustram os pontos
-          - Se as referências sustentam as afirmações
+        user_action: "revisar e aprovar conteúdo"       
 
-      # ── 05_publicacao ──────────────────────────────────────────
+      # ── 06_publicacao ──────────────────────────────────────────
       - name: "publicacao"
         purpose: "Definir estratégia de publicação no Medium — SEO, tags, publicação, distribuição"
         artifacts: ["PUBLICACAO"]
         max_agents: 1
         agent_behavior:
-          - "Leia MED-${SEQUENCE}-RASCUNHO.md e MED-${SEQUENCE}-REVISAO.md para entender o artigo final"
+          - "Leia MED-${SEQUENCE}-RASCUNHO.md para entender o artigo final"
           - "Otimize o título para SEO: claro, com palavras-chave, sem clickbait"
           - "Escreva o subtítulo: complementar ao título, não redundante"
           - "Sugira 5 tags do Medium (mix de amplas e nichadas — ex: 'Software Engineering', 'Go', 'System Design')"
@@ -216,7 +194,7 @@ modules:
           - Como submeter a uma publicação
           - Como configurar canonical URL
 
-      # ── 06_publicado ───────────────────────────────────────────
+      # ── 07_publicado ───────────────────────────────────────────
       - name: "publicado"
         purpose: "Arquivo de artigos publicados — referência para futuros artigos e cross-posting"
         user_action: "arquivar"

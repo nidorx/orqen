@@ -39,7 +39,7 @@ type Project struct {
 // GetModule returns a module by name, or nil if not found.
 func (p *Project) GetModule(name string) *Module {
 	for _, mod := range p.Modules {
-		if mod.Name == name {
+		if strings.EqualFold(mod.Name, name) {
 			return mod
 		}
 	}

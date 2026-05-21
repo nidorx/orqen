@@ -214,11 +214,23 @@ func (m *Module) CreateItem() {
 
 func (m *Module) TxNewWorkItem(fn func(nextSeq int) error) error {
 
+	// Collect max sequence number from all lanes.
+	// Values() snapshots keys under lock and iterates without holding it,
+	// so this won't block concurrent cache operations.
+	maxSeq := 0
+	for _, lane := range m.Lanes {
+		for item := range lane.WorkItems() {
+			if item.Seq > maxSeq {
+				maxSeq = item.Seq
+			}
+		}
+	}
+
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	maxSeq := 0
-
+	// Re-check maxSeq under lock in case another goroutine incremented it
+	// between our scan and the lock acquisition.
 	for _, lane := range m.Lanes {
 		for item := range lane.WorkItems() {
 			if item.Seq > maxSeq {

@@ -37,7 +37,7 @@ func TestCreateItemHandler(t *testing.T) {
 		}
 
 		// Verify directory exists
-		fullDir := filepath.Join(out.WorkItem.Lane.DirAbs, out.WorkItem.Name)
+		fullDir := filepath.Join(out.WorkItem.Lane, out.WorkItem.Name)
 		if _, err := os.Stat(fullDir); os.IsNotExist(err) {
 			t.Errorf("directory does not exist: %s", fullDir)
 		}

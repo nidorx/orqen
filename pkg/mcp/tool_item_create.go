@@ -21,9 +21,9 @@ func (i *ItemCreateInput) SetWorkItemID(workItemID string) {
 }
 
 type ItemCreateOutput struct {
-	Success  bool             `json:"success"`
-	WorkItem *engine.WorkItem `json:"workitem"`
-	Error    string           `json:"error,omitempty"`
+	Success  bool                  `json:"success"`
+	WorkItem *engine.WorkItemAlias `json:"workitem"`
+	Error    string                `json:"error,omitempty"`
 }
 
 const tnItemCreate = "orqen_item_create"
@@ -78,7 +78,7 @@ func ItemCreateHandler(ctx context.Context, req *mcp.CallToolRequest, input *Ite
 	}
 
 	out.Success = true
-	out.WorkItem = wi
+	out.WorkItem = wi.Alias()
 
 	return nil, out, nil
 }

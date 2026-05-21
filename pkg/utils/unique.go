@@ -1,14 +1,14 @@
 package utils
 
-func Unique(strSlice []string) []string {
-	keys := make(map[string]struct{})
-	list := []string{}
+func Unique[T comparable](input []T) []T {
+	seen := make(map[T]struct{})
+	result := make([]T, 0, len(input))
 
-	for _, entry := range strSlice {
-		if _, value := keys[entry]; !value {
-			keys[entry] = struct{}{}
-			list = append(list, entry)
+	for _, v := range input {
+		if _, ok := seen[v]; !ok {
+			seen[v] = struct{}{}
+			result = append(result, v)
 		}
 	}
-	return list
+	return result
 }

@@ -7,6 +7,7 @@ import (
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/nidorx/orqen/pkg/engine"
+	"github.com/nidorx/orqen/pkg/utils"
 )
 
 // orqen_item_search
@@ -25,8 +26,8 @@ func (i *ItemSearchInput) SetWorkItemID(workItemID string) {
 }
 
 type ItemSearchOutput struct {
-	Items []*engine.WorkItem `json:"items"`
-	Error string             `json:"error,omitempty"`
+	Items []*engine.WorkItemAlias `json:"items"`
+	Error string                  `json:"error,omitempty"`
 }
 
 const tnItemSearch = "orqen_item_search"
@@ -93,7 +94,7 @@ func ItemSearchHandler(ctx context.Context, req *mcp.CallToolRequest, input *Ite
 		}
 	}
 
-	out.Items = slices.Collect(iterator)
+	out.Items = utils.Map(slices.Collect(iterator), workItem2Alias)
 
 	return nil, out, nil
 }

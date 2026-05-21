@@ -1,7 +1,6 @@
 package engine
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"iter"
@@ -24,10 +23,14 @@ type WorkItem struct {
 	attributesModTime time.Time `json:"-"`
 }
 
-func (item WorkItem) MarshalJSON() ([]byte, error) {
-	// Alias original type so it doesn't have the MarshalJSON method
-	type Alias WorkItem
+type WorkItemAlias struct {
+	*WorkItem
+	Lane         string   `json:"lane"`
+	Module       string   `json:"module"`
+	Dependencies []string `json:"dependencies"`
+}
 
+func (item WorkItem) Alias() *WorkItemAlias {
 	// DirPath    string            `json:"dir_path"`
 	// FilePath   string            `json:"file_path"`
 	// ModuleType string            `json:"module_type"`
@@ -36,23 +39,16 @@ func (item WorkItem) MarshalJSON() ([]byte, error) {
 	// relFile, _ := filepath.Rel(proj.DirAbs, filepath.Clean(filePath))
 	// out.DirPath = filepath.ToSlash(filepath.Rel(proj.DirAbs, filepath.Clean(dirPath)))
 	// out.FilePath = filepath.ToSlash(relFile)
-
 	var deps []string
 	for _, v := range item.Attributes.StringArray("dependencies") {
 		deps = append(deps, v)
 	}
-
-	return json.Marshal(&struct {
-		Lane         string   `json:"lane"`
-		Module       string   `json:"module"`
-		Dependencies []string `json:"dependencies"`
-		*Alias
-	}{
+	return &WorkItemAlias{
 		Lane:         item.Lane.Name,
 		Module:       item.Lane.Module.Name,
 		Dependencies: deps,
-		Alias:        (*Alias)(&item),
-	})
+		WorkItem:     &item,
+	}
 }
 
 func (item *WorkItem) AttributesLoad() {

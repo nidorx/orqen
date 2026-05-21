@@ -264,7 +264,7 @@ func TestItemSearchHandler(t *testing.T) {
 		if item.Name == "" {
 			t.Error("item Name should not be empty")
 		}
-		if item.Lane == nil {
+		if item.Lane == "" {
 			t.Error("item Lane should not be nil")
 		}
 		if item.Attributes == nil {

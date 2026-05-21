@@ -15,6 +15,9 @@
 
 Oi 🙂 Orqen é o sistema que organiza seu trabalho com IA de forma estruturada. Ele transforma processos repetitivos em pipelines claros, com memória persistente e execução determinística.
 
+
+Acesse https://nidorx.github.io/orqen/#/
+
 ## O Que é Orqen?
 
 Orqen é um motor de orquestração de workflows open-source. Inspirado no Kanban, ele serve não apenas ao desenvolvimento de software, mas **qualquer fluxo** que você queira automatizar — criação de conteúdo, marketing, operações e além.
@@ -139,6 +142,8 @@ Use o skill embutido em `.orqen/SKILL.md` — um agente vai entrevistar você so
 - **Open Source** — Licença MIT
 
 ## Documentação
+
+A documentação completa está disponível em **[https://nidorx.github.io/orqen/#/](https://nidorx.github.io/orqen/#/)**.
 
 | Documento | Propósito |
 |-----------|-----------|

@@ -18,7 +18,6 @@
 [Superficial (melhor como post LinkedIn) | Média (artigo curto, 5-8 min) | Profunda (artigo longo, 8-15 min)]
 
 ## Público-Alvo
-[Engenheiros seniores | Staff/Principal Engineers | Arquitetos | CTOs/VPs | Misto]
 
 ## Conexão com Posicionamento
 [Como esse artigo conecta com o posicionamento do autor como líder técnico?]

@@ -151,8 +151,10 @@ func loadProject() *engine.Project {
 
 				// 3. ChatService — needs project loaded and HTTP port known
 				chatSrv := chat.New(proj)
-				if err := chatSrv.OnStart(); err != nil {
-					panic(err)
+				if chatSrv != nil {
+					if err := chatSrv.OnStart(); err != nil {
+						panic(err)
+					}
 				}
 				return proj
 			} else {

@@ -41,12 +41,12 @@ func TestStatusHandler(t *testing.T) {
 			t.Errorf("item_id = %d, want 1", out.Item.Seq)
 		}
 
-		if out.Item.Lane.Name != "backlog" {
-			t.Errorf("current_lane.name = %q, want 'backlog'", out.Item.Lane.Name)
+		if out.Item.Lane != "backlog" {
+			t.Errorf("current_lane.name = %q, want 'backlog'", out.Item.Lane)
 		}
 
-		if out.Item.Lane.Module.Name != "task" {
-			t.Errorf("current_lane.module = %q, want 'task'", out.Item.Lane.Module.Name)
+		if out.Item.Module != "task" {
+			t.Errorf("current_lane.module = %q, want 'task'", out.Item.Module)
 		}
 	})
 

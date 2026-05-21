@@ -107,9 +107,6 @@ func sseProxy[In InputWithWorkItemID, Out any](
 		}
 
 		result, err = cs.CallTool(ctx, &mcp.CallToolParams{Name: tool, Arguments: input})
-		if err != nil && DEBUG_STDIO {
-			debugError(err)
-		}
 
 		if DEBUG_STDIO {
 			debugAny("CALL_TOOL_RESULT", result)
