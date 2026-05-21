@@ -885,3 +885,20 @@ hr {
       margin-top: var(--space-2);
    }
 }
+
+
+.sidebar-toggle {
+    width: 279px;
+}
+
+@media screen and (max-width: 768px) {
+    aside.sidebar {
+        box-shadow: none!important;
+        left: -100vw;
+        transition: transform 250ms ease-out;
+    }
+
+    body.close aside.sidebar {
+        transform: translateX(100vw);
+    }
+}

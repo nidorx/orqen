@@ -43,7 +43,7 @@ modules:
       - PR.md           → Descrição do Pull Request
 
     lanes:
-      # ── 00_inbox ───────────────────────────────────────────────
+      # ── 01_inbox ───────────────────────────────────────────────
       - name: "inbox"
         purpose: "Capturar issues, bugs, feature requests — entrada de trabalho para o agente analisar"
         user_action: "criar issues"
@@ -66,12 +66,12 @@ modules:
           A qualidade da análise inicial determina a qualidade de toda a cadeia.
           Seja rigoroso na compreensão do problema antes de avançar.
 
-      # ── 01_revisar_issue ───────────────────────────────────────
+      # ── 02_revisar_issue ───────────────────────────────────────
       - name: "revisar_issue"
         purpose: "Usuário revisa a análise da issue e aprova antes de especificar a solução"
         user_action: "revisar e aprovar issue"
 
-      # ── 02_especificacao ───────────────────────────────────────
+      # ── 03_especificacao ───────────────────────────────────────
       - name: "especificacao"
         purpose: "Analisar a codebase e especificar a solução técnica detalhada — o QUE fazer e COMO, sem implementar ainda"
         artifacts: ["SPEC"]
@@ -96,12 +96,12 @@ modules:
           Seja explícito sobre trade-offs — "podemos fazer X (mais simples) ou Y (mais robusto)".
           Inclua exemplos de código se necessário para ilustrar a abordagem.
 
-      # ── 03_revisar_especificacao ───────────────────────────────
+      # ── 04_revisar_especificacao ───────────────────────────────
       - name: "revisar_especificacao"
         purpose: "CHECKPOINT HUMANO — Usuário valida a abordagem técnica antes da implementação"
         user_action: "aprovar especificação"
 
-      # ── 04_implementacao ───────────────────────────────────────
+      # ── 05_implementacao ───────────────────────────────────────
       - name: "implementacao"
         purpose: "Implementar a solução conforme especificação aprovada — código, testes e documentação"
         artifacts: ["SUMMARY"]
@@ -128,7 +128,7 @@ modules:
           foi aprovada pelo humano. Se descobrir algo que invalida a spec durante a implementação,
           documente a divergência e justifique a mudança no SUMMARY.
 
-      # ── 05_revisao ─────────────────────────────────────────────
+      # ── 06_revisao ─────────────────────────────────────────────
       - name: "revisao"
         purpose: "Validar a implementação contra a especificação e os critérios de aceite"
         artifacts: ["FAIL"]
@@ -149,13 +149,13 @@ modules:
           Revisão automatizada de qualidade. Seja rigoroso — o humano confiará nesta revisão
           para decidir se abre o PR.
 
-      # ── 06_blocked ─────────────────────────────────────────────
+      # ── 07_blocked ─────────────────────────────────────────────
       - name: "blocked"
         purpose: "Tarefas bloqueadas por impedimentos técnicos que requerem intervenção humana"
         user_action: "resolver bloqueios"
         artifacts: ["FAIL"]
 
-      # ── 07_pr_aberto ───────────────────────────────────────────
+      # ── 08_pr_aberto ───────────────────────────────────────────
       - name: "pr_aberto"
         purpose: "Gerar descrição do Pull Request e preparar para submissão"
         artifacts: ["PR"]
@@ -174,7 +174,7 @@ modules:
           O PR é a interface entre o agente e o revisor humano. Faça uma descrição clara,
           concisa e completa.
 
-      # ── 08_concluido ───────────────────────────────────────────
+      # ── 09_concluido ───────────────────────────────────────────
       - name: "concluido"
         purpose: "Tarefas concluídas — PR aberto e pronto para merge"
         user_action: "fazer merge e arquivar"
