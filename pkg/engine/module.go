@@ -56,6 +56,7 @@ func (m *Module) set(item *WorkItem) {
 
 func (m *Module) stash(seq int) {
 	if item, exists := m.workItemsBySeq.Get(strconv.Itoa(seq)); exists {
+		item.Lane = nil
 		m.workItemsStashed.Set(strconv.Itoa(seq), item)
 		m.workItemsBySeq.Del(strconv.Itoa(seq))
 	}

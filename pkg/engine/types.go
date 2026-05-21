@@ -56,6 +56,60 @@ type AgentClient struct {
 	Command []string `yaml:"command"`
 }
 
+// McpServerStdioConfig defines an MCP server transport via stdio.
+//
+// YAML structure:
+//
+//	stdio:
+//	  command: "npx"
+//	  args: ["-y", "@modelcontextprotocol/server-postgres", "postgresql://localhost/db"]
+//	  env:
+//	    - name: "API_KEY"
+//	      value: "secret"
+type McpServerStdioConfig struct {
+	Command string         `yaml:"command"`
+	Args    []string       `yaml:"args"`
+	Env     []McpEnvVar    `yaml:"env"`
+}
+
+// McpEnvVar defines an environment variable for an MCP server.
+type McpEnvVar struct {
+	Name  string `yaml:"name"`
+	Value string `yaml:"value"`
+}
+
+// McpServerHttpConfig defines an MCP server transport via HTTP.
+//
+// YAML structure:
+//
+//	http:
+//	  url: "https://search.example.com/mcp"
+//	  headers:
+//	    Authorization: "Bearer token"
+type McpServerHttpConfig struct {
+	Url     string            `yaml:"url"`
+	Headers map[string]string `yaml:"headers"`
+}
+
+// McpServerConfig defines a named MCP server with either stdio or http transport.
+//
+// YAML structure:
+//
+//	mcpServers:
+//	  database:
+//	    stdio:
+//	      command: "npx"
+//	      args: ["-y", "@modelcontextprotocol/server-postgres", "postgresql://localhost/db"]
+//	  search:
+//	    http:
+//	      url: "https://search.example.com/mcp"
+//	      headers:
+//	        Authorization: "Bearer token"
+type McpServerConfig struct {
+	Stdio *McpServerStdioConfig `yaml:"stdio"`
+	Http  *McpServerHttpConfig  `yaml:"http"`
+}
+
 // Execution holds project-level execution settings.
 //
 // YAML structure:

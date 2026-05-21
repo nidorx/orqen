@@ -51,7 +51,7 @@ modules:
       - SUMMARY.md      → Resumo da implementação completa
 
     lanes:
-      # ── 00_objetivo ────────────────────────────────────────────
+      # ── 01_inbox ────────────────────────────────────────────
       - name: "objetivo"
         purpose: "Definir o objetivo de alto nível — o que precisa ser alcançado, sem especificar como"
         user_action: "definir objetivo"

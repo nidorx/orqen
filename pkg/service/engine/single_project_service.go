@@ -63,6 +63,9 @@ func (s *Service) OnStart() error {
 
 		// @TODO: sent context item.Files
 
+		// Build MCP servers list for this lane
+		mcpServers := buildMcpServers(proj, lane, orqenExec, orqenPort, item.ID)
+
 		// initialize agent (ACP)
 		return agent.Exec(
 			proj.Id,
@@ -72,22 +75,7 @@ func (s *Service) OnStart() error {
 			cwd,
 			prompt,
 			proj.Agents.GetCommand(lane.Agent),
-			[]acp.McpServer{
-				{
-					// disponibiliza acesso ao mcp do próprio orqen
-					Stdio: &acp.McpServerStdio{
-						Name:    "orqen",
-						Command: orqenExec,
-						Args: []string{
-							"--mcp",
-							"--port=" + strconv.Itoa(orqenPort),
-							"--project=" + proj.Id,
-							"--workitem=" + item.ID,
-						},
-						Env: make([]acp.EnvVariable, 0),
-					},
-				},
-			})
+			mcpServers)
 	})
 	proj.Start()
 
@@ -102,6 +90,70 @@ func (s *Service) OnStop() error {
 
 func New() *Service {
 	return &Service{}
+}
+
+// buildMcpServers resolves lane MCP server references and builds the []acp.McpServer list.
+// The Orqen MCP is always prepended as the first server in the list.
+func buildMcpServers(proj *engine.Project, lane *engine.Lane, orqenExec string, orqenPort int, workItemID string) []acp.McpServer {
+	var mcpServers []acp.McpServer
+
+	// Always prepend Orqen MCP
+	orqenMcp := acp.McpServer{
+		Stdio: &acp.McpServerStdio{
+			Name:    "orqen",
+			Command: orqenExec,
+			Args: []string{
+				"--mcp",
+				"--port=" + strconv.Itoa(orqenPort),
+				"--project=" + proj.Id,
+				"--workitem=" + workItemID,
+			},
+			Env: make([]acp.EnvVariable, 0),
+		},
+	}
+	mcpServers = append(mcpServers, orqenMcp)
+
+	// Resolve lane-specific MCP servers
+	for _, mcpName := range lane.McpServers {
+		if mcpConfig, exists := proj.McpServers[mcpName]; exists {
+			if mcpConfig.Stdio != nil {
+				// Convert stdio config
+				envVars := make([]acp.EnvVariable, 0, len(mcpConfig.Stdio.Env))
+				for _, env := range mcpConfig.Stdio.Env {
+					envVars = append(envVars, acp.EnvVariable{
+						Name:  env.Name,
+						Value: env.Value,
+					})
+				}
+				mcpServers = append(mcpServers, acp.McpServer{
+					Stdio: &acp.McpServerStdio{
+						Name:    mcpName,
+						Command: mcpConfig.Stdio.Command,
+						Args:    mcpConfig.Stdio.Args,
+						Env:     envVars,
+					},
+				})
+			} else if mcpConfig.Http != nil {
+				// Convert HTTP config
+				headers := make([]acp.HttpHeader, 0, len(mcpConfig.Http.Headers))
+				for k, v := range mcpConfig.Http.Headers {
+					headers = append(headers, acp.HttpHeader{
+						Name:  k,
+						Value: v,
+					})
+				}
+				mcpServers = append(mcpServers, acp.McpServer{
+					Http: &acp.McpServerHttpInline{
+						Name:    mcpName,
+						Url:     mcpConfig.Http.Url,
+						Headers: headers,
+					},
+				})
+			}
+		}
+	}
+
+	return mcpServers
 }
 
 // GetProject returns the loaded project instance.

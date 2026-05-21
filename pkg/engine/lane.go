@@ -61,6 +61,7 @@ type Lane struct {
 	IgnoreIfExists     []string `yaml:"ignore_if_exists"`     // ignore if items exist in referenced lanes
 	IgnoreIfNotExists  []string `yaml:"ignore_if_not_exists"` // ignore if items/files don't exist in referenced lanes
 	IgnoreIfDependency []string `yaml:"ignore_if_dependency"` // ignore if item has dependencies in referenced lanes
+	McpServers         []string `yaml:"mcpServers"`           // list of MCP server names to inject for this lane
 	Module             *Module  `yaml:"-"`                    // reference to parent module
 
 	// Runtime state

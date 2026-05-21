@@ -85,6 +85,64 @@ modules:
           - "Revisa qualidade e segurança do código"
 ```
 
+### MCP Servers
+
+Orqen permite configurar servidores MCP (Model Context Protocol) adicionais para os agentes utilizarem durante a execução. Isso permite integrar bancos de dados, APIs externas, ferramentas de busca e outros recursos via MCP.
+
+#### Definindo MCP Servers
+
+MCP servers são definidos na raiz do `orqen.yaml`, similar a `agents`. Cada server recebe um nome e pode usar transporte `stdio` (comando local) ou `http` (endpoint remoto):
+
+```yaml
+mcpServers:
+  database:
+    stdio:
+      command: "npx"
+      args: ["-y", "@modelcontextprotocol/server-postgres", "postgresql://localhost/mydb"]
+      env:
+        - name: "NODE_ENV"
+          value: "production"
+
+  search:
+    http:
+      url: "https://search.example.com/mcp"
+      headers:
+        Authorization: "Bearer ${SEARCH_API_TOKEN}"
+```
+
+#### Referenciando MCP Servers em Lanes
+
+Cada lane pode referenciar MCP servers por nome através do campo `mcpServers`. O MCP do próprio Orqen é sempre injetado automaticamente (sempre primeiro na lista):
+
+```yaml
+modules:
+  - name: task
+    dir: ".orqen/tasks"
+    lanes:
+      - name: "implementacao"
+        purpose: "Implementar a solução"
+        mcpServers: [database, search]   # refere MCP servers por nome
+        agent_behavior:
+          - "Implementa conforme especificações"
+
+      - name: "review"
+        purpose: "Revisar implementação"
+        # Sem mcpServers — recebe apenas o MCP do Orqen
+```
+
+#### Transportes Suportados
+
+| Transporte | Uso | Configuração |
+|------------|-----|--------------|
+| `stdio` | Processo local executado pelo agente | `command`, `args`, `env` (opcional) |
+| `http` | Endpoint remoto acessível via rede | `url`, `headers` (opcional) |
+
+#### Notas
+
+- O Orqen não valida a disponibilidade dos MCP servers — se um server falhar, o agente ACP faz o log adequado
+- MCP servers com ferramentas de mesmo nome podem coexistir; o comportamento de resolução depende do agente ACP
+- Credenciais devem ser gerenciadas pelo usuário (variáveis de ambiente, secrets managers, etc.)
+
 ### Fluxo de Execução
 
 ```
@@ -157,12 +215,24 @@ A documentação completa está disponível em **[https://nidorx.github.io/orqen
 - [x] Autopilot (versão shell script) — prova de conceito
 - [x] Backend Go com protocolo ACP
 - [x] CLI terminal-first com servidor de ferramentas MCP
+- [ ] Notificação com Telegram
 - [ ] Criação custom de workflow via skill interativo
-- [ ] Integração ADR e sistema de aprendizado
+- [ ] Integração sistema de aprendizado
 - [ ] Marketplace de agentes
 - [ ] Biblioteca de templates para workflows comuns
 - [ ] APIs REST para integrações externas
 - [ ] Interface web
+- [ ] Logica para criar novo projeto, usando um agente local (e SKILLs)
+- [ ] Permitir usar modelo local
+- [ ] Connectors: permite a conexão com RSS, E-mail, etc. Entrada e saída
+- [ ] Permitir scheduler window, lane só é executada em periodo determinado
+- [ ] Carregar orqen.yaml do diretório do usuário (valores padrão)
+- [ ] Passar contexto para invocaçao do agente, para permitir graceful stop
+- [ ] Enviar arquivos para o contexto (adicionar parametro context com blob)
+- [ ] Logs de saida em arquivo (depuração)
+- [ ] Steps na lane, permite execução complexa. Mesma lógica de Lane, e lógica atual só cria um step default
+- [ ] Permitir usar prompt externo (use no yaml)
+- [ ] Multi-projeto
 
 ## Licença
 
@@ -173,7 +243,3 @@ Orqen é open source sob a [Licença MIT](LICENSE).
 - **GitHub:** [github.com/orqen/orqen](https://github.com/orqen/orqen)
 - **Issues:** Reporte bugs e solicite funcionalidades via GitHub Issues
 - **Contribuindo:** Veja [CONTRIBUTING.md](CONTRIBUTING.md)
-
----
-
-**Orqen © 2026 — Camada de execução para workflows de IA**

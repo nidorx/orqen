@@ -255,6 +255,13 @@ func validate(proj *Project) error {
 				return fmt.Errorf("module %q has duplicate lane name: %s", mod.Name, lane.Name)
 			}
 			laneNames[lane.Name] = true
+
+			// Validate MCP server references
+			for _, mcpName := range lane.McpServers {
+				if _, exists := proj.McpServers[mcpName]; !exists {
+					return fmt.Errorf("module %q lane %q references unknown MCP server: %q", mod.Name, lane.Name, mcpName)
+				}
+			}
 		}
 	}
 

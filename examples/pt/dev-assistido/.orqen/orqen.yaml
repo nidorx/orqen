@@ -110,7 +110,9 @@ modules:
         ignore_if_dependency: ["inbox", "especificacao"]
         agent_behavior:
           - "Leia DEV-${SEQUENCE}-ISSUE.md e DEV-${SEQUENCE}-SPEC.md para entender o problema e a solução aprovada"
+          - "Se o arquivo DEV-${SEQUENCE}-FAIL.md existir, leia para entender o problema que foi reportado durante a revisao"
           - "Implemente o código conforme a especificação, seguindo as convenções do projeto"
+          - "Se houver críticas de revisão no arquivo DEV-${SEQUENCE}-FAIL.md, faça os ajustes necessários"
           - "Escreva testes unitários e/ou de integração para cobrir os critérios de aceite"
           - "Execute os testes e garanta que todos passam"
           - "Execute linting e correção de estilo se aplicável"
@@ -141,6 +143,8 @@ modules:
           - "Verifique se a documentação foi atualizada se necessário"
           - "Se TUDO estiver conforme, use o tool orqen_move_item para mover para pr_aberto"
           - "Se houver problemas, crie o arquivo DEV-${SEQUENCE}-FAIL.md com os rejeições detalhadas"
+          - "Se houver problemas, use o tool orqen_move_item (orqen MCP Server) para mover o item da lane revisao para blocked"
+          - "Se não houver problemas, use o tool orqen_move_item (orqen MCP Server) para mover o item da lane revisao para pr_aberto"
           - "Finalize a execução"
         critical_rules:
           - "Não aprove se QUALQUER critério de aceite não for atendido"
