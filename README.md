@@ -211,10 +211,6 @@ A documentação completa está disponível em **[https://nidorx.github.io/orqen
 
 ## Roadmap
 
-- [x] Conceito central e design system
-- [x] Autopilot (versão shell script) — prova de conceito
-- [x] Backend Go com protocolo ACP
-- [x] CLI terminal-first com servidor de ferramentas MCP
 - [ ] Notificação com Telegram
 - [ ] Criação custom de workflow via skill interativo
 - [ ] Integração sistema de aprendizado

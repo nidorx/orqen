@@ -1,5 +1,7 @@
 # Exemplo: Dev Autônomo
 
+> **IMPORTANTE** Ainda em fase de implementaçao
+
 Desenvolvimento em **loop fechado**. O agente recebe um objetivo, decompõe, implementa, testa e faz commit - sem intervenção humana.
 
 ## Pipeline

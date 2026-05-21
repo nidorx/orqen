@@ -1,6 +1,6 @@
 ## O que é
 
-Orqen é um motor de orquestração de workflows open-source escrito em **Go**. Inspirado no modelo Kanban, ele transforma processos repetitivos em pipelines claros com memória persistente e execução determinística.
+Orqen é um motor/**en**gine de **orq**uestração de workflows open-source escrito em **Go**. Inspirado no modelo Kanban, ele transforma processos repetitivos em pipelines claros com memória persistente e execução determinística.
 
 Funciona com [**qualquer agente que use o Agent Client Protocol (ACP)**](https://agentclientprotocol.com/get-started/agents), dando liberdade para escolher provedores de IA (Qwen, Claude, GitHub Copilot, etc.).
 

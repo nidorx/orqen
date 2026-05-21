@@ -26,7 +26,7 @@ Desenvolvimento com **checkpoints humanos**. O agente faz o trabalho pesado, mas
 <summary>Clique para ver o orqen.yaml completo</summary>
 
 ```yaml
-# Orqen Workflow - Desenvolvimento Assistido com Checkpoint Humano
+# Orqen Workflow — Desenvolvimento Assistido com Checkpoint Humano
 # Pipeline: Issue → Especificação → Implementação → Pull Request
 #
 # Este workflow demonstra o modelo "assistivo" da taxonomia Orqen:
@@ -53,7 +53,7 @@ modules:
     order: ["revisao", "implementacao", "especificacao", "inbox", "pr_aberto"]
     extra_prompt: |
       **CONTEXTO**: Workflow de desenvolvimento assistido. O agente recebe issues/tarefas,
-      analisa, especifica a solução, implementa e abre PR - mas com checkpoints humanos
+      analisa, especifica a solução, implementa e abre PR — mas com checkpoints humanos
       antes de codificar e antes de abrir o PR.
 
       **PRINCÍPIO**: O agente faz o trabalho pesado (análise, implementação, testes),
@@ -71,9 +71,9 @@ modules:
       - PR.md           → Descrição do Pull Request
 
     lanes:
-      # ── 00_inbox ───────────────────────────────────────────────
+      # ── 01_inbox ───────────────────────────────────────────────
       - name: "inbox"
-        purpose: "Capturar issues, bugs, feature requests - entrada de trabalho para o agente analisar"
+        purpose: "Capturar issues, bugs, feature requests — entrada de trabalho para o agente analisar"
         user_action: "criar issues"
         artifacts: ["ISSUE"]
         max_agents: 1
@@ -88,20 +88,20 @@ modules:
           - "Mova o arquivo de inbox para o diretório do item criado na lane revisar_issue"
           - "Finalize a execução"
         critical_rules:
-          - "NUNCA assumir requisitos não explícitos - se houver dúvida, pergunte"
+          - "NUNCA assumir requisitos não explícitos — se houver dúvida, pergunte"
           - "Se o problema for complexo demais para uma única tarefa, sugira decomposição"
         extra_prompt: |
           A qualidade da análise inicial determina a qualidade de toda a cadeia.
           Seja rigoroso na compreensão do problema antes de avançar.
 
-      # ── 01_revisar_issue ───────────────────────────────────────
+      # ── 02_revisar_issue ───────────────────────────────────────
       - name: "revisar_issue"
         purpose: "Usuário revisa a análise da issue e aprova antes de especificar a solução"
         user_action: "revisar e aprovar issue"
 
-      # ── 02_especificacao ───────────────────────────────────────
+      # ── 03_especificacao ───────────────────────────────────────
       - name: "especificacao"
-        purpose: "Analisar a codebase e especificar a solução técnica detalhada - o QUE fazer e COMO, sem implementar ainda"
+        purpose: "Analisar a codebase e especificar a solução técnica detalhada — o QUE fazer e COMO, sem implementar ainda"
         artifacts: ["SPEC"]
         max_agents: 1
         ignore_if_dependency: ["inbox"]
@@ -116,29 +116,31 @@ modules:
           - "Use o tool orqen_move_item (orqen MCP Server) para mover o item da lane especificacao para revisar_especificacao"
           - "Finalize a execução"
         critical_rules:
-          - "NÃO implemente nada nesta lane - apenas especifique"
+          - "NÃO implemente nada nesta lane — apenas especifique"
           - "A especificação deve ser detalhada o suficiente para outra pessoa implementar sem dúvidas"
           - "Identifique claramente o que será modificado vs. o que será criado do zero"
         extra_prompt: |
           Esta é a lane de DECISÃO. O humano vai validar a abordagem aqui.
-          Seja explícito sobre trade-offs - "podemos fazer X (mais simples) ou Y (mais robusto)".
+          Seja explícito sobre trade-offs — "podemos fazer X (mais simples) ou Y (mais robusto)".
           Inclua exemplos de código se necessário para ilustrar a abordagem.
 
-      # ── 03_revisar_especificacao ───────────────────────────────
+      # ── 04_revisar_especificacao ───────────────────────────────
       - name: "revisar_especificacao"
-        purpose: "CHECKPOINT HUMANO - Usuário valida a abordagem técnica antes da implementação"
+        purpose: "CHECKPOINT HUMANO — Usuário valida a abordagem técnica antes da implementação"
         user_action: "aprovar especificação"
 
-      # ── 04_implementacao ───────────────────────────────────────
+      # ── 05_implementacao ───────────────────────────────────────
       - name: "implementacao"
-        purpose: "Implementar a solução conforme especificação aprovada - código, testes e documentação"
+        purpose: "Implementar a solução conforme especificação aprovada — código, testes e documentação"
         artifacts: ["SUMMARY"]
         max_agents: 1
         ignore_if_exists: ["revisar_especificacao"]
         ignore_if_dependency: ["inbox", "especificacao"]
         agent_behavior:
           - "Leia DEV-${SEQUENCE}-ISSUE.md e DEV-${SEQUENCE}-SPEC.md para entender o problema e a solução aprovada"
+          - "Se o arquivo DEV-${SEQUENCE}-FAIL.md existir, leia para entender o problema que foi reportado durante a revisao"
           - "Implemente o código conforme a especificação, seguindo as convenções do projeto"
+          - "Se houver críticas de revisão no arquivo DEV-${SEQUENCE}-FAIL.md, faça os ajustes necessários"
           - "Escreva testes unitários e/ou de integração para cobrir os critérios de aceite"
           - "Execute os testes e garanta que todos passam"
           - "Execute linting e correção de estilo se aplicável"
@@ -147,7 +149,7 @@ modules:
           - "Use o tool orqen_move_item (orqen MCP Server) para mover o item da lane implementacao para revisao"
           - "Finalize a execução"
         critical_rules:
-          - "SIGA a especificação aprovada - não desvie sem justificativa documentada"
+          - "SIGA a especificação aprovada — não desvie sem justificativa documentada"
           - "TODO código novo DEVE ter testes"
           - "NUNCA commitar código que falha nos testes ou linting"
           - "Se encontrar um bloqueio técnico intransponível, documente no SUMMARY e mova para blocked"
@@ -156,7 +158,7 @@ modules:
           foi aprovada pelo humano. Se descobrir algo que invalida a spec durante a implementação,
           documente a divergência e justifique a mudança no SUMMARY.
 
-      # ── 05_revisao ─────────────────────────────────────────────
+      # ── 06_revisao ─────────────────────────────────────────────
       - name: "revisao"
         purpose: "Validar a implementação contra a especificação e os critérios de aceite"
         artifacts: ["FAIL"]
@@ -169,21 +171,23 @@ modules:
           - "Verifique se a documentação foi atualizada se necessário"
           - "Se TUDO estiver conforme, use o tool orqen_move_item para mover para pr_aberto"
           - "Se houver problemas, crie o arquivo DEV-${SEQUENCE}-FAIL.md com os rejeições detalhadas"
+          - "Se houver problemas, use o tool orqen_move_item (orqen MCP Server) para mover o item da lane revisao para blocked"
+          - "Se não houver problemas, use o tool orqen_move_item (orqen MCP Server) para mover o item da lane revisao para pr_aberto"
           - "Finalize a execução"
         critical_rules:
           - "Não aprove se QUALQUER critério de aceite não for atendido"
           - "Documente cada falha com evidência específica (arquivo, linha, comportamento esperado vs. real)"
         extra_prompt: |
-          Revisão automatizada de qualidade. Seja rigoroso - o humano confiará nesta revisão
+          Revisão automatizada de qualidade. Seja rigoroso — o humano confiará nesta revisão
           para decidir se abre o PR.
 
-      # ── 06_blocked ─────────────────────────────────────────────
+      # ── 07_blocked ─────────────────────────────────────────────
       - name: "blocked"
         purpose: "Tarefas bloqueadas por impedimentos técnicos que requerem intervenção humana"
         user_action: "resolver bloqueios"
         artifacts: ["FAIL"]
 
-      # ── 07_pr_aberto ───────────────────────────────────────────
+      # ── 08_pr_aberto ───────────────────────────────────────────
       - name: "pr_aberto"
         purpose: "Gerar descrição do Pull Request e preparar para submissão"
         artifacts: ["PR"]
@@ -196,15 +200,15 @@ modules:
           - "Use o tool orqen_move_item (orqen MCP Server) para mover o item para concluido"
           - "Finalize a execução"
         critical_rules:
-          - "A descrição do PR deve ser autocontida - um revisor humano deve entender sem ler a spec"
+          - "A descrição do PR deve ser autocontida — um revisor humano deve entender sem ler a spec"
           - "Inclua instruções claras de como testar a mudança"
         extra_prompt: |
           O PR é a interface entre o agente e o revisor humano. Faça uma descrição clara,
           concisa e completa.
 
-      # ── 08_concluido ───────────────────────────────────────────
+      # ── 09_concluido ───────────────────────────────────────────
       - name: "concluido"
-        purpose: "Tarefas concluídas - PR aberto e pronto para merge"
+        purpose: "Tarefas concluídas — PR aberto e pronto para merge"
         user_action: "fazer merge e arquivar"
 ```
 

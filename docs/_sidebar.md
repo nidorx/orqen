@@ -7,8 +7,8 @@
 <!-- - [Agentes](/agentes.md) -->
 - [Telegram](/telegram.md)
 - [Exemplos](/exemplos.md)
+  - [Conteúdo Medium](/exemplos/conteudo-medium.md)
   - [Dev Assistido](/exemplos/dev-assistido.md)
   - [Dev Autônomo](/exemplos/dev-autonomo.md)
-  - [Conteúdo Medium](/exemplos/conteudo-medium.md)
   - [Portal Autônomo](/exemplos/portal-autonomo.md)
 - [Criar Workflow](/criar-workflow.md)

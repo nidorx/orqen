@@ -1,6 +1,6 @@
 # Exemplo: Portal Autônomo
 
-> **IMPORTANTE** Ainda em fase de implementaçao, a notificação via TELEGRAM está sendo implementada.
+> **IMPORTANTE** Ainda em fase de implementaçao
 
 **Nível máximo de automação.** Pedidos chegam via Telegram, o agente processa tudo (geração, build, deploy) e notifica os resultados de volta ao usuário.
 

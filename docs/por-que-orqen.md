@@ -1,19 +1,5 @@
 # Por que Orqen?
 
-## O Problema
-
-Ferramentas de IA atuais operam como **máquinas de prompt sem estado**. Você precisa:
-
-- Iterar manualmente, mantendo contexto na cabeça
-- Gerenciar decisões entre conversas separadas
-- Reconstruir o contexto a cada nova sessão
-- Sem rastreabilidade do que foi feito, quando e por quê
-
-Não existe um sistema estruturado para **execução determinística**, **memória persistente** ou **orquestração multi-projeto**.
-
-
-## A Solução
-
 O Orqen fornece uma **camada de execução estruturada** que:
 
 1. **Orquestra agentes de IA** através de fluxos definidos (lanes)
@@ -23,6 +9,13 @@ O Orqen fornece uma **camada de execução estruturada** que:
 
 
 ## Comparação Direta
+
+Ferramentas de IA atuais operam como **máquinas de prompt sem estado**. Você precisa:
+
+- Iterar manualmente, mantendo contexto na cabeça
+- Gerenciar decisões entre conversas separadas
+- Reconstruir o contexto a cada nova sessão
+- Sem rastreabilidade do que foi feito, quando e por quê
 
 | | Ferramentas de IA Típicas | Orqen |
 |---|---|---|

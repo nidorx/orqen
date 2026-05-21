@@ -2,32 +2,32 @@
 
 Orqen é distribuído como um **binário standalone** - sem dependências externas. Basta baixar e executar.
 
-## Download
+## Download (v1.0.0)
 
 <div class="download-wrapper">
-  <a class="download-card" href="https://github.com/nidorx/orqen/releases/download/vX.Y.Z/orqen-windows-amd64.exe">
+  <a class="download-card" href="https://github.com/nidorx/orqen/releases/download/v1.0.0/orqen-windows-amd64.exe">
     <div class="os">Microsoft Windows</div>
     <div class="arch">Windows 10 or later, Intel 64-bit processor</div>
     <div class="filename">orqen-windows-amd64.exe</div>
   </a>
-  <a class="download-card" href="https://github.com/nidorx/orqen/releases/download/vX.Y.Z/orqen-linux-amd64">
+  <a class="download-card" href="https://github.com/nidorx/orqen/releases/download/v1.0.0/orqen-linux-amd64">
     <div class="os">Linux</div>
     <div class="arch">Linux 3.2 or later, Intel 64-bit processor</div>
     <div class="filename">orqen-linux-amd64</div>
   </a>
-  <a class="download-card" href="https://github.com/nidorx/orqen/releases/download/vX.Y.Z/orqen-darwin-arm64">
+  <a class="download-card" href="https://github.com/nidorx/orqen/releases/download/v1.0.0/orqen-darwin-arm64.pkg">
     <div class="os">Apple macOS (ARM64)</div>
     <div class="arch">macOS 12 or later, Apple 64-bit processor</div>
-    <div class="filename">orqen-darwin-arm64</div>
+    <div class="filename">orqen-darwin-arm64.pkg</div>
   </a>
-  <a class="download-card" href="https://github.com/nidorx/orqen/releases/download/vX.Y.Z/orqen-darwin-amd64">
+  <a class="download-card" href="https://github.com/nidorx/orqen/releases/download/v1.0.0/orqen-darwin-amd64.pkg">
     <div class="os">Apple macOS (X86-64)</div>
     <div class="arch">macOS 12 or later, Intel 64-bit processor</div>
-    <div class="filename">orqen-darwin-amd64</div>
+    <div class="filename">orqen-darwin-amd64.pkg</div>
   </a>
 </div>
 
-Baixe a versão mais recente na [página de Releases do GitHub](https://github.com/nidorx/orqen/releases).
+Você encontra outras opções para download na [página de Releases do GitHub](https://github.com/nidorx/orqen/releases).
 
 ## Outras opções
 
@@ -35,7 +35,7 @@ Baixe a versão mais recente na [página de Releases do GitHub](https://github.c
 
 ```powershell
 # Download (PowerShell)
-Invoke-WebRequest -Uri "https://github.com/nidorx/orqen/releases/download/vX.Y.Z/orqen-windows-amd64.exe" -OutFile "orqen.exe"
+Invoke-WebRequest -Uri "https://github.com/nidorx/orqen/releases/download/v1.0.0/orqen-windows-amd64.exe" -OutFile "orqen.exe"
 
 # Executar
 .\orqen.exe
@@ -45,7 +45,7 @@ Invoke-WebRequest -Uri "https://github.com/nidorx/orqen/releases/download/vX.Y.Z
 
 ```bash
 # Download
-curl -LO "https://github.com/nidorx/orqen/releases/download/vX.Y.Z/orqen-linux-amd64"
+curl -LO "https://github.com/nidorx/orqen/releases/download/v1.0.0/orqen-linux-amd64"
 
 # Tornar executável e instalar
 chmod +x orqen-linux-amd64
@@ -59,7 +59,7 @@ orqen
 
 ```bash
 # Download
-curl -LO "https://github.com/nidorx/orqen/releases/download/vX.Y.Z/orqen-darwin-arm64"
+curl -LO "https://github.com/nidorx/orqen/releases/download/v1.0.0/orqen-darwin-arm64"
 
 # Tornar executável e renomear
 chmod +x orqen-darwin-arm64
@@ -73,7 +73,7 @@ mv orqen-darwin-arm64 orqen
 
 ```bash
 # Download
-curl -LO "https://github.com/nidorx/orqen/releases/download/vX.Y.Z/orqen-darwin-amd64"
+curl -LO "https://github.com/nidorx/orqen/releases/download/v1.0.0/orqen-darwin-amd64"
 
 # Tornar executável e renomear
 chmod +x orqen-darwin-amd64
