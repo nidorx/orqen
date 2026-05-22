@@ -26,12 +26,12 @@ Defina quais agentes de IA estão disponíveis e como invocá-los:
 
 ```yaml
 agents:
-  default: "qwen"                    # Agente padrão
+  default: "claude"                    # Agente padrão
   clients:
     qwen:
       command: ["qwen", "--yolo", "--acp"]
     claude:
-      command: ["claude", "--dangerously-skip-permissions"]
+      command: ["npx", "-y", "@agentclientprotocol/claude-agent-acp", "--dangerously-skip-permissions"]
 ```
 
 | Campo | Descrição |
@@ -140,10 +140,12 @@ modules:
 
 ```yaml
 agents:
-  default: "qwen"
+  default: "claude"
   clients:
     qwen:
       command: ["qwen", "--yolo", "--acp"]
+    claude:
+      command: ["npx", "-y", "@agentclientprotocol/claude-agent-acp", "--dangerously-skip-permissions"]
 
 execution:
   max_agents: 10

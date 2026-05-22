@@ -64,10 +64,12 @@ chat:
 
 ```yaml
 agents:
-  default: "qwen"
+  default: "claude"
   clients:
     qwen:
       command: ["qwen", "--yolo", "--acp"]
+    claude:
+      command: ["npx", "-y", "@agentclientprotocol/claude-agent-acp"]
 
 execution:
   max_agents: 10

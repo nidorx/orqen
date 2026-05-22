@@ -31,10 +31,12 @@ Pipeline de **artigos longos para Medium**. Pesquisa profunda, rascunho estrutur
 # - Estratégia de distribuição em publicações
 
 agents:
-  default: "qwen"
+  default: "claude"
   clients:
     qwen:
       command: ["qwen", "--yolo", "--acp"]
+    claude:
+      command: ["npx", "-y", "@agentclientprotocol/claude-agent-acp"]
 
 execution:
   max_agents: 3

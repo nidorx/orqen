@@ -6,10 +6,12 @@ Orqen funciona com qualquer agente que suporte o **Agent Client Protocol (ACP)**
 
 ```yaml
 agents:
-  default: "qwen"              # Agente padrão
+  default: "claude"              # Agente padrão
   clients:
     qwen:
       command: ["qwen", "--yolo", "--acp"]
+    claude:
+      command: ["npx", "-y", "@agentclientprotocol/claude-agent-acp"]
 ```
 
 | Campo | Descrição |
@@ -29,10 +31,12 @@ npm install -g @anthropic-ai/qwen-code  # ou conforme distribuição
 ### Configuração
 ```yaml
 agents:
-  default: "qwen"
+  default: "claude"
   clients:
     qwen:
       command: ["qwen", "--yolo", "--acp"]
+    claude:
+      command: ["npx", "-y", "@agentclientprotocol/claude-agent-acp"] 
 ```
 
 | Flag | Descrição |
@@ -107,12 +111,12 @@ Você pode configurar vários agentes e usar o padrão ou sobrescrever por lane:
 
 ```yaml
 agents:
-  default: "qwen"
+  default: "claude"
   clients:
     qwen:
       command: ["qwen", "--yolo", "--acp"]
     claude:
-      command: ["claude", "--dangerously-skip-permissions"]
+      command: ["npx", "-y", "@agentclientprotocol/claude-agent-acp", "--dangerously-skip-permissions"]
 ```
 
 ### Sobrescrevendo por Lane

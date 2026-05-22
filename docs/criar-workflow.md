@@ -63,10 +63,12 @@ O skill trabalha através de 8 tópicos, pulando os que já foram cobertos natur
 
 ```yaml
 agents:
-  default: "qwen"
+  default: "claude"
   clients:
     qwen:
       command: ["qwen", "--yolo", "--acp"]
+    claude:
+      command: ["npx", "-y", "@agentclientprotocol/claude-agent-acp", "--dangerously-skip-permissions"]
 
 execution:
   max_agents: 5

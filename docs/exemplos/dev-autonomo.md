@@ -46,10 +46,12 @@ Desenvolvimento em **loop fechado**. O agente recebe um objetivo, decompõe, imp
 # Este é o "Tipo 9" - Portal Autônomo em miniatura.
 
 agents:
-  default: "qwen"
+  default: "claude"
   clients:
     qwen:
       command: ["qwen", "--yolo", "--acp"]
+    claude:
+      command: ["npx", "-y", "@agentclientprotocol/claude-agent-acp"]
 
 execution:
   max_agents: 5

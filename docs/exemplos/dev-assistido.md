@@ -37,10 +37,12 @@ Desenvolvimento com **checkpoints humanos**. O agente faz o trabalho pesado, mas
 # O agente implementa, mas o humano decide em pontos de inflexão.
 
 agents:
-  default: "qwen"
+  default: "claude"
   clients:
     qwen:
       command: ["qwen", "--yolo", "--acp"]
+    claude:
+      command: ["npx", "-y", "@agentclientprotocol/claude-agent-acp"]
 
 execution:
   max_agents: 3
