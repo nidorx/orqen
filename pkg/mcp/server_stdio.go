@@ -70,7 +70,7 @@ func StartStdio(orqenPort string, projectId string, workItemID string) {
 	}
 
 	// Tools that need workItemID (auto-injected)
-	addToolProxy(server, tnItemStatus, ItemStatusHandler, session, workItemID)
+	addToolProxy(server, tnItem, ItemHandler, session, workItemID)
 	addToolProxy(server, tnItemMove, ItemMoveHandler, session, workItemID)
 	addToolProxy(server, tnItemCreate, ItemCreateHandler, session, workItemID)
 	addToolProxy(server, tnItemSearch, ItemSearchHandler, session, workItemID)

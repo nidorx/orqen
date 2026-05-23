@@ -12,7 +12,7 @@ func ServerHttp(proj *engine.Project) http.Handler {
 	server := createServer()
 
 	// Register real handlers with project reference
-	addTool(server, tnItemStatus, ItemStatusHandler, proj)
+	addTool(server, tnItem, ItemHandler, proj)
 	addTool(server, tnItemMove, ItemMoveHandler, proj)
 	addTool(server, tnItemCreate, ItemCreateHandler, proj)
 	addTool(server, tnItemSearch, ItemSearchHandler, proj)

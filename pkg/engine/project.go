@@ -28,6 +28,7 @@ type Project struct {
 	McpServers map[string]McpServerConfig `yaml:"mcpServers"`
 	Execution *Execution                 `yaml:"execution"`
 	Modules   []*Module                  `yaml:"modules"`
+	NamedHooks NamedHooks               `yaml:"hooks,omitempty"` // named hook definitions
 
 	// Runtime state (not serialized)
 	mu       sync.Mutex

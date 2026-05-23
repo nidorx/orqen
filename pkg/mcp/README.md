@@ -31,7 +31,7 @@ The package exposes **11 MCP tools** for work item and project management:
 
 | Tool Constant | Tool Name | Handler | Description |
 |---------------|-----------|---------|-------------|
-| `tnItemStatus` | `orqen_item_status` | `ItemStatusHandler` | Returns the current work item, lane, module, and project context for a running agent job. Requires `workitem_id`. |
+| `tnItem` | `orqen_item` | `ItemHandler` | Returns the current work item, lane, module, and project context for a running agent job. Requires `workitem_id`. |
 | `tnItemMove` | `orqen_item_move` | `ItemMoveHandler` | Moves a work item directory from one lane to another within a module. Updates internal state to reflect the new lane position. |
 | `tnItemCreate` | `orqen_item_create` | `ItemCreateHandler` | Creates a new work item in a specific lane of a module. Creates the directory following naming conventions (MOD_TYPE-NNNN-name) and an empty `.yaml` file. |
 | `tnItemSearch` | `orqen_item_search` | `ItemSearchHandler` | Searches for work items in a module or lane, optionally filtered by a condition SQL-like DSL string. Returns full WorkItem objects. |

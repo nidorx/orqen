@@ -26,15 +26,15 @@ type ItemStatusOutput struct {
 	Error string                `json:"error,omitempty"`
 }
 
-const tnItemStatus = "orqen_item_status"
+const tnItem = "orqen_item"
 
 func init() {
-	tools[tnItemStatus] = &mcp.Tool{
+	tools[tnItem] = &mcp.Tool{
 		Description: "Returns the current work item, lane, module, and project context for the running agent job. Use this to understand what you are working on.",
 	}
 }
 
-func ItemStatusHandler(ctx context.Context, req *mcp.CallToolRequest, input *ItemStatusInput, proj *engine.Project) (*mcp.CallToolResult, ItemStatusOutput, error) {
+func ItemHandler(ctx context.Context, req *mcp.CallToolRequest, input *ItemStatusInput, proj *engine.Project) (*mcp.CallToolResult, ItemStatusOutput, error) {
 	out := ItemStatusOutput{}
 
 	if proj == nil {

@@ -233,6 +233,19 @@ func applyDefaults(proj *Project) {
 
 // validate checks the project configuration for required fields.
 func validate(proj *Project) error {
+	// Validate hook definitions
+	for hookName, hookDef := range proj.NamedHooks {
+		if len(hookDef.Command) == 0 {
+			return fmt.Errorf("hook %q has empty command array - must define at least a base command", hookName)
+		}
+		// Validate hook name is a valid identifier (alphanumeric, underscores, hyphens)
+		for _, ch := range hookName {
+			if !((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9') || ch == '_' || ch == '-') {
+				return fmt.Errorf("hook name %q contains invalid character %q - only alphanumeric, underscores, and hyphens are allowed", hookName, ch)
+			}
+		}
+	}
+
 	if len(proj.Modules) == 0 {
 		return fmt.Errorf("no modules defined")
 	}
@@ -245,6 +258,13 @@ func validate(proj *Project) error {
 			return fmt.Errorf("module %q has no lanes defined", mod.Name)
 		}
 
+		// Validate module hook bindings reference existing hooks
+		if mod.Hooks != nil {
+			if err := validateHookBindings(mod.Hooks, proj.NamedHooks, "module "+mod.Name); err != nil {
+				return err
+			}
+		}
+
 		// Validate lane names are unique
 		laneNames := make(map[string]bool)
 		for j, lane := range mod.Lanes {
@@ -255,6 +275,13 @@ func validate(proj *Project) error {
 				return fmt.Errorf("module %q has duplicate lane name: %s", mod.Name, lane.Name)
 			}
 			laneNames[lane.Name] = true
+
+			// Validate lane hook bindings reference existing hooks
+			if lane.Hooks != nil {
+				if err := validateHookBindings(lane.Hooks, proj.NamedHooks, "module "+mod.Name+" lane "+lane.Name); err != nil {
+					return err
+				}
+			}
 
 			// Validate MCP server references
 			for _, mcpName := range lane.McpServers {
@@ -270,6 +297,31 @@ func validate(proj *Project) error {
 		if len(client.Command) == 0 {
 			return fmt.Errorf("agent client %q has empty command", name)
 		}
+	}
+
+	return nil
+}
+
+// validateHookBindings checks that all hook bindings reference existing named hooks.
+func validateHookBindings(bindings *HookBindings, namedHooks NamedHooks, context string) error {
+	if bindings == nil {
+		return nil
+	}
+
+	validateBindings := func(bindings []HookBinding, bindingType string) error {
+		for _, b := range bindings {
+			if _, exists := namedHooks[b.Name]; !exists {
+				return fmt.Errorf("%s %s binding references unknown hook: %q", context, bindingType, b.Name)
+			}
+		}
+		return nil
+	}
+
+	if err := validateBindings(bindings.Pre, "pre"); err != nil {
+		return err
+	}
+	if err := validateBindings(bindings.Post, "post"); err != nil {
+		return err
 	}
 
 	return nil

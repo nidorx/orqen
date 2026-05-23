@@ -42,6 +42,7 @@ type Module struct {
 	Project     *Project `yaml:"-"`
 	DirPrompts  string   `yaml:"-"`
 	ExtraPrompt string   `yaml:"extra_prompt"`
+	Hooks       *HookBindings `yaml:"hooks,omitempty"` // pre/post hook bindings for this module
 
 	mu               sync.Mutex
 	workItemsBySeq   *tinylfu.SyncCacheT[*WorkItem]

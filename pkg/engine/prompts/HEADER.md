@@ -85,6 +85,45 @@ Lane instructions (appended after this section) define HOW to execute the REQUIR
 
 If there is any conflict between this document and the lane instructions, the lane instructions take precedence.
 
+## Orqen MCP Server
+
+You have access to Orqen workflow operations through MCP (Model Context Protocol) tools during execution. Use these tools whenever workflow interaction is required, including retrieving item details, inspecting schemas, managing attributes, moving items between lanes, and performing workflow state operations. Prefer using these tools for any interaction or maintenance involving WORKITEMS whenever possible.
+
+If one of the available MCP tools can solve the problem, use it instead of manipulating files or workflow state manually.
+
+Use these tools for operations such as:
+
+* Retrieving WORKITEM details
+* Reading attribute schemas
+* Reading or updating item attributes
+* Moving items between lanes
+* Managing workflow state
+* Inspecting workflow metadata
+
+For example:
+
+* Prefer `orqen_item` instead of manually parsing WORKITEM files
+* Prefer `orqen_item_attrs_set` and `orqen_item_attrs_del` instead of editing frontmatter or embedded metadata
+* Prefer workflow movement tools instead of manually moving files between directories
+
+Do not create markdown frontmatter for workflow metadata management unless explicitly required. Use the tools `orqen_item_attrs_del` and `orqen_item_attrs_set` to manage item attributes, and use the `orqen_item` and `orqen_item_attrs_schema` tools to retrieve item details, including their attributes.
+
+### Tools
+
+| Tool | Description |
+|------|-------------|
+| `orqen_item` | Get current work item context by workitem_id |
+| `orqen_item_create` | Create a new work item in a lane |
+| `orqen_item_move` | Move a work item between lanes |
+| `orqen_item_search` | Search work items with condition DSL filter |
+| `orqen_item_attrs_set` | Update attributes on a work item |
+| `orqen_item_attrs_del` | Remove attribute keys from a work item |
+| `orqen_item_attrs_schema` | Get observed attribute schema across a module |
+| `orqen_item_dependencies` | Check dependency status for a work item |
+| `orqen_lane_list` | List all lanes in a module |
+| `orqen_project_info` | Get full project structure |
+
+
 # Module _$_MOD_TYPE_$_ Instructions
 
 ## Naming Conventions
@@ -109,3 +148,4 @@ Pattern: `_$_MOD_PREFIX_$_-${SEQUENCE}.md`
 - `_$_MOD_PREFIX_$_-0003.md`
 
 _$_ARTIFACTS_INSTRUCTIONS_$_
+

@@ -2,6 +2,11 @@ package engine
 
 import (
 	"embed"
+	"fmt"
+	"runtime"
+	"strings"
+
+	"github.com/goccy/go-yaml"
 )
 
 //go:embed prompts
@@ -158,4 +163,136 @@ type SchemaField struct {
 	Field  string   `json:"field"`  // field name
 	Types  []string `json:"types"`  // observed Go/YAML types (string, bool, int, list, map)
 	Values []any    `json:"values"` // unique observed values (up to schemaMaxValues)
+}
+
+// HookDefinition maps a hook name to its command array.
+// OS-specific variants use suffix: .windows, .darwin, .linux
+type HookDefinition struct {
+	Command []string `yaml:"-"` // base command (no OS suffix)
+	Windows []string `yaml:"-"` // .windows variant
+	Darwin  []string `yaml:"-"` // .darwin variant
+	Linux   []string `yaml:"-"` // .linux variant
+}
+
+// GetCommandForOS resolves the command array for the given OS.
+// Falls back to base Command if no OS-specific variant exists.
+func (h *HookDefinition) GetCommandForOS(goos string) []string {
+	switch goos {
+	case "windows":
+		if len(h.Windows) > 0 {
+			return h.Windows
+		}
+	case "darwin":
+		if len(h.Darwin) > 0 {
+			return h.Darwin
+		}
+	case "linux":
+		if len(h.Linux) > 0 {
+			return h.Linux
+		}
+	}
+	return h.Command
+}
+
+// GetCurrentOSCommand resolves the command array for the current OS.
+func (h *HookDefinition) GetCurrentOSCommand() []string {
+	return h.GetCommandForOS(runtime.GOOS)
+}
+
+// HookBinding represents a single hook reference, optionally negated.
+// Negated bindings (!hook_name) exclude a module-level hook at lane level.
+type HookBinding struct {
+	Name    string
+	Negated bool // true if prefixed with "!"
+}
+
+// UnmarshalYAML implements custom YAML parsing for HookBinding.
+// Handles the "!hook_name" negation syntax (string prefix, not YAML tag).
+func (hb *HookBinding) UnmarshalYAML(b []byte) error {
+	s := strings.TrimSpace(string(b))
+	// Remove surrounding quotes if present
+	if len(s) >= 2 && s[0] == '"' && s[len(s)-1] == '"' {
+		s = s[1 : len(s)-1]
+	} else if len(s) >= 2 && s[0] == '\'' && s[len(s)-1] == '\'' {
+		s = s[1 : len(s)-1]
+	}
+
+	if strings.HasPrefix(s, "!") {
+		hb.Negated = true
+		hb.Name = strings.TrimPrefix(s, "!")
+	} else {
+		hb.Name = s
+	}
+
+	if hb.Name == "" {
+		return fmt.Errorf("hook binding name cannot be empty")
+	}
+
+	return nil
+}
+
+// HookBindings holds pre/post hook lists for a module or lane.
+type HookBindings struct {
+	Pre  []HookBinding `yaml:"pre,omitempty"`
+	Post []HookBinding `yaml:"post,omitempty"`
+}
+
+// NamedHooks is a map of hook name to its definition.
+// Requires custom unmarshaling to handle OS-specific suffixes (.windows, .darwin, .linux).
+type NamedHooks map[string]*HookDefinition
+
+// UnmarshalYAML implements custom YAML parsing for NamedHooks.
+// Parses keys like "hook_name" (base), "hook_name.windows", "hook_name.darwin", "hook_name.linux".
+func (nh *NamedHooks) UnmarshalYAML(b []byte) error {
+	var raw map[string][]string
+	if err := yaml.Unmarshal(b, &raw); err != nil {
+		return err
+	}
+
+	if *nh == nil {
+		*nh = make(NamedHooks)
+	}
+
+	for key, cmd := range raw {
+		var (
+			hookName string
+			osSuffix string
+		)
+
+		// Split on last dot to handle hook names with dots (though unlikely)
+		if idx := strings.LastIndex(key, "."); idx != -1 {
+			potentialSuffix := key[idx+1:]
+			if potentialSuffix == "windows" || potentialSuffix == "darwin" || potentialSuffix == "linux" {
+				hookName = key[:idx]
+				osSuffix = potentialSuffix
+			} else {
+				hookName = key
+			}
+		} else {
+			hookName = key
+		}
+
+		if hookName == "" {
+			return fmt.Errorf("hook name cannot be empty (key: %q)", key)
+		}
+
+		hook, exists := (*nh)[hookName]
+		if !exists {
+			hook = &HookDefinition{}
+			(*nh)[hookName] = hook
+		}
+
+		switch osSuffix {
+		case "windows":
+			hook.Windows = cmd
+		case "darwin":
+			hook.Darwin = cmd
+		case "linux":
+			hook.Linux = cmd
+		default:
+			hook.Command = cmd
+		}
+	}
+
+	return nil
 }

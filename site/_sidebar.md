@@ -3,7 +3,6 @@
 - [Instalação](/instalacao.md)
 - [Conceitos](/conceitos.md)
 - [Configuração](/configuracao.md)
-  - [Referência Completa](/CONFIG.md)
 <!-- - [Agentes](/agentes.md) -->
 - [Telegram](/telegram.md)
 - [Exemplos](/exemplos.md)

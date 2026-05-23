@@ -16,6 +16,7 @@ This document describes every attribute available in `orqen.yaml`, the project c
 ```yaml
 agents:      # AI agent client definitions
 execution:   # Runtime execution settings
+hooks:       # Named hook definitions (reusable command arrays)
 modules:     # Workflow modules (task, adr, learning, etc.)
 ```
 
@@ -62,6 +63,89 @@ execution:
 |-----------|------|----------|---------|-------------|
 | `max_agents` | int | No | 0 (unlimited) | Maximum number of agents running concurrently across all modules. If set to `0` or negative, there is no limit. |
 | `sleep_interval_seconds` | int | No | 60 | Number of seconds the engine sleeps between scanning for available work. Controls the polling frequency of the execution loop. |
+
+---
+
+## `hooks` - Named Hook Definitions
+
+Defines reusable command arrays that can be bound to modules and lanes for pre/post task execution. Hooks support OS-specific variants and lane-level exclusion.
+
+```yaml
+hooks:
+  notify: ["notify.sh", "$WI"]
+  notify.windows: ["notify.cmd", "%WI%"]   # OS-specific variant for Windows
+  validate: ["validate.sh", "--strict"]
+  cleanup: ["cleanup.sh"]
+```
+
+| Attribute | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `<hook_name>` | array of string | Yes | - | Command array for the hook. The hook name must be a valid identifier (alphanumeric, underscores, hyphens). |
+| `<hook_name>.windows` | array of string | No | - | Windows-specific command array. Used when `runtime.GOOS == "windows"`. |
+| `<hook_name>.darwin` | array of string | No | - | macOS-specific command array. Used when `runtime.GOOS == "darwin"`. |
+| `<hook_name>.linux` | array of string | No | - | Linux-specific command array. Used when `runtime.GOOS == "linux"`. |
+
+### OS Resolution
+
+At execution time, the system resolves the command array based on the current OS:
+
+1. If an OS-specific variant exists for the current platform, use it.
+2. Otherwise, fall back to the base command array.
+
+### Wildcards
+
+Hook commands support the following wildcards:
+
+| Wildcard | Description | Example |
+|----------|-------------|---------|
+| `$WI` | Work item name (e.g., `01_vision/my-task.md`, `03_backlog/WI-0001-my-task`) | `["notify.sh", "$WI"]` |
+
+### Module and Lane Bindings
+
+Named hooks are referenced by modules and lanes using `pre` and `post` bindings:
+
+```yaml
+modules:
+  - name: task
+    hooks:                          # Applied to ALL lanes in this module
+      pre:
+        - validate
+        - notify
+      post:
+        - cleanup
+    lanes:
+      - name: "inbox"
+        hooks:                      # Lane-specific overrides
+          post:
+            - "!cleanup"            # Exclude module-level 'cleanup' hook
+            - notify                # Add this hook for this lane
+```
+
+| Attribute | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `hooks` | object | No | - | Hook bindings for the module or lane. |
+| `hooks.pre` | array of string | No | - | Hooks executed **before** task execution. Each item references a named hook. |
+| `hooks.post` | array of string | No | - | Hooks executed **after** task execution. Each item references a named hook. |
+
+### Exclusion Syntax
+
+At lane level, use the `!` prefix to **exclude** a module-level hook:
+
+```yaml
+hooks:
+  post:
+    - "!cleanup"    # Do NOT run the 'cleanup' hook in this lane
+    - notify        # DO run the 'notify' hook in this lane
+```
+
+**Important:** The `!` prefix must be quoted in YAML (e.g., `"!cleanup"` or `'!cleanup'`) because `!` is a YAML tag indicator. Unquoted `!cleanup` will cause a YAML parse error.
+
+### Validation Rules
+
+- Every named hook definition must have a non-empty base command array.
+- All hook bindings must reference an existing named hook.
+- Hook names must contain only alphanumeric characters, underscores, and hyphens.
+- Exclusion bindings (`!hook_name`) are only meaningful at lane level (they exclude module-level hooks).
 
 ---
 
@@ -283,11 +367,24 @@ execution:
   max_agents: 10
   sleep_interval_seconds: 60
 
+# ── Named Hooks ──────────────────────────────────────────────────
+hooks:
+  notify: ["notify.sh", "$WI"]
+  notify.windows: ["notify.cmd", "%WI%"]
+  validate: ["validate.sh", "--strict"]
+  cleanup: ["cleanup.sh"]
+
 # ── Modules ──────────────────────────────────────────────────────
 modules:
   - name: task
     dir: "tasks"
     order: ["doing", "learning", "review", "inbox", "prioritized", "ready"]
+    hooks:
+      pre:
+        - validate
+        - notify
+      post:
+        - cleanup
     extra_prompt: |
       **Consult ADRs:** Before refining, scan the ADR module for accepted ADRs.
 
@@ -309,6 +406,10 @@ modules:
         artifacts: ["SUMMARY", "FAIL"]
         ignore_if_exists: ["draft"]
         ignore_if_dependency: ["doing"]
+        hooks:
+          pre:
+            - "!validate"   # skip validation in doing lane
+            - notify
         agent_behavior:
           - "Read the provided task document and refinement if available"
           - "Check dependency files to ensure prerequisites are met"
@@ -381,10 +482,17 @@ modules:
 | | `clients.<name>.command` | []string | Yes |
 | **execution** | `max_agents` | int | No |
 | | `sleep_interval_seconds` | int | No |
+| **hooks** | `<hook_name>` | []string | Yes (if used) |
+| | `<hook_name>.windows` | []string | No |
+| | `<hook_name>.darwin` | []string | No |
+| | `<hook_name>.linux` | []string | No |
 | **modules** | `name` | string | Yes |
 | | `dir` | string | Yes |
 | | `prefix` | string | No |
 | | `order` | []string | No |
+| | `hooks` | object | No |
+| | `hooks.pre` | []string | No |
+| | `hooks.post` | []string | No |
 | | `extra_prompt` | string | No |
 | | `lanes` | []Lane | Yes |
 | **lanes** | `name` | string | Yes |
@@ -395,6 +503,9 @@ modules:
 | | `user_action` | string | No |
 | | `agent_behavior` | []string | No |
 | | `critical_rules` | []string | No |
+| | `hooks` | object | No |
+| | `hooks.pre` | []string | No |
+| | `hooks.post` | []string | No |
 | | `ignore_if_exists` | []string | No |
 | | `ignore_if_not_exists` | []string | No |
 | | `ignore_if_dependency` | []string | No |

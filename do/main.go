@@ -13,6 +13,7 @@ func main() {
 		flgPing     bool
 		flgBuild    bool
 		flgExamples bool
+		flgNextADR  bool
 	)
 
 	// Use the default flag set but parse manually so unknown flags
@@ -22,6 +23,7 @@ func main() {
 	topFlags.BoolVar(&flgLint, "lint", false, "execute golangci-lint")
 	topFlags.BoolVar(&flgBuild, "build", false, "build binaries via container runtimes")
 	topFlags.BoolVar(&flgExamples, "examples", false, "package examples as .zip files")
+	topFlags.BoolVar(&flgNextADR, "next-adr", false, "print the next ADR number")
 	topFlags.SetOutput(nil) // suppress errors; sub-commands handle their own
 
 	// Parse only the flags we know; skip unknown ones so sub-commands get them.
@@ -36,6 +38,8 @@ func main() {
 			flgBuild = true
 		case "-examples":
 			flgExamples = true
+		case "-next-adr":
+			flgNextADR = true
 		}
 	}
 
@@ -64,6 +68,14 @@ func main() {
 	if flgExamples {
 		if err := runExamples(); err != nil {
 			fmt.Fprintf(os.Stderr, "examples failed: %v\n", err)
+			os.Exit(1)
+		}
+		return
+	}
+
+	if flgNextADR {
+		if err := runNextADR(); err != nil {
+			fmt.Fprintf(os.Stderr, "next-adr failed: %v\n", err)
 			os.Exit(1)
 		}
 		return

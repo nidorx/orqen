@@ -31,7 +31,7 @@ func TestStatusHandler(t *testing.T) {
 
 		workItemID := item1.ID
 		input := &ItemStatusInput{WorkItemID: &workItemID}
-		out := callHandler(t, ItemStatusHandler, input, proj)
+		out := callHandler(t, ItemHandler, input, proj)
 
 		if !out.Found {
 			t.Fatal("expected item to be found")
@@ -54,7 +54,7 @@ func TestStatusHandler(t *testing.T) {
 		// Use a hash that doesn't exist
 		workItemID := "nonexistent-id-12345"
 		input := &ItemStatusInput{WorkItemID: &workItemID}
-		out := callHandler(t, ItemStatusHandler, input, proj)
+		out := callHandler(t, ItemHandler, input, proj)
 
 		if out.Found {
 			t.Error("expected not found")
@@ -66,7 +66,7 @@ func TestStatusHandler(t *testing.T) {
 
 	t.Run("no id", func(t *testing.T) {
 		input := &ItemStatusInput{}
-		out := callHandler(t, ItemStatusHandler, input, proj)
+		out := callHandler(t, ItemHandler, input, proj)
 
 		if out.Error == "" {
 			t.Error("expected error for missing id")
@@ -76,7 +76,7 @@ func TestStatusHandler(t *testing.T) {
 	t.Run("nil project", func(t *testing.T) {
 		workItemID := "some-id"
 		input := &ItemStatusInput{WorkItemID: &workItemID}
-		out := callHandler(t, ItemStatusHandler, input, nil)
+		out := callHandler(t, ItemHandler, input, nil)
 
 		if out.Error == "" {
 			t.Error("expected error for nil project")

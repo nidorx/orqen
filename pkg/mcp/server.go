@@ -12,7 +12,7 @@ var (
 	tools = map[string]*mcp.Tool{}
 	impl  = &mcp.Implementation{
 		Name:       "orqen",
-		Title:      "Execution layer for AI workflows",
+		Title:      "Orqen MCP Server",
 		WebsiteURL: "https://orqen.ai.br",
 	}
 )

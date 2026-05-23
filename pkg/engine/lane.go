@@ -63,6 +63,7 @@ type Lane struct {
 	IgnoreIfDependency []string `yaml:"ignore_if_dependency"` // ignore if item has dependencies in referenced lanes
 	McpServers         []string `yaml:"mcpServers"`           // list of MCP server names to inject for this lane
 	Module             *Module  `yaml:"-"`                    // reference to parent module
+	Hooks              *HookBindings `yaml:"hooks,omitempty"` // pre/post hook bindings for this lane (can exclude module-level hooks)
 
 	// Runtime state
 	workItemsByID *tinylfu.SyncCacheT[*WorkItem]

@@ -189,7 +189,7 @@ modules:
 
 Para documentação completa de todos os atributos, incluindo o Condition Language para `ignore_if_attr`, consulte:
 
-→ [Referência Completa de Configuração](CONFIG.md)
+→ [Referência Completa de Configuração](https://github.com/nidorx/orqen/blob/main/docs/CONFIG.md)
 
 ## Próximos passos
 
