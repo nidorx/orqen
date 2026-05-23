@@ -282,7 +282,7 @@ func initialize(proj *Project) error {
 
 		// create prompts directory
 		modPromptsDir := mod.DirPrompts
-		if err := os.MkdirAll(modPromptsDir, os.ModeDir); err != nil {
+		if err := os.MkdirAll(modPromptsDir, 0o755); err != nil {
 			return err
 		}
 
@@ -393,7 +393,7 @@ func initialize(proj *Project) error {
 
 		// create lanes
 		for i, lane := range mod.Lanes {
-			if err := os.MkdirAll(lane.DirAbs, os.ModeDir); err != nil {
+			if err := os.MkdirAll(lane.DirAbs, 0o755); err != nil {
 				return err
 			}
 

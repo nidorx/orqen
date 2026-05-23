@@ -13,6 +13,8 @@ Pipeline de **artigos longos para Medium**. Pesquisa profunda, rascunho estrutur
 
 **Checkpoints humanos:** Revisar Ideia → Revisar Conteúdo
 
+
+
 ## Configuração
 
 <details>
@@ -276,17 +278,15 @@ Estratégia de publicação. Inclui: SEO metadata (título otimizado, subtítulo
 
 ## Como usar
 
-1. Copie o exemplo para seu projeto:
-   ```bash
-   cp -r orqen/examples/pt/conteudo-medium/.orqen meu-projeto/.orqen
-   ```
-2. Crie um arquivo de ideia na lane `01_inbox/`:
-   ```
-   meu-projeto/.orqen/conteudo/01_inbox/arquiteturas-automacao-ia.md
-   ```
-3. Execute o Orqen:
+1. **Baixe** o arquivo [example-pt-conteudo-medium.zip](https://github.com/nidorx/orqen/releases/download/__VERSION__/example-pt-conteudo-medium.zip)
+2. **Ajuste** o `orqen.yaml` conforme sua necessidade
+3. **Execute** o Orqen no diretório do projeto
    ```bash
    ./orqen
+   ```
+4. Crie um arquivo de ideia na lane `01_inbox/`:
+   ```
+   meu-projeto/.orqen/conteudo/01_inbox/arquiteturas-automacao-ia.md
    ```
 
 ## Quando usar

@@ -53,7 +53,7 @@ func TestLaneListItems(t *testing.T) {
 	// Set up lane directories
 	for _, lane := range taskModule.Lanes {
 		lane.DirAbs = filepath.Join(tempDir, taskModule.Dir, lane.Name)
-		if err := os.MkdirAll(lane.DirAbs, 0755); err != nil {
+		if err := os.MkdirAll(lane.DirAbs, 0o755); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -101,7 +101,7 @@ func TestLaneHasItems(t *testing.T) {
 	readyLane := taskModule.GetLane("ready")
 	readyLane.DirAbs = filepath.Join(tempDir, taskModule.Dir, "ready")
 
-	if err := os.MkdirAll(readyLane.DirAbs, 0755); err != nil {
+	if err := os.MkdirAll(readyLane.DirAbs, 0o755); err != nil {
 		t.Fatal(err)
 	}
 
@@ -129,7 +129,7 @@ func TestLaneActiveItemCount(t *testing.T) {
 	doingLane := taskModule.GetLane("doing")
 	doingLane.DirAbs = filepath.Join(tempDir, taskModule.Dir, "doing")
 
-	if err := os.MkdirAll(doingLane.DirAbs, 0755); err != nil {
+	if err := os.MkdirAll(doingLane.DirAbs, 0o755); err != nil {
 		t.Fatal(err)
 	}
 
@@ -170,7 +170,7 @@ func TestLaneHasAvailableSlot(t *testing.T) {
 	doingLane.DirAbs = filepath.Join(tempDir, taskModule.Dir, "doing")
 	doingLane.MaxAgents = 2
 
-	if err := os.MkdirAll(doingLane.DirAbs, 0755); err != nil {
+	if err := os.MkdirAll(doingLane.DirAbs, 0o755); err != nil {
 		t.Fatal(err)
 	}
 
@@ -277,7 +277,7 @@ func TestLaneItemCount(t *testing.T) {
 	readyLane := taskModule.GetLane("ready")
 	readyLane.DirAbs = filepath.Join(tempDir, taskModule.Dir, "ready")
 
-	if err := os.MkdirAll(readyLane.DirAbs, 0755); err != nil {
+	if err := os.MkdirAll(readyLane.DirAbs, 0o755); err != nil {
 		t.Fatal(err)
 	}
 
@@ -305,7 +305,7 @@ func TestLaneGetItem(t *testing.T) {
 	readyLane := taskModule.GetLane("ready")
 	readyLane.DirAbs = filepath.Join(tempDir, taskModule.Dir, "ready")
 
-	if err := os.MkdirAll(readyLane.DirAbs, 0755); err != nil {
+	if err := os.MkdirAll(readyLane.DirAbs, 0o755); err != nil {
 		t.Fatal(err)
 	}
 
@@ -370,7 +370,7 @@ func TestHasDependencyInReferencedLanes(t *testing.T) {
 	for _, lane := range taskModule.Lanes {
 		lane.DirAbs = filepath.Join(tempDir, taskModule.Dir, lane.Name)
 		lane.Module = taskModule
-		if err := os.MkdirAll(lane.DirAbs, 0755); err != nil {
+		if err := os.MkdirAll(lane.DirAbs, 0o755); err != nil {
 			t.Fatal(err)
 		}
 	}

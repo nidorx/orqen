@@ -4,13 +4,9 @@ O Orqen vem com **4 exemplos prontos** em português. Cada exemplo demonstra um 
 
 ## Como usar os exemplos
 
-1. **Clone ou baixe** o repositório: `https://github.com/nidorx/orqen`
-2. **Copie** o diretório do exemplo para seu projeto:
-   ```bash
-   cp -r orqen/examples/pt/dev-assistido/.orqen meu-projeto/.orqen
-   ```
-3. **Ajuste** o `orqen.yaml` conforme sua necessidade
-4. **Execute** o Orqen no diretório do projeto
+1. **Baixe** o arquivo do exemplo para seu projeto
+2. **Ajuste** o `orqen.yaml` conforme sua necessidade
+3. **Execute** o Orqen no diretório do projeto
 
 ## Exemplos Disponíveis
 

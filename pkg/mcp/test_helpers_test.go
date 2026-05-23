@@ -23,7 +23,7 @@ func setupTestProject(t *testing.T) (*engine.Project, string) {
 
 	// Create .orqen directory
 	orqenDir := filepath.Join(tempDir, ".orqen")
-	if err := os.MkdirAll(orqenDir, 0755); err != nil {
+	if err := os.MkdirAll(orqenDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 
@@ -80,19 +80,19 @@ modules:
 		if backlog != nil {
 			// TASK-0001-write-tests
 			itemDir := filepath.Join(backlog.DirAbs, "TASK-0001-write-tests")
-			os.MkdirAll(itemDir, 0755)
+			os.MkdirAll(itemDir, 0o755)
 			os.WriteFile(filepath.Join(itemDir, "TASK-0001.yaml"), []byte("title: Write Tests\n"), 0644)
 
 			// TASK-0002-add-feature
 			itemDir2 := filepath.Join(backlog.DirAbs, "TASK-0002-add-feature")
-			os.MkdirAll(itemDir2, 0755)
+			os.MkdirAll(itemDir2, 0o755)
 			os.WriteFile(filepath.Join(itemDir2, "TASK-0002.yaml"), []byte("title: Add Feature\n"), 0644)
 		}
 
 		doing := taskModule.GetLane("doing")
 		if doing != nil {
 			itemDir := filepath.Join(doing.DirAbs, "TASK-0003-refactor")
-			os.MkdirAll(itemDir, 0755)
+			os.MkdirAll(itemDir, 0o755)
 			os.WriteFile(filepath.Join(itemDir, "TASK-0003.yaml"), []byte("title: Refactor\n"), 0644)
 		}
 	}
@@ -103,14 +103,14 @@ modules:
 		draft := adrModule.GetLane("draft")
 		if draft != nil {
 			itemDir := filepath.Join(draft.DirAbs, "ADR-0001-use-go")
-			os.MkdirAll(itemDir, 0755)
+			os.MkdirAll(itemDir, 0o755)
 			os.WriteFile(filepath.Join(itemDir, "ADR-0001.yaml"), []byte("title: Use Go\nstatus: draft\n"), 0644)
 		}
 
 		accepted := adrModule.GetLane("accepted")
 		if accepted != nil {
 			itemDir := filepath.Join(accepted.DirAbs, "ADR-0002-use-postgres")
-			os.MkdirAll(itemDir, 0755)
+			os.MkdirAll(itemDir, 0o755)
 			os.WriteFile(filepath.Join(itemDir, "ADR-0002.yaml"), []byte("title: Use PostgreSQL\nstatus: accepted\nauthor: nidorx\n"), 0644)
 		}
 	}

@@ -255,17 +255,15 @@ Descrição do Pull Request. Inclui: contexto, o que mudou, principais alteraç�
 
 ## Como usar
 
-1. Copie o exemplo para seu projeto:
-   ```bash
-   cp -r orqen/examples/pt/dev-assistido/.orqen meu-projeto/.orqen
-   ```
-2. Crie um arquivo de issue na lane `00_inbox/`:
-   ```
-   meu-projeto/.orqen/tasks/00_inbox/minha-feature.md
-   ```
-3. Execute o Orqen:
+1. **Baixe** o arquivo [example-pt-dev-assistido.zip](https://github.com/nidorx/orqen/releases/download/__VERSION__/example-pt-dev-assistido.zip)
+2. **Ajuste** o `orqen.yaml` conforme sua necessidade
+3. **Execute** o Orqen no diretório do projeto
    ```bash
    ./orqen
+   ```
+4. Crie um arquivo de ideia na lane `01_inbox/`:
+   ```
+   meu-projeto/.orqen/tasks/01_inbox/minha-feature.md
    ```
 
 ## Quando usar

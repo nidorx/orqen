@@ -295,16 +295,14 @@ Ação: revise os testes e reenvie com /novo
 
 ## Como usar
 
-1. Copie o exemplo para seu projeto:
-   ```bash
-   cp -r orqen/examples/pt/portal-autonomo/.orqen meu-projeto/.orqen
-   ```
-2. Configure o token do Telegram no `orqen.yaml` (veja [Telegram](telegram.md))
-3. Inicie o bot no Telegram com `/novo seu pedido`
-4. Execute o Orqen:
+1. **Baixe** o arquivo [example-pt-portal-autonomo.zip](https://github.com/nidorx/orqen/releases/download/__VERSION__/example-pt-portal-autonomo.zip)
+2. **Ajuste** o `orqen.yaml` conforme sua necessidade
+3. Configure o token do Telegram no `orqen.yaml` (veja [Telegram](telegram.md))
+4. **Execute** o Orqen no diretório do projeto
    ```bash
    ./orqen
    ```
+5. Inicie o bot no Telegram `/new` e solicite que o Orqen faça algo como 'Altere o título da página'
 
 ## Quando usar
 

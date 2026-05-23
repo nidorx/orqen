@@ -19,13 +19,13 @@ func TestOnFsysUpdate_CreateWorkItemDir(t *testing.T) {
 	readyLane := taskModule.GetLane("ready")
 	readyLane.DirAbs = filepath.Join(tempDir, taskModule.Dir, "ready")
 
-	if err := os.MkdirAll(readyLane.DirAbs, 0755); err != nil {
+	if err := os.MkdirAll(readyLane.DirAbs, 0o755); err != nil {
 		t.Fatal(err)
 	}
 
 	// Create a work item directory
 	itemDir := filepath.Join(readyLane.DirAbs, "TASK-001-new-item")
-	if err := os.MkdirAll(itemDir, 0755); err != nil {
+	if err := os.MkdirAll(itemDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 
@@ -60,13 +60,13 @@ func TestOnFsysUpdate_CreateFileInWorkItem(t *testing.T) {
 	readyLane := taskModule.GetLane("ready")
 	readyLane.DirAbs = filepath.Join(tempDir, taskModule.Dir, "ready")
 
-	if err := os.MkdirAll(readyLane.DirAbs, 0755); err != nil {
+	if err := os.MkdirAll(readyLane.DirAbs, 0o755); err != nil {
 		t.Fatal(err)
 	}
 
 	// Create work item directory
 	itemDir := filepath.Join(readyLane.DirAbs, "TASK-001-test")
-	if err := os.MkdirAll(itemDir, 0755); err != nil {
+	if err := os.MkdirAll(itemDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 
@@ -112,13 +112,13 @@ func TestOnFsysUpdate_RemoveWorkItemDir(t *testing.T) {
 	readyLane := taskModule.GetLane("ready")
 	readyLane.DirAbs = filepath.Join(tempDir, taskModule.Dir, "ready")
 
-	if err := os.MkdirAll(readyLane.DirAbs, 0755); err != nil {
+	if err := os.MkdirAll(readyLane.DirAbs, 0o755); err != nil {
 		t.Fatal(err)
 	}
 
 	// Create work item directory
 	itemDir := filepath.Join(readyLane.DirAbs, "TASK-001-to-remove")
-	if err := os.MkdirAll(itemDir, 0755); err != nil {
+	if err := os.MkdirAll(itemDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 
@@ -157,13 +157,13 @@ func TestOnFsysUpdate_RenameWorkItemDir(t *testing.T) {
 	readyLane := taskModule.GetLane("ready")
 	readyLane.DirAbs = filepath.Join(tempDir, taskModule.Dir, "ready")
 
-	if err := os.MkdirAll(readyLane.DirAbs, 0755); err != nil {
+	if err := os.MkdirAll(readyLane.DirAbs, 0o755); err != nil {
 		t.Fatal(err)
 	}
 
 	// Create work item directory
 	oldPath := filepath.Join(readyLane.DirAbs, "TASK-001-old")
-	if err := os.MkdirAll(oldPath, 0755); err != nil {
+	if err := os.MkdirAll(oldPath, 0o755); err != nil {
 		t.Fatal(err)
 	}
 
@@ -202,7 +202,7 @@ func TestOnFsysUpdate_InboxFile(t *testing.T) {
 	inboxLane := taskModule.GetLane("inbox")
 	inboxLane.DirAbs = filepath.Join(tempDir, taskModule.Dir, "inbox")
 
-	if err := os.MkdirAll(inboxLane.DirAbs, 0755); err != nil {
+	if err := os.MkdirAll(inboxLane.DirAbs, 0o755); err != nil {
 		t.Fatal(err)
 	}
 
@@ -245,13 +245,13 @@ func TestOnFsysUpdate_PreservesInProgressState(t *testing.T) {
 	readyLane := taskModule.GetLane("ready")
 	readyLane.DirAbs = filepath.Join(tempDir, taskModule.Dir, "ready")
 
-	if err := os.MkdirAll(readyLane.DirAbs, 0755); err != nil {
+	if err := os.MkdirAll(readyLane.DirAbs, 0o755); err != nil {
 		t.Fatal(err)
 	}
 
 	// Create work item directory
 	itemDir := filepath.Join(readyLane.DirAbs, "TASK-001-test")
-	if err := os.MkdirAll(itemDir, 0755); err != nil {
+	if err := os.MkdirAll(itemDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 
@@ -298,13 +298,13 @@ func TestOnFsysUpdate_IgnoreNonWorkItemDir(t *testing.T) {
 	readyLane := taskModule.GetLane("ready")
 	readyLane.DirAbs = filepath.Join(tempDir, taskModule.Dir, "ready")
 
-	if err := os.MkdirAll(readyLane.DirAbs, 0755); err != nil {
+	if err := os.MkdirAll(readyLane.DirAbs, 0o755); err != nil {
 		t.Fatal(err)
 	}
 
 	// Create a non-work-item directory
 	otherDir := filepath.Join(readyLane.DirAbs, "not-a-task")
-	if err := os.MkdirAll(otherDir, 0755); err != nil {
+	if err := os.MkdirAll(otherDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 
@@ -330,7 +330,7 @@ func TestOnFsysUpdate_IgnoreWrongExtensionInInbox(t *testing.T) {
 	inboxLane := taskModule.GetLane("inbox")
 	inboxLane.DirAbs = filepath.Join(tempDir, taskModule.Dir, "inbox")
 
-	if err := os.MkdirAll(inboxLane.DirAbs, 0755); err != nil {
+	if err := os.MkdirAll(inboxLane.DirAbs, 0o755); err != nil {
 		t.Fatal(err)
 	}
 

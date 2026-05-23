@@ -90,7 +90,7 @@ func (s *ChatService) OnStart() error {
 
 	// Initialize ChatStore
 	dbPath := filepath.Join(s.proj.DirAbs, ".orqen", "chat.db")
-	if err := os.MkdirAll(filepath.Dir(dbPath), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(dbPath), 0o755); err != nil {
 		return fmt.Errorf("chat: create .orqen directory: %w", err)
 	}
 

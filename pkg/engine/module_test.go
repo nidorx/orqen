@@ -69,7 +69,7 @@ func TestModuleActiveItemCount(t *testing.T) {
 	// Set up lane directories
 	for _, lane := range taskModule.Lanes {
 		lane.DirAbs = filepath.Join(tempDir, taskModule.Dir, lane.Name)
-		if err := os.MkdirAll(lane.DirAbs, 0755); err != nil {
+		if err := os.MkdirAll(lane.DirAbs, 0o755); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -117,7 +117,7 @@ func TestModuleListItems(t *testing.T) {
 	// Set up lane directories
 	for _, lane := range taskModule.Lanes {
 		lane.DirAbs = filepath.Join(tempDir, taskModule.Dir, lane.Name)
-		if err := os.MkdirAll(lane.DirAbs, 0755); err != nil {
+		if err := os.MkdirAll(lane.DirAbs, 0o755); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -146,7 +146,7 @@ func TestModuleFindItemByID(t *testing.T) {
 	// Set up lane directories
 	for _, lane := range taskModule.Lanes {
 		lane.DirAbs = filepath.Join(tempDir, taskModule.Dir, lane.Name)
-		if err := os.MkdirAll(lane.DirAbs, 0755); err != nil {
+		if err := os.MkdirAll(lane.DirAbs, 0o755); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -183,7 +183,7 @@ func TestModuleHasAvailableSlot(t *testing.T) {
 		lane.DirAbs = filepath.Join(tempDir, taskModule.Dir, lane.Name)
 		lane.Dir = lane.Name
 		lane.MaxAgents = 1
-		if err := os.MkdirAll(lane.DirAbs, 0755); err != nil {
+		if err := os.MkdirAll(lane.DirAbs, 0o755); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -266,7 +266,7 @@ func TestModuleTxNewWorkItem(t *testing.T) {
 	// Set up lane directories
 	for _, lane := range taskModule.Lanes {
 		lane.DirAbs = filepath.Join(tempDir, taskModule.Dir, lane.Name)
-		if err := os.MkdirAll(lane.DirAbs, 0755); err != nil {
+		if err := os.MkdirAll(lane.DirAbs, 0o755); err != nil {
 			t.Fatal(err)
 		}
 	}

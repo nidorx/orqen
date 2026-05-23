@@ -111,7 +111,7 @@ func TestMoveItemHandler(t *testing.T) {
 
 // copyDir recursively copies a directory from src to dst.
 func copyDir(src, dst string) error {
-	if err := os.MkdirAll(dst, 0755); err != nil {
+	if err := os.MkdirAll(dst, 0o755); err != nil {
 		return err
 	}
 

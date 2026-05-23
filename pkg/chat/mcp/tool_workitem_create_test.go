@@ -71,7 +71,7 @@ func setupTestProjectWithLaneAndWorkitem(t *testing.T, dir string) (*engine.Proj
 	// Manually create a workitem directory and yaml file
 	lane := proj.Modules[0].Lanes[0]
 	itemDir := filepath.Join(lane.DirAbs, "TASK-0001-test-task")
-	if err := os.MkdirAll(itemDir, 0755); err != nil {
+	if err := os.MkdirAll(itemDir, 0o755); err != nil {
 		t.Fatalf("mkdir: %v", err)
 	}
 	if err := os.WriteFile(filepath.Join(itemDir, "TASK-0001.yaml"), []byte{}, 0644); err != nil {

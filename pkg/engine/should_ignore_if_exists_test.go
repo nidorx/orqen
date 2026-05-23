@@ -17,7 +17,7 @@ func TestShouldIgnoreIfExists_EmptyIgnoreList(t *testing.T) {
 	for _, lane := range taskModule.Lanes {
 		lane.DirAbs = filepath.Join(tempDir, taskModule.Dir, lane.Name)
 		lane.Module = taskModule
-		if err := os.MkdirAll(lane.DirAbs, 0755); err != nil {
+		if err := os.MkdirAll(lane.DirAbs, 0o755); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -43,7 +43,7 @@ func TestShouldIgnoreIfExists_NilIgnoreList(t *testing.T) {
 	for _, lane := range taskModule.Lanes {
 		lane.DirAbs = filepath.Join(tempDir, taskModule.Dir, lane.Name)
 		lane.Module = taskModule
-		if err := os.MkdirAll(lane.DirAbs, 0755); err != nil {
+		if err := os.MkdirAll(lane.DirAbs, 0o755); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -69,7 +69,7 @@ func TestShouldIgnoreIfExists_SameModuleLaneRef(t *testing.T) {
 	for _, lane := range taskModule.Lanes {
 		lane.DirAbs = filepath.Join(tempDir, taskModule.Dir, lane.Name)
 		lane.Module = taskModule
-		if err := os.MkdirAll(lane.DirAbs, 0755); err != nil {
+		if err := os.MkdirAll(lane.DirAbs, 0o755); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -105,7 +105,7 @@ func TestShouldIgnoreIfExists_CrossModuleLaneRef(t *testing.T) {
 		for _, lane := range mod.Lanes {
 			lane.DirAbs = filepath.Join(tempDir, mod.Dir, lane.Name)
 			lane.Module = mod
-			if err := os.MkdirAll(lane.DirAbs, 0755); err != nil {
+			if err := os.MkdirAll(lane.DirAbs, 0o755); err != nil {
 				t.Fatal(err)
 			}
 		}
@@ -144,7 +144,7 @@ func TestShouldIgnoreIfExists_NonexistentModule(t *testing.T) {
 	for _, lane := range taskModule.Lanes {
 		lane.DirAbs = filepath.Join(tempDir, taskModule.Dir, lane.Name)
 		lane.Module = taskModule
-		if err := os.MkdirAll(lane.DirAbs, 0755); err != nil {
+		if err := os.MkdirAll(lane.DirAbs, 0o755); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -171,7 +171,7 @@ func TestShouldIgnoreIfExists_NonexistentLane(t *testing.T) {
 	for _, lane := range taskModule.Lanes {
 		lane.DirAbs = filepath.Join(tempDir, taskModule.Dir, lane.Name)
 		lane.Module = taskModule
-		if err := os.MkdirAll(lane.DirAbs, 0755); err != nil {
+		if err := os.MkdirAll(lane.DirAbs, 0o755); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -198,7 +198,7 @@ func TestShouldIgnoreIfExists_MultipleRefs(t *testing.T) {
 	for _, lane := range taskModule.Lanes {
 		lane.DirAbs = filepath.Join(tempDir, taskModule.Dir, lane.Name)
 		lane.Module = taskModule
-		if err := os.MkdirAll(lane.DirAbs, 0755); err != nil {
+		if err := os.MkdirAll(lane.DirAbs, 0o755); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -234,7 +234,7 @@ func TestShouldIgnoreIfExists_FileRefExactMatch(t *testing.T) {
 	for _, lane := range taskModule.Lanes {
 		lane.DirAbs = filepath.Join(tempDir, taskModule.Dir, lane.Name)
 		lane.Module = taskModule
-		if err := os.MkdirAll(lane.DirAbs, 0755); err != nil {
+		if err := os.MkdirAll(lane.DirAbs, 0o755); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -244,7 +244,7 @@ func TestShouldIgnoreIfExists_FileRefExactMatch(t *testing.T) {
 
 	// Create item in doing lane with specific file
 	itemDir := filepath.Join(doingLane.DirAbs, "TASK-001-test")
-	if err := os.MkdirAll(itemDir, 0755); err != nil {
+	if err := os.MkdirAll(itemDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	testFilePath := filepath.Join(itemDir, "summary.md")
@@ -273,7 +273,7 @@ func TestShouldIgnoreIfExists_FileRefNoMatch(t *testing.T) {
 	for _, lane := range taskModule.Lanes {
 		lane.DirAbs = filepath.Join(tempDir, taskModule.Dir, lane.Name)
 		lane.Module = taskModule
-		if err := os.MkdirAll(lane.DirAbs, 0755); err != nil {
+		if err := os.MkdirAll(lane.DirAbs, 0o755); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -304,7 +304,7 @@ func TestShouldIgnoreIfExists_FileRefGlobMatch(t *testing.T) {
 	for _, lane := range taskModule.Lanes {
 		lane.DirAbs = filepath.Join(tempDir, taskModule.Dir, lane.Name)
 		lane.Module = taskModule
-		if err := os.MkdirAll(lane.DirAbs, 0755); err != nil {
+		if err := os.MkdirAll(lane.DirAbs, 0o755); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -314,7 +314,7 @@ func TestShouldIgnoreIfExists_FileRefGlobMatch(t *testing.T) {
 
 	// Create item with a .md file
 	itemDir := filepath.Join(doingLane.DirAbs, "TASK-001-test")
-	if err := os.MkdirAll(itemDir, 0755); err != nil {
+	if err := os.MkdirAll(itemDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(filepath.Join(itemDir, "notes.md"), []byte("content"), 0644); err != nil {
@@ -342,7 +342,7 @@ func TestShouldIgnoreIfExists_FileRefGlobNoMatch(t *testing.T) {
 	for _, lane := range taskModule.Lanes {
 		lane.DirAbs = filepath.Join(tempDir, taskModule.Dir, lane.Name)
 		lane.Module = taskModule
-		if err := os.MkdirAll(lane.DirAbs, 0755); err != nil {
+		if err := os.MkdirAll(lane.DirAbs, 0o755); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -352,7 +352,7 @@ func TestShouldIgnoreIfExists_FileRefGlobNoMatch(t *testing.T) {
 
 	// Create item with a .txt file
 	itemDir := filepath.Join(doingLane.DirAbs, "TASK-001-test")
-	if err := os.MkdirAll(itemDir, 0755); err != nil {
+	if err := os.MkdirAll(itemDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(filepath.Join(itemDir, "notes.txt"), []byte("content"), 0644); err != nil {
@@ -380,7 +380,7 @@ func TestShouldIgnoreIfExists_FileRefDoubleStarGlob(t *testing.T) {
 	for _, lane := range taskModule.Lanes {
 		lane.DirAbs = filepath.Join(tempDir, taskModule.Dir, lane.Name)
 		lane.Module = taskModule
-		if err := os.MkdirAll(lane.DirAbs, 0755); err != nil {
+		if err := os.MkdirAll(lane.DirAbs, 0o755); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -391,7 +391,7 @@ func TestShouldIgnoreIfExists_FileRefDoubleStarGlob(t *testing.T) {
 	// Create item with nested file
 	itemDir := filepath.Join(doingLane.DirAbs, "TASK-001-test")
 	subDir := filepath.Join(itemDir, "subdir")
-	if err := os.MkdirAll(subDir, 0755); err != nil {
+	if err := os.MkdirAll(subDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(filepath.Join(subDir, "deep.md"), []byte("content"), 0644); err != nil {
@@ -419,7 +419,7 @@ func TestShouldIgnoreIfExists_FileRefPlainFilePath(t *testing.T) {
 	for _, lane := range taskModule.Lanes {
 		lane.DirAbs = filepath.Join(tempDir, taskModule.Dir, lane.Name)
 		lane.Module = taskModule
-		if err := os.MkdirAll(lane.DirAbs, 0755); err != nil {
+		if err := os.MkdirAll(lane.DirAbs, 0o755); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -429,7 +429,7 @@ func TestShouldIgnoreIfExists_FileRefPlainFilePath(t *testing.T) {
 
 	// Create item in doing lane with a file
 	itemDir := filepath.Join(doingLane.DirAbs, "TASK-001-test")
-	if err := os.MkdirAll(itemDir, 0755); err != nil {
+	if err := os.MkdirAll(itemDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(filepath.Join(itemDir, "summary.md"), []byte("content"), 0644); err != nil {
@@ -458,7 +458,7 @@ func TestShouldIgnoreIfExists_MixedRefsLaneAndFile(t *testing.T) {
 		for _, lane := range mod.Lanes {
 			lane.DirAbs = filepath.Join(tempDir, mod.Dir, lane.Name)
 			lane.Module = mod
-			if err := os.MkdirAll(lane.DirAbs, 0755); err != nil {
+			if err := os.MkdirAll(lane.DirAbs, 0o755); err != nil {
 				t.Fatal(err)
 			}
 		}
@@ -495,7 +495,7 @@ func TestShouldIgnoreIfExists_MixedRefsFileOnly(t *testing.T) {
 		for _, lane := range mod.Lanes {
 			lane.DirAbs = filepath.Join(tempDir, mod.Dir, lane.Name)
 			lane.Module = mod
-			if err := os.MkdirAll(lane.DirAbs, 0755); err != nil {
+			if err := os.MkdirAll(lane.DirAbs, 0o755); err != nil {
 				t.Fatal(err)
 			}
 		}
@@ -519,7 +519,7 @@ func TestShouldIgnoreIfExists_MixedRefsFileOnly(t *testing.T) {
 
 	// Create file in draft lane
 	draftItemDir := filepath.Join(draftLane.DirAbs, "ADR-001-draft")
-	if err := os.MkdirAll(draftItemDir, 0755); err != nil {
+	if err := os.MkdirAll(draftItemDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(filepath.Join(draftItemDir, "some.md"), []byte("content"), 0644); err != nil {
@@ -539,7 +539,7 @@ func TestShouldIgnoreIfExists_FileRefCrossModule(t *testing.T) {
 		for _, lane := range mod.Lanes {
 			lane.DirAbs = filepath.Join(tempDir, mod.Dir, lane.Name)
 			lane.Module = mod
-			if err := os.MkdirAll(lane.DirAbs, 0755); err != nil {
+			if err := os.MkdirAll(lane.DirAbs, 0o755); err != nil {
 				t.Fatal(err)
 			}
 		}
@@ -552,7 +552,7 @@ func TestShouldIgnoreIfExists_FileRefCrossModule(t *testing.T) {
 
 	// Create item in draft lane with a specific file
 	draftItemDir := filepath.Join(draftLane.DirAbs, "ADR-001-draft")
-	if err := os.MkdirAll(draftItemDir, 0755); err != nil {
+	if err := os.MkdirAll(draftItemDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(filepath.Join(draftItemDir, "proposal.md"), []byte("content"), 0644); err != nil {
@@ -579,7 +579,7 @@ func TestShouldIgnoreIfExists_SameLaneSelfRef(t *testing.T) {
 	for _, lane := range taskModule.Lanes {
 		lane.DirAbs = filepath.Join(tempDir, taskModule.Dir, lane.Name)
 		lane.Module = taskModule
-		if err := os.MkdirAll(lane.DirAbs, 0755); err != nil {
+		if err := os.MkdirAll(lane.DirAbs, 0o755); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -614,7 +614,7 @@ func TestShouldIgnoreIfExists_FileRefWithNonexistentModule(t *testing.T) {
 	for _, lane := range taskModule.Lanes {
 		lane.DirAbs = filepath.Join(tempDir, taskModule.Dir, lane.Name)
 		lane.Module = taskModule
-		if err := os.MkdirAll(lane.DirAbs, 0755); err != nil {
+		if err := os.MkdirAll(lane.DirAbs, 0o755); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -641,7 +641,7 @@ func TestShouldIgnoreIfExists_FileRefWithNonexistentLane(t *testing.T) {
 	for _, lane := range taskModule.Lanes {
 		lane.DirAbs = filepath.Join(tempDir, taskModule.Dir, lane.Name)
 		lane.Module = taskModule
-		if err := os.MkdirAll(lane.DirAbs, 0755); err != nil {
+		if err := os.MkdirAll(lane.DirAbs, 0o755); err != nil {
 			t.Fatal(err)
 		}
 	}

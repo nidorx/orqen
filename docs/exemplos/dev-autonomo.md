@@ -253,17 +253,15 @@ Resumo da implementação autônoma. Inclui: resumo executivo, sub-tarefas execu
 
 ## Como usar
 
-1. Copie o exemplo para seu projeto:
-   ```bash
-   cp -r orqen/examples/pt/dev-autonomo/.orqen meu-projeto/.orqen
-   ```
-2. Crie um arquivo de objetivo na lane `00_objetivo/`:
-   ```
-   meu-projeto/.orqen/tasks/00_objetivo/adicionar-oauth.md
-   ```
-3. Execute o Orqen:
+1. **Baixe** o arquivo [example-pt-dev-autonomo.zip](https://github.com/nidorx/orqen/releases/download/__VERSION__/example-pt-dev-autonomo.zip)
+2. **Ajuste** o `orqen.yaml` conforme sua necessidade
+3. **Execute** o Orqen no diretório do projeto
    ```bash
    ./orqen
+   ```
+4. Crie um arquivo de objetivo na lane `01_inbox/`:
+   ```
+   meu-projeto/.orqen/tasks/01_inbox/adicionar-oauth.md
    ```
 
 ## Quando usar

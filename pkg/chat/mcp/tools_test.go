@@ -37,7 +37,7 @@ func newTestProject(t *testing.T) *engine.Project {
 
 	moduleDir := filepath.Join(dir, "tasks")
 	backlogDir := filepath.Join(moduleDir, "backlog")
-	os.MkdirAll(backlogDir, 0755)
+	os.MkdirAll(backlogDir, 0o755)
 
 	lane := &engine.Lane{
 		Name:   "backlog",
@@ -68,7 +68,7 @@ func setupTestProjectWithLane(t *testing.T, dir string) *engine.Project {
 
 	moduleDir := filepath.Join(dir, "tasks")
 	backlogDir := filepath.Join(moduleDir, "backlog")
-	os.MkdirAll(backlogDir, 0755)
+	os.MkdirAll(backlogDir, 0o755)
 
 	lane := &engine.Lane{
 		Name:   "backlog",

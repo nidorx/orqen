@@ -19,7 +19,7 @@ func createTestProjectDir(t *testing.T, extraConfig map[string]interface{}) stri
 
 	tmpDir := t.TempDir()
 	orqenDir := filepath.Join(tmpDir, ".orqen")
-	if err := os.MkdirAll(orqenDir, 0755); err != nil {
+	if err := os.MkdirAll(orqenDir, 0o755); err != nil {
 		t.Fatalf("failed to create .orqen dir: %v", err)
 	}
 

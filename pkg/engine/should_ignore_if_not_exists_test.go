@@ -14,7 +14,7 @@ func TestShouldIgnoreIfNotExists(t *testing.T) {
 		lane := taskModule.GetLane(laneName)
 		lane.DirAbs = filepath.Join(tempDir, taskModule.Dir, lane.Name)
 		lane.Module = taskModule
-		if err := os.MkdirAll(lane.DirAbs, 0755); err != nil {
+		if err := os.MkdirAll(lane.DirAbs, 0o755); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -75,7 +75,7 @@ func TestShouldIgnoreIfNotExistsWithFiles(t *testing.T) {
 		lane := taskModule.GetLane(laneName)
 		lane.DirAbs = filepath.Join(tempDir, taskModule.Dir, lane.Name)
 		lane.Module = taskModule
-		if err := os.MkdirAll(lane.DirAbs, 0755); err != nil {
+		if err := os.MkdirAll(lane.DirAbs, 0o755); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -86,7 +86,7 @@ func TestShouldIgnoreIfNotExistsWithFiles(t *testing.T) {
 	createWorkItemDir(t, doingLane, "TASK-001-test")
 	itemDir := filepath.Join(doingLane.DirAbs, "TASK-001-test")
 	artifactsDir := filepath.Join(itemDir, "artifacts")
-	if err := os.MkdirAll(artifactsDir, 0755); err != nil {
+	if err := os.MkdirAll(artifactsDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(filepath.Join(artifactsDir, "test.md"), []byte("test"), 0644); err != nil {

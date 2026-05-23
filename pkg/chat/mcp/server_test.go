@@ -297,7 +297,7 @@ func (e *httpError) Error() string {
 // storeFileInProject writes content to a file within the project directory.
 func storeFileInProject(proj *engine.Project, path, content string) error {
 	abs := filepath.Join(proj.DirAbs, path)
-	if err := os.MkdirAll(filepath.Dir(abs), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(abs), 0o755); err != nil {
 		return err
 	}
 	return os.WriteFile(abs, []byte(content), 0644)

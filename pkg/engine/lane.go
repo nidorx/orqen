@@ -160,7 +160,7 @@ func (l *Lane) CreateWorkItem(simpleNameP string) (wi *WorkItem, err error) {
 		}()
 
 		// Create directory
-		if err := os.MkdirAll(wiDirPath, 0755); err != nil {
+		if err := os.MkdirAll(wiDirPath, 0o755); err != nil {
 			e = fmt.Errorf("failed to create directory: %v", err)
 			return
 		}

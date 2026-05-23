@@ -23,7 +23,7 @@ func createTempProject(t *testing.T) (*Project, string) {
 
 	// Create basic project structure
 	orqenDir := filepath.Join(tempDir, ".orqen")
-	if err := os.MkdirAll(orqenDir, 0755); err != nil {
+	if err := os.MkdirAll(orqenDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 
@@ -90,7 +90,7 @@ func createWorkItemDir(t *testing.T, lane *Lane, name string) {
 	}
 
 	itemDir := filepath.Join(lane.DirAbs, name)
-	if err := os.MkdirAll(itemDir, 0755); err != nil {
+	if err := os.MkdirAll(itemDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -186,7 +186,7 @@ func TestProjectActiveAgentCount(t *testing.T) {
 	for _, mod := range project.Modules {
 		for _, lane := range mod.Lanes {
 			lane.DirAbs = filepath.Join(tempDir, mod.Dir, lane.Name)
-			if err := os.MkdirAll(lane.DirAbs, 0755); err != nil {
+			if err := os.MkdirAll(lane.DirAbs, 0o755); err != nil {
 				t.Fatal(err)
 			}
 		}
@@ -218,7 +218,7 @@ func TestProjectHasAvailableSlot(t *testing.T) {
 	for _, mod := range project.Modules {
 		for _, lane := range mod.Lanes {
 			lane.DirAbs = filepath.Join(tempDir, mod.Dir, lane.Name)
-			if err := os.MkdirAll(lane.DirAbs, 0755); err != nil {
+			if err := os.MkdirAll(lane.DirAbs, 0o755); err != nil {
 				t.Fatal(err)
 			}
 		}
@@ -303,7 +303,7 @@ func TestExecutorTick(t *testing.T) {
 	for _, mod := range project.Modules {
 		for _, lane := range mod.Lanes {
 			lane.DirAbs = filepath.Join(tempDir, mod.Dir, lane.Name)
-			if err := os.MkdirAll(lane.DirAbs, 0755); err != nil {
+			if err := os.MkdirAll(lane.DirAbs, 0o755); err != nil {
 				t.Fatal(err)
 			}
 		}
@@ -355,7 +355,7 @@ func TestExecutorRespectsMaxAgents(t *testing.T) {
 	for _, mod := range project.Modules {
 		for _, lane := range mod.Lanes {
 			lane.DirAbs = filepath.Join(tempDir, mod.Dir, lane.Name)
-			if err := os.MkdirAll(lane.DirAbs, 0755); err != nil {
+			if err := os.MkdirAll(lane.DirAbs, 0o755); err != nil {
 				t.Fatal(err)
 			}
 			lane.MaxAgents = 2
@@ -399,7 +399,7 @@ func TestExecutorCleanupCompleted(t *testing.T) {
 	for _, mod := range project.Modules {
 		for _, lane := range mod.Lanes {
 			lane.DirAbs = filepath.Join(tempDir, mod.Dir, lane.Name)
-			if err := os.MkdirAll(lane.DirAbs, 0755); err != nil {
+			if err := os.MkdirAll(lane.DirAbs, 0o755); err != nil {
 				t.Fatal(err)
 			}
 		}
@@ -452,7 +452,7 @@ func TestIgnoreIfExists(t *testing.T) {
 		for _, lane := range mod.Lanes {
 			lane.DirAbs = filepath.Join(tempDir, mod.Dir, lane.Name)
 			lane.Module = mod
-			if err := os.MkdirAll(lane.DirAbs, 0755); err != nil {
+			if err := os.MkdirAll(lane.DirAbs, 0o755); err != nil {
 				t.Fatal(err)
 			}
 		}
@@ -495,7 +495,7 @@ func TestIgnoreIfDependency(t *testing.T) {
 	for _, mod := range project.Modules {
 		for _, lane := range mod.Lanes {
 			lane.DirAbs = filepath.Join(tempDir, mod.Dir, lane.Name)
-			if err := os.MkdirAll(lane.DirAbs, 0755); err != nil {
+			if err := os.MkdirAll(lane.DirAbs, 0o755); err != nil {
 				t.Fatal(err)
 			}
 		}
@@ -507,7 +507,7 @@ func TestIgnoreIfDependency(t *testing.T) {
 	for _, lane := range taskModule.Lanes {
 		lane.DirAbs = filepath.Join(tempDir, taskModule.Dir, lane.Name)
 		lane.Module = taskModule
-		if err := os.MkdirAll(lane.DirAbs, 0755); err != nil {
+		if err := os.MkdirAll(lane.DirAbs, 0o755); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -517,7 +517,7 @@ func TestIgnoreIfDependency(t *testing.T) {
 	for _, lane := range adrModule.Lanes {
 		lane.DirAbs = filepath.Join(tempDir, adrModule.Dir, lane.Name)
 		lane.Module = adrModule
-		if err := os.MkdirAll(lane.DirAbs, 0755); err != nil {
+		if err := os.MkdirAll(lane.DirAbs, 0o755); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -581,7 +581,7 @@ func TestExecutionLoopIntegration(t *testing.T) {
 	for _, mod := range project.Modules {
 		for _, lane := range mod.Lanes {
 			lane.DirAbs = filepath.Join(tempDir, mod.Dir, lane.Name)
-			if err := os.MkdirAll(lane.DirAbs, 0755); err != nil {
+			if err := os.MkdirAll(lane.DirAbs, 0o755); err != nil {
 				t.Fatal(err)
 			}
 		}
@@ -646,7 +646,7 @@ func TestLoadMissingOrqenDir(t *testing.T) {
 func TestLoadMissingConfigFile(t *testing.T) {
 	tempDir := t.TempDir()
 	orqenDir := filepath.Join(tempDir, ".orqen")
-	if err := os.MkdirAll(orqenDir, 0755); err != nil {
+	if err := os.MkdirAll(orqenDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 
@@ -659,7 +659,7 @@ func TestLoadMissingConfigFile(t *testing.T) {
 func TestLoadInvalidYaml(t *testing.T) {
 	tempDir := t.TempDir()
 	orqenDir := filepath.Join(tempDir, ".orqen")
-	if err := os.MkdirAll(orqenDir, 0755); err != nil {
+	if err := os.MkdirAll(orqenDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 
@@ -676,7 +676,7 @@ func TestLoadInvalidYaml(t *testing.T) {
 func TestLoadNoModules(t *testing.T) {
 	tempDir := t.TempDir()
 	orqenDir := filepath.Join(tempDir, ".orqen")
-	if err := os.MkdirAll(orqenDir, 0755); err != nil {
+	if err := os.MkdirAll(orqenDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 
@@ -704,7 +704,7 @@ modules: []
 func TestLoadEmptyAgentCommand(t *testing.T) {
 	tempDir := t.TempDir()
 	orqenDir := filepath.Join(tempDir, ".orqen")
-	if err := os.MkdirAll(orqenDir, 0755); err != nil {
+	if err := os.MkdirAll(orqenDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 
@@ -736,7 +736,7 @@ modules:
 func TestLoadDefaultsApplied(t *testing.T) {
 	tempDir := t.TempDir()
 	orqenDir := filepath.Join(tempDir, ".orqen")
-	if err := os.MkdirAll(orqenDir, 0755); err != nil {
+	if err := os.MkdirAll(orqenDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 
@@ -795,7 +795,7 @@ modules:
 func TestLoadDuplicateLaneNames(t *testing.T) {
 	tempDir := t.TempDir()
 	orqenDir := filepath.Join(tempDir, ".orqen")
-	if err := os.MkdirAll(orqenDir, 0755); err != nil {
+	if err := os.MkdirAll(orqenDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 
@@ -937,7 +937,7 @@ func TestProjectWithInvokerOld(t *testing.T) {
 	for _, mod := range project.Modules {
 		for _, lane := range mod.Lanes {
 			lane.DirAbs = filepath.Join(tempDir, mod.Dir, lane.Name)
-			if err := os.MkdirAll(lane.DirAbs, 0755); err != nil {
+			if err := os.MkdirAll(lane.DirAbs, 0o755); err != nil {
 				t.Fatal(err)
 			}
 		}

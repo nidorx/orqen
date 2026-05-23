@@ -15,7 +15,7 @@ func TestChatFileList_ValidInput(t *testing.T) {
 
 	// Create some files
 	srcDir := filepath.Join(dir, "src")
-	os.MkdirAll(srcDir, 0755)
+	os.MkdirAll(srcDir, 0o755)
 	os.WriteFile(filepath.Join(dir, "README.md"), []byte("# hello"), 0644)
 	os.WriteFile(filepath.Join(srcDir, "main.go"), []byte("package main"), 0644)
 
@@ -40,7 +40,7 @@ func TestChatFileList_PathFilter(t *testing.T) {
 	proj := setupTestProjectWithLane(t, dir)
 
 	srcDir := filepath.Join(dir, "src")
-	os.MkdirAll(srcDir, 0755)
+	os.MkdirAll(srcDir, 0o755)
 	os.WriteFile(filepath.Join(dir, "README.md"), []byte("# hello"), 0644)
 	os.WriteFile(filepath.Join(srcDir, "main.go"), []byte("package main"), 0644)
 

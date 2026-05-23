@@ -16,6 +16,8 @@
 <body>
    <div id="app"></div>
    <script>
+      const VERSION = 'v1.0.1';
+
       window.$docsify = {
          repo: 'nidorx/orqen',
          name: 'Orqen',
@@ -32,7 +34,14 @@
             buttonText: 'Clique para copiar',
             errorText: 'Erro',
             successText: 'Copiado'
-         }
+         },
+         plugins: [
+            function (hook, vm) {               
+               hook.beforeEach(function (markdown) {
+                  return markdown.replaceAll('__VERSION__', VERSION)
+               })
+            }
+         ]
       }
 
       // remove sidebar's title and add Orqen logo
