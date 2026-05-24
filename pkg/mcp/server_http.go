@@ -30,7 +30,6 @@ func ServerHttp(proj *engine.Project) http.Handler {
 	addTool(server, tnFsTree, FsTreeHandler, proj)
 	addTool(server, tnFsFind, FsFindHandler, proj)
 	addTool(server, tnFsGrep, FsGrepHandler, proj)
-	addTool(server, tnFsCat, FsCatHandler, proj)
 	addTool(server, tnFsDiff, FsDiffHandler, proj)
 
 	return mcp.NewStreamableHTTPHandler(func(request *http.Request) *mcp.Server {

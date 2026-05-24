@@ -135,14 +135,12 @@ You also have access to filesystem tools for cross-platform file operations. The
 | `orqen_fs_tree dir` | Display directory tree structure with indentation. Default max depth is 3. |
 | `orqen_fs_find pattern [dir]` | Find files/directories matching glob pattern. Supports max_results, max_depth, and file_type filters. |
 | `orqen_fs_grep pattern filepath` | Search for regex pattern in file contents. Returns matching lines with line numbers. Supports ignore_case and max_results. |
-| `orqen_fs_cat file` | Display file contents. Limited to 100KB to prevent excessive output. |
 | `orqen_fs_diff file1 file2` | Show unified diff between two files (similar to `diff -u`). Configurable context lines. |
 
 ### Usage Guidance
 
 Prefer filesystem tools over direct shell commands for file operations:
 
-- Use `orqen_fs_cat` instead of `cat`, `read_file`, or shell redirection
 - Use `orqen_fs_list` instead of `ls` or `dir`
 - Use `orqen_fs_move` / `orqen_fs_copy` instead of `mv` / `cp`
 - Use `orqen_fs_find` / `orqen_fs_grep` instead of `find` / `grep` / `rg`

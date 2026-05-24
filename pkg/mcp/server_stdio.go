@@ -88,7 +88,6 @@ func StartStdio(orqenPort string, projectId string, workItemID string) {
 	addToolProxy(server, tnFsTree, FsTreeHandler, session, workItemID)
 	addToolProxy(server, tnFsFind, FsFindHandler, session, workItemID)
 	addToolProxy(server, tnFsGrep, FsGrepHandler, session, workItemID)
-	addToolProxy(server, tnFsCat, FsCatHandler, session, workItemID)
 	addToolProxy(server, tnFsDiff, FsDiffHandler, session, workItemID)
 	if DEBUG_STDIO {
 		debugAny("MCP_TOOLS_ADDED", time.Now())

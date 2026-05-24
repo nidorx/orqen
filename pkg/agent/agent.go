@@ -31,11 +31,12 @@ var (
 )
 
 type Agent struct {
-	id     string
-	ctx    context.Context
-	cmd    *exec.Cmd // defer cmd.Process.Kill()
-	client *Client
-	conn   *acp.ClientSideConnection
+	id          string
+	ctx         context.Context
+	cmd         *exec.Cmd // defer cmd.Process.Kill()
+	client      *Client
+	conn        *acp.ClientSideConnection
+	loadSession bool // whether the agent supports session loading via LoadSession
 }
 
 func (a *Agent) NewSession(ctx context.Context, params acp.NewSessionRequest) (acp.NewSessionResponse, error) {
@@ -52,6 +53,10 @@ func (a *Agent) CloseSession(ctx context.Context, params acp.CloseSessionRequest
 
 func (a *Agent) Prompt(ctx context.Context, params acp.PromptRequest) (acp.PromptResponse, error) {
 	return a.conn.Prompt(ctx, params)
+}
+
+func (a *Agent) LoadSession(ctx context.Context, params acp.LoadSessionRequest) (acp.LoadSessionResponse, error) {
+	return a.conn.LoadSession(ctx, params)
 }
 
 // ScheduleIdle sets a timer to kill the subprocess after the idle timeout.
@@ -150,10 +155,11 @@ func GetAgent(projectId string, agentName string, command []string) (*Agent, err
 	logger.Log("connected (protocol v%v)\n", initResp.ProtocolVersion)
 
 	agent = &Agent{
-		ctx:    ctx,
-		cmd:    cmd,
-		conn:   conn,
-		client: client,
+		ctx:         ctx,
+		cmd:         cmd,
+		conn:        conn,
+		client:      client,
+		loadSession: initResp.AgentCapabilities.LoadSession,
 	}
 
 	agents[agentId] = agent

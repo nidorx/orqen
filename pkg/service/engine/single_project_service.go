@@ -66,8 +66,11 @@ func (s *Service) OnStart() error {
 		// Build MCP servers list for this lane
 		mcpServers := buildMcpServers(proj, lane, orqenExec, orqenPort, item.ID)
 
+		// Read prior session ID from work item attributes
+		priorSessionID := item.Attributes.String("session_id")
+
 		// initialize agent (ACP)
-		return agent.Exec(
+		sessionID, err := agent.Exec(
 			proj.Id,
 			proj.Agents.GetName(lane.Agent),
 			lane.Name,
@@ -75,7 +78,18 @@ func (s *Service) OnStart() error {
 			cwd,
 			prompt,
 			proj.Agents.GetCommand(lane.Agent),
-			mcpServers)
+			mcpServers,
+			priorSessionID,
+		)
+
+		// Persist session lifecycle: remove on success, save on error for reload
+		if err == nil {
+			_ = item.AttributesDel([]string{"session_id"})
+		} else if sessionID != "" {
+			_ = item.AttributesSave(engine.Attributes{"session_id": sessionID})
+		}
+
+		return err
 	})
 	proj.Start()
 

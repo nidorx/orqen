@@ -8,61 +8,6 @@ import (
 	"github.com/nidorx/orqen/pkg/engine"
 )
 
-func TestFsCatHandler(t *testing.T) {
-	proj := createTestProject(t)
-
-	// Create a test file
-	testFile := filepath.Join(proj.DirAbs, "test.txt")
-	if err := os.WriteFile(testFile, []byte("hello world"), 0644); err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(proj.DirAbs)
-
-	t.Run("read file successfully", func(t *testing.T) {
-		input := &FsCatInput{Filepath: "test.txt"}
-		_, out, err := FsCatHandler(t.Context(), nil, input, proj)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if out.Content != "hello world" {
-			t.Errorf("expected 'hello world', got %q", out.Content)
-		}
-	})
-
-	t.Run("file not exist", func(t *testing.T) {
-		input := &FsCatInput{Filepath: "nonexistent.txt"}
-		_, out, err := FsCatHandler(t.Context(), nil, input, proj)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if out.Error == "" {
-			t.Error("expected error for nonexistent file")
-		}
-	})
-
-	t.Run("directory not file", func(t *testing.T) {
-		input := &FsCatInput{Filepath: "."}
-		_, out, err := FsCatHandler(t.Context(), nil, input, proj)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if out.Error == "" {
-			t.Error("expected error for directory")
-		}
-	})
-
-	t.Run("blocked path", func(t *testing.T) {
-		input := &FsCatInput{Filepath: ".orqen/config.yaml"}
-		_, out, err := FsCatHandler(t.Context(), nil, input, proj)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if out.Error == "" {
-			t.Error("expected error for blocked path")
-		}
-	})
-}
-
 func TestFsCopyHandler(t *testing.T) {
 	proj := createTestProject(t)
 
