@@ -44,26 +44,26 @@ import (
 //	    extra_prompt: |                # additional context injected after agent_behavior
 //	      Upon successful completion, create the SUMMARY artifact...
 type Lane struct {
-	Dir                string   `yaml:"-"`
-	Name               string   `yaml:"name"`
-	Agent              string   `yaml:"agent"`
-	DirAbs             string   `yaml:"-"`
-	Prompt             string   `yaml:"-"`
-	Purpose            string   `yaml:"purpose"`
-	MaxAgents          int      `yaml:"max_agents"`
-	Artifacts          []string `yaml:"artifacts"`
-	UserAction         string   `yaml:"user_action"`
-	ExtraPrompt        string   `yaml:"extra_prompt"`
-	AgentBehavior      []string `yaml:"agent_behavior"`
-	CriticalRules      []string `yaml:"critical_rules"`
-	IgnoreIfAttr       string   `yaml:"ignore_if_attr"`       // ignore if work item attributes match a condition
-	IgnoreIfModtime    int      `yaml:"ignore_if_modtime"`    // ignore if recently updated
-	IgnoreIfExists     []string `yaml:"ignore_if_exists"`     // ignore if items exist in referenced lanes
-	IgnoreIfNotExists  []string `yaml:"ignore_if_not_exists"` // ignore if items/files don't exist in referenced lanes
-	IgnoreIfDependency []string `yaml:"ignore_if_dependency"` // ignore if item has dependencies in referenced lanes
-	McpServers         []string `yaml:"mcpServers"`           // list of MCP server names to inject for this lane
-	Module             *Module  `yaml:"-"`                    // reference to parent module
-	Hooks              *HookBindings `yaml:"hooks,omitempty"` // pre/post hook bindings for this lane (can exclude module-level hooks)
+	Dir                string        `yaml:"-"`
+	Name               string        `yaml:"name"`
+	Agent              string        `yaml:"agent"`
+	DirAbs             string        `yaml:"-"`
+	Prompt             string        `yaml:"-"`
+	Purpose            string        `yaml:"purpose"`
+	MaxAgents          int           `yaml:"max_agents"`
+	Artifacts          []string      `yaml:"artifacts"`
+	UserAction         string        `yaml:"user_action"`
+	ExtraPrompt        string        `yaml:"extra_prompt"`
+	AgentBehavior      []string      `yaml:"agent_behavior"`
+	CriticalRules      []string      `yaml:"critical_rules"`
+	IgnoreIfAttr       string        `yaml:"ignore_if_attr"`       // ignore if work item attributes match a condition
+	IgnoreIfModtime    int           `yaml:"ignore_if_modtime"`    // ignore if recently updated
+	IgnoreIfExists     []string      `yaml:"ignore_if_exists"`     // ignore if items exist in referenced lanes
+	IgnoreIfNotExists  []string      `yaml:"ignore_if_not_exists"` // ignore if items/files don't exist in referenced lanes
+	IgnoreIfDependency []string      `yaml:"ignore_if_dependency"` // ignore if item has dependencies in referenced lanes
+	McpServers         []string      `yaml:"mcpServers"`           // list of MCP server names to inject for this lane
+	Module             *Module       `yaml:"-"`                    // reference to parent module
+	Hooks              *HookBindings `yaml:"hooks,omitempty"`      // pre/post hook bindings for this lane (can exclude module-level hooks)
 
 	// Runtime state
 	workItemsByID *tinylfu.SyncCacheT[*WorkItem]
@@ -224,6 +224,9 @@ func (l *Lane) onFsysUpdate(ev FsysEvent) {
 		if (ev.Op == FsysOpRemove || ev.Op == FsysOpRename) && fileExtraPath == "" {
 			// work item removed, renamed or moved to another lane
 
+			if it, exists := l.workItemsByID.Get(id); exists && it.Lane == l {
+				it.Lane = nil
+			}
 			l.workItemsByID.Del(id)
 
 			// temporarily remove
@@ -379,6 +382,9 @@ func (l *Lane) onFsysUpdate(ev FsysEvent) {
 
 		// removed, renamed or moved to another lane
 		if ev.Op == FsysOpRemove || ev.Op == FsysOpRename {
+			if it, exists := l.workItemsByID.Get(id); exists && it.Lane == l {
+				it.Lane = nil
+			}
 			l.workItemsByID.Del(id)
 			return
 		}
@@ -386,6 +392,7 @@ func (l *Lane) onFsysUpdate(ev FsysEvent) {
 		// Reuse existing item if it exists to preserve InProgress state
 		if existingInboxItem, exists := l.workItemsByID.Get(id); exists {
 			item = existingInboxItem
+			item.Lane = l
 		} else {
 			rel, err := filepath.Rel(l.Module.Project.DirAbs, filepath.Clean(filepath.Join(l.DirAbs, itemName)))
 			if err != nil {

@@ -21,14 +21,14 @@ type Telegram struct {
 
 // Project represents the top-level project configuration (.orqen/orqen.yaml).
 type Project struct {
-	Id        string                     `yaml:"-"` // directory hash
-	DirAbs    string                     `yaml:"-"` // absolute directory path
-	Chat      *Chat                      `yaml:"chat"`
-	Agents    Agent                      `yaml:"agents"`
+	Id         string                     `yaml:"-"` // directory hash
+	DirAbs     string                     `yaml:"-"` // absolute directory path
+	Chat       *Chat                      `yaml:"chat"`
+	Agents     Agent                      `yaml:"agents"`
 	McpServers map[string]McpServerConfig `yaml:"mcpServers"`
-	Execution *Execution                 `yaml:"execution"`
-	Modules   []*Module                  `yaml:"modules"`
-	NamedHooks NamedHooks               `yaml:"hooks,omitempty"` // named hook definitions
+	Execution  *Execution                 `yaml:"execution"`
+	Modules    []*Module                  `yaml:"modules"`
+	NamedHooks NamedHooks                 `yaml:"hooks,omitempty"` // named hook definitions
 
 	// Runtime state (not serialized)
 	mu       sync.Mutex

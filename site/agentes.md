@@ -159,6 +159,7 @@ Error: agent command not found
 
 ## Próximos passos
 
+- [Recuperação de Sessão](recuperacao-sessao.md) - Como o Orqen recupera sessões de agentes em caso de falha
 - [Telegram](telegram.md) - Integre com bot do Telegram
 - [Exemplos](exemplos.md) - Pipelines prontos para usar
 - [Configuração](configuracao.md) - Referência de configuração

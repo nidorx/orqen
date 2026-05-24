@@ -32,16 +32,16 @@ const schemaMaxValues = 50 // max unique values per field in schema
 //	      - name: "inbox"
 //	        purpose: "..."
 type Module struct {
-	Name        string   `yaml:"name"`
-	Order       []string `yaml:"order"`  // priority order for lane selection when choosing work
-	Prefix      string   `yaml:"prefix"` // prefix for work item names (e.g., TASK, ADR, LKN)
-	Lanes       []*Lane  `yaml:"lanes"`
-	Prompt      string   `yaml:"-"`
-	Dir         string   `yaml:"dir"`
-	DirAbs      string   `yaml:"-"`
-	Project     *Project `yaml:"-"`
-	DirPrompts  string   `yaml:"-"`
-	ExtraPrompt string   `yaml:"extra_prompt"`
+	Name        string        `yaml:"name"`
+	Order       []string      `yaml:"order"`  // priority order for lane selection when choosing work
+	Prefix      string        `yaml:"prefix"` // prefix for work item names (e.g., TASK, ADR, LKN)
+	Lanes       []*Lane       `yaml:"lanes"`
+	Prompt      string        `yaml:"-"`
+	Dir         string        `yaml:"dir"`
+	DirAbs      string        `yaml:"-"`
+	Project     *Project      `yaml:"-"`
+	DirPrompts  string        `yaml:"-"`
+	ExtraPrompt string        `yaml:"extra_prompt"`
 	Hooks       *HookBindings `yaml:"hooks,omitempty"` // pre/post hook bindings for this module
 
 	mu               sync.Mutex
