@@ -26,7 +26,7 @@ type FsCopyOutput struct {
 	Error   string `json:"error,omitempty"`
 }
 
-const tnFsCopy = "orqen_fs_copy"
+const tnFsCopy = "fs_copy"
 
 func init() {
 	tools[tnFsCopy] = &mcp.Tool{

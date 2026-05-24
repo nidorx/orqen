@@ -9,10 +9,6 @@ import (
 	"github.com/nidorx/orqen/pkg/engine"
 )
 
-// ============================================================================
-// Test orqen_item_attrs_set
-// ============================================================================
-
 func TestItemAttrsSetHandler(t *testing.T) {
 	proj, _ := setupTestProject(t)
 
@@ -37,7 +33,7 @@ func TestItemAttrsSetHandler(t *testing.T) {
 				"description": "Implement unit tests",
 			},
 		}
-		out := callHandler(t, ItemAttrsSetHandler, input, proj)
+		out := callHandler(t, WorkitemAttrsSetHandler, input, proj)
 
 		if !out.Success {
 			t.Fatalf("expected success, got error: %s", out.Error)
@@ -63,7 +59,7 @@ func TestItemAttrsSetHandler(t *testing.T) {
 				"priority": 5,
 			},
 		}
-		out := callHandler(t, ItemAttrsSetHandler, input, proj)
+		out := callHandler(t, WorkitemAttrsSetHandler, input, proj)
 
 		if !out.Success {
 			t.Fatalf("expected success, got error: %s", out.Error)
@@ -88,7 +84,7 @@ func TestItemAttrsSetHandler(t *testing.T) {
 			},
 		}
 		input.WorkItemID = &workItemID
-		out := callHandler(t, ItemAttrsSetHandler, input, proj)
+		out := callHandler(t, WorkitemAttrsSetHandler, input, proj)
 
 		if !out.Success {
 			t.Fatalf("expected success, got error: %s", out.Error)
@@ -119,7 +115,7 @@ func TestItemAttrsSetHandler(t *testing.T) {
 				"approved":    true,
 			},
 		}
-		out := callHandler(t, ItemAttrsSetHandler, input, proj)
+		out := callHandler(t, WorkitemAttrsSetHandler, input, proj)
 
 		if !out.Success {
 			t.Fatalf("expected success, got error: %s", out.Error)
@@ -139,7 +135,7 @@ func TestItemAttrsSetHandler(t *testing.T) {
 				"key": "value",
 			},
 		}
-		out := callHandler(t, ItemAttrsSetHandler, input, nil)
+		out := callHandler(t, WorkitemAttrsSetHandler, input, nil)
 
 		if out.Error == "" {
 			t.Error("expected error for nil project")
@@ -154,7 +150,7 @@ func TestItemAttrsSetHandler(t *testing.T) {
 				"key": "value",
 			},
 		}
-		out := callHandler(t, ItemAttrsSetHandler, input, proj)
+		out := callHandler(t, WorkitemAttrsSetHandler, input, proj)
 
 		if out.Error == "" {
 			t.Error("expected error for seq = 0")
@@ -169,7 +165,7 @@ func TestItemAttrsSetHandler(t *testing.T) {
 				"key": "value",
 			},
 		}
-		out := callHandler(t, ItemAttrsSetHandler, input, proj)
+		out := callHandler(t, WorkitemAttrsSetHandler, input, proj)
 
 		if out.Error == "" {
 			t.Error("expected error for seq < 0")
@@ -182,7 +178,7 @@ func TestItemAttrsSetHandler(t *testing.T) {
 			Seq:        1,
 			Attributes: engine.Attributes{},
 		}
-		out := callHandler(t, ItemAttrsSetHandler, input, proj)
+		out := callHandler(t, WorkitemAttrsSetHandler, input, proj)
 
 		if out.Error == "" {
 			t.Error("expected error for empty attributes")
@@ -197,7 +193,7 @@ func TestItemAttrsSetHandler(t *testing.T) {
 				"key": "value",
 			},
 		}
-		out := callHandler(t, ItemAttrsSetHandler, input, proj)
+		out := callHandler(t, WorkitemAttrsSetHandler, input, proj)
 
 		if out.Error == "" {
 			t.Error("expected error for nonexistent module")
@@ -212,7 +208,7 @@ func TestItemAttrsSetHandler(t *testing.T) {
 				"key": "value",
 			},
 		}
-		out := callHandler(t, ItemAttrsSetHandler, input, proj)
+		out := callHandler(t, WorkitemAttrsSetHandler, input, proj)
 
 		if out.Error == "" {
 			t.Error("expected error for nonexistent item")
@@ -226,7 +222,7 @@ func TestItemAttrsSetHandler(t *testing.T) {
 				"key": "value",
 			},
 		}
-		out := callHandler(t, ItemAttrsSetHandler, input, proj)
+		out := callHandler(t, WorkitemAttrsSetHandler, input, proj)
 
 		// With multiple modules and no workitem_id, should fail
 		if out.Error == "" {
@@ -243,7 +239,7 @@ func TestItemAttrsSetHandler(t *testing.T) {
 				"metrics": map[string]any{"complexity": "high", "lines": 150},
 			},
 		}
-		out := callHandler(t, ItemAttrsSetHandler, input, proj)
+		out := callHandler(t, WorkitemAttrsSetHandler, input, proj)
 
 		if !out.Success {
 			t.Fatalf("expected success, got error: %s", out.Error)
@@ -267,7 +263,7 @@ func TestItemAttrsSetHandler(t *testing.T) {
 				"test_key": "test_value",
 			},
 		}
-		out := callHandler(t, ItemAttrsSetHandler, input, proj)
+		out := callHandler(t, WorkitemAttrsSetHandler, input, proj)
 
 		if !out.Success {
 			t.Fatalf("expected success, got error: %s", out.Error)

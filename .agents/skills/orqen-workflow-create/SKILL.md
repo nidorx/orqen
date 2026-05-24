@@ -162,7 +162,7 @@ modules:
         agent_behavior:              # ordered steps if agent acts here
           - "Read the inbox file"
           - "Decompose into tasks"
-          - "Create tasks in backlog using orqen_item_create"
+          - "Create tasks in backlog using workitem_create"
           - "Move the inbox file to the new item directory"
         critical_rules:              # hard rules (rendered prominently in prompts)
           - "Never invent references"

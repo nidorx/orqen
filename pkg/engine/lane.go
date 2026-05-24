@@ -217,6 +217,10 @@ func (l *Lane) onFsysUpdate(ev FsysEvent) {
 
 	var item *WorkItem
 
+	if l.Name == "push" {
+		fmt.Print("aqui\n")
+	}
+
 	// Check if this is a work item directory (e.g., WI-001-name, ADR-001-title)
 	if l.isWorkItemDir(itemName) {
 		seq := l.extractItemSeq(itemName)
@@ -423,7 +427,11 @@ func (l *Lane) onFsysUpdate(ev FsysEvent) {
 		}
 	}
 
-	fmt.Printf(">>> SET workItemsByID  %s - %s", l.Name, item.Name)
+	fmt.Printf("\n>>> SET workItemsByID  %s - %s\n\n", l.Name, item.Name)
+
+	if l.Name == "push" {
+		fmt.Print("aqui\n")
+	}
 
 	l.workItemsByID.Set(item.ID, item)
 	if item.Seq > 0 {

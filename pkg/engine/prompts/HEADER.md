@@ -30,7 +30,7 @@ This directory contains an automated management system designed for AI agents to
 The REQUIRED ACTION is defined by the EXECUTION CONTEXT and lane instructions.
 
 It may include:
-- Calling a tool (e.g., orqen_item_create)
+- Calling a tool (e.g., workitem_create)
 - Creating or updating files
 - Moving files between directories
 - Generating structured content
@@ -102,26 +102,26 @@ Use these tools for operations such as:
 
 For example:
 
-* Prefer `orqen_item` instead of manually parsing WORKITEM files
-* Prefer `orqen_item_attrs_set` and `orqen_item_attrs_del` instead of editing frontmatter or embedded metadata
+* Prefer `workitem` instead of manually parsing WORKITEM files
+* Prefer `workitem_attrs_set` and `workitem_attrs_del` instead of editing frontmatter or embedded metadata
 * Prefer workflow movement tools instead of manually moving files between directories
 
-Do not create markdown frontmatter for workflow metadata management unless explicitly required. Use the tools `orqen_item_attrs_del` and `orqen_item_attrs_set` to manage item attributes, and use the `orqen_item` and `orqen_item_attrs_schema` tools to retrieve item details, including their attributes.
+Do not create markdown frontmatter for workflow metadata management unless explicitly required. Use the tools `workitem_attrs_del` and `workitem_attrs_set` to manage item attributes, and use the `workitem` and `workitem_attrs_schema` tools to retrieve item details, including their attributes.
 
 ### Tools
 
 | Tool | Description |
 |------|-------------|
-| `orqen_item` | Get current work item context by workitem_id |
-| `orqen_item_create` | Create a new work item in a lane |
-| `orqen_item_move` | Move a work item between lanes |
-| `orqen_item_search` | Search work items with condition DSL filter |
-| `orqen_item_attrs_set` | Update attributes on a work item |
-| `orqen_item_attrs_del` | Remove attribute keys from a work item |
-| `orqen_item_attrs_schema` | Get observed attribute schema across a module |
-| `orqen_item_dependencies` | Check dependency status for a work item |
-| `orqen_lane_list` | List all lanes in a module |
-| `orqen_project_info` | Get full project structure |
+| `workitem` | Get current work item context by workitem_id |
+| `workitem_create` | Create a new work item in a lane |
+| `workitem_move` | Move a work item between lanes |
+| `workitem_search` | Search work items with condition DSL filter |
+| `workitem_attrs_set` | Update attributes on a work item |
+| `workitem_attrs_del` | Remove attribute keys from a work item |
+| `workitem_attrs_schema` | Get observed attribute schema across a module |
+| `workitem_dependencies` | Check dependency status for a work item |
+| `lane_list` | List all lanes in a module |
+| `project_info` | Get full project structure |
 
 ### Filesystem Tools
 
@@ -129,23 +129,23 @@ You also have access to filesystem tools for cross-platform file operations. The
 
 | Tool | Description |
 |------|-------------|
-| `orqen_fs_move src dst` | Move file/directory from source to destination. Handles cross-device moves automatically. |
-| `orqen_fs_copy src dst` | Copy file/directory from source to destination. Preserves directory structure. |
-| `orqen_fs_list dir` | List directory contents. Excludes `.orqen/` and `.git/` paths. Returns name, type, and size. |
-| `orqen_fs_tree dir` | Display directory tree structure with indentation. Default max depth is 3. |
-| `orqen_fs_find pattern [dir]` | Find files/directories matching glob pattern. Supports max_results, max_depth, and file_type filters. |
-| `orqen_fs_grep pattern filepath` | Search for regex pattern in file contents. Returns matching lines with line numbers. Supports ignore_case and max_results. |
-| `orqen_fs_diff file1 file2` | Show unified diff between two files (similar to `diff -u`). Configurable context lines. |
+| `fs_move src dst` | Move file/directory from source to destination. Handles cross-device moves automatically. |
+| `fs_copy src dst` | Copy file/directory from source to destination. Preserves directory structure. |
+| `fs_list dir` | List directory contents. Excludes `.orqen/` and `.git/` paths. Returns name, type, and size. |
+| `fs_tree dir` | Display directory tree structure with indentation. Default max depth is 3. |
+| `fs_find pattern [dir]` | Find files/directories matching glob pattern. Supports max_results, max_depth, and file_type filters. |
+| `fs_grep pattern filepath` | Search for regex pattern in file contents. Returns matching lines with line numbers. Supports ignore_case and max_results. |
+| `fs_diff file1 file2` | Show unified diff between two files (similar to `diff -u`). Configurable context lines. |
 
 ### Usage Guidance
 
 Prefer filesystem tools over direct shell commands for file operations:
 
-- Use `orqen_fs_list` instead of `ls` or `dir`
-- Use `orqen_fs_move` / `orqen_fs_copy` instead of `mv` / `cp`
-- Use `orqen_fs_find` / `orqen_fs_grep` instead of `find` / `grep` / `rg`
-- Use `orqen_fs_tree` for directory structure visualization
-- Use `orqen_fs_diff` for comparing files
+- Use `fs_list` instead of `ls` or `dir`
+- Use `fs_move` / `fs_copy` instead of `mv` / `cp`
+- Use `fs_find` / `fs_grep` instead of `find` / `grep` / `rg`
+- Use `fs_tree` for directory structure visualization
+- Use `fs_diff` for comparing files
 
 Use shell commands only when filesystem tools are insufficient (e.g., complex pipelines, git operations, package managers).
 

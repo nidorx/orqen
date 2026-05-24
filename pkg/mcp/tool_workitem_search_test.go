@@ -6,10 +6,6 @@ import (
 	"github.com/nidorx/orqen/pkg/engine"
 )
 
-// ============================================================================
-// Test orqen_item_search
-// ============================================================================
-
 func TestItemSearchHandler(t *testing.T) {
 	proj, _ := setupTestProject(t)
 
@@ -71,7 +67,7 @@ func TestItemSearchHandler(t *testing.T) {
 		input := &ItemSearchInput{
 			Module: ptr("task"),
 		}
-		out := callHandler(t, ItemSearchHandler, input, proj)
+		out := callHandler(t, WorkitemSearchHandler, input, proj)
 
 		// Should have 3 task items (1, 2 in backlog, 3 in doing)
 		if len(out.Items) != 3 {
@@ -84,7 +80,7 @@ func TestItemSearchHandler(t *testing.T) {
 			Module: ptr("task"),
 			Lane:   "backlog",
 		}
-		out := callHandler(t, ItemSearchHandler, input, proj)
+		out := callHandler(t, WorkitemSearchHandler, input, proj)
 
 		if len(out.Items) != 2 {
 			t.Fatalf("expected 2 items, got %d", len(out.Items))
@@ -96,7 +92,7 @@ func TestItemSearchHandler(t *testing.T) {
 			Module: ptr("task"),
 			Lane:   "inbox",
 		}
-		out := callHandler(t, ItemSearchHandler, input, proj)
+		out := callHandler(t, WorkitemSearchHandler, input, proj)
 
 		if len(out.Items) != 0 {
 			t.Fatalf("expected 0 items, got %d", len(out.Items))
@@ -109,7 +105,7 @@ func TestItemSearchHandler(t *testing.T) {
 			Lane:      "backlog",
 			Condition: "priority > 3",
 		}
-		out := callHandler(t, ItemSearchHandler, input, proj)
+		out := callHandler(t, WorkitemSearchHandler, input, proj)
 
 		// Only item2 has priority > 5
 		if len(out.Items) != 1 {
@@ -125,7 +121,7 @@ func TestItemSearchHandler(t *testing.T) {
 			Module:    ptr("task"),
 			Condition: "status == 'open'",
 		}
-		out := callHandler(t, ItemSearchHandler, input, proj)
+		out := callHandler(t, WorkitemSearchHandler, input, proj)
 
 		// Items 1 and 2 have status=open
 		if len(out.Items) != 2 {
@@ -139,7 +135,7 @@ func TestItemSearchHandler(t *testing.T) {
 			Lane:      "doing",
 			Condition: "priority > 2",
 		}
-		out := callHandler(t, ItemSearchHandler, input, proj)
+		out := callHandler(t, WorkitemSearchHandler, input, proj)
 
 		// Item 3 has priority=3 which is > 2
 		if len(out.Items) != 1 {
@@ -156,7 +152,7 @@ func TestItemSearchHandler(t *testing.T) {
 			Lane: "backlog",
 		}
 		input.WorkItemID = &workItemID
-		out := callHandler(t, ItemSearchHandler, input, proj)
+		out := callHandler(t, WorkitemSearchHandler, input, proj)
 
 		if len(out.Items) != 2 {
 			t.Fatalf("expected 2 items, got %d", len(out.Items))
@@ -167,7 +163,7 @@ func TestItemSearchHandler(t *testing.T) {
 		input := &ItemSearchInput{
 			Module: ptr("adr"),
 		}
-		out := callHandler(t, ItemSearchHandler, input, proj)
+		out := callHandler(t, WorkitemSearchHandler, input, proj)
 
 		// Should have 2 ADR items (1 in draft, 1 in accepted)
 		if len(out.Items) != 2 {
@@ -180,7 +176,7 @@ func TestItemSearchHandler(t *testing.T) {
 			Module:    ptr("adr"),
 			Condition: "type == 'architecture'",
 		}
-		out := callHandler(t, ItemSearchHandler, input, proj)
+		out := callHandler(t, WorkitemSearchHandler, input, proj)
 
 		// Both ADRs have type=architecture
 		if len(out.Items) != 2 {
@@ -192,7 +188,7 @@ func TestItemSearchHandler(t *testing.T) {
 		input := &ItemSearchInput{
 			Module: ptr("task"),
 		}
-		out := callHandler(t, ItemSearchHandler, input, nil)
+		out := callHandler(t, WorkitemSearchHandler, input, nil)
 
 		if out.Error == "" {
 			t.Error("expected error for nil project")
@@ -203,7 +199,7 @@ func TestItemSearchHandler(t *testing.T) {
 		input := &ItemSearchInput{
 			Module: ptr("nonexistent"),
 		}
-		out := callHandler(t, ItemSearchHandler, input, proj)
+		out := callHandler(t, WorkitemSearchHandler, input, proj)
 
 		if out.Error == "" {
 			t.Error("expected error for nonexistent module")
@@ -215,7 +211,7 @@ func TestItemSearchHandler(t *testing.T) {
 			Module: ptr("task"),
 			Lane:   "nonexistent",
 		}
-		out := callHandler(t, ItemSearchHandler, input, proj)
+		out := callHandler(t, WorkitemSearchHandler, input, proj)
 
 		if out.Error == "" {
 			t.Error("expected error for nonexistent lane")
@@ -227,7 +223,7 @@ func TestItemSearchHandler(t *testing.T) {
 			Module:    ptr("task"),
 			Condition: "invalid syntax here @#$",
 		}
-		out := callHandler(t, ItemSearchHandler, input, proj)
+		out := callHandler(t, WorkitemSearchHandler, input, proj)
 
 		// Should return an error for invalid condition
 		if out.Error == "" {
@@ -237,7 +233,7 @@ func TestItemSearchHandler(t *testing.T) {
 
 	t.Run("ambiguous module resolution", func(t *testing.T) {
 		input := &ItemSearchInput{}
-		out := callHandler(t, ItemSearchHandler, input, proj)
+		out := callHandler(t, WorkitemSearchHandler, input, proj)
 
 		// With multiple modules and no workitem_id, should fail
 		if out.Error == "" {
@@ -250,7 +246,7 @@ func TestItemSearchHandler(t *testing.T) {
 			Module: ptr("task"),
 			Lane:   "backlog",
 		}
-		out := callHandler(t, ItemSearchHandler, input, proj)
+		out := callHandler(t, WorkitemSearchHandler, input, proj)
 
 		if len(out.Items) == 0 {
 			t.Fatal("expected at least 1 item")
@@ -277,7 +273,7 @@ func TestItemSearchHandler(t *testing.T) {
 			Module:    ptr("task"),
 			Condition: "priority > 100",
 		}
-		out := callHandler(t, ItemSearchHandler, input, proj)
+		out := callHandler(t, WorkitemSearchHandler, input, proj)
 
 		if len(out.Items) != 0 {
 			t.Fatalf("expected 0 items, got %d", len(out.Items))
@@ -290,7 +286,7 @@ func TestItemSearchHandler(t *testing.T) {
 			Lane:      "backlog",
 			Condition: "",
 		}
-		out := callHandler(t, ItemSearchHandler, input, proj)
+		out := callHandler(t, WorkitemSearchHandler, input, proj)
 
 		// Should return all items in backlog
 		if len(out.Items) != 2 {
@@ -303,7 +299,7 @@ func TestItemSearchHandler(t *testing.T) {
 			Module: ptr("task"),
 			Lane:   "backlog",
 		}
-		out := callHandler(t, ItemSearchHandler, input, proj)
+		out := callHandler(t, WorkitemSearchHandler, input, proj)
 
 		if len(out.Items) == 0 {
 			t.Fatal("expected at least 1 item")
@@ -324,7 +320,7 @@ func TestItemSearchHandler(t *testing.T) {
 			Module:    ptr("task"),
 			Condition: "status == 'in-progress'",
 		}
-		out := callHandler(t, ItemSearchHandler, input, proj)
+		out := callHandler(t, WorkitemSearchHandler, input, proj)
 
 		// Only item 3 has status=in-progress
 		if len(out.Items) != 1 {

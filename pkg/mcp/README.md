@@ -31,31 +31,31 @@ The package exposes **11 MCP tools** for work item and project management:
 
 | Tool Constant | Tool Name | Handler | Description |
 |---------------|-----------|---------|-------------|
-| `tnItem` | `orqen_item` | `ItemHandler` | Returns the current work item, lane, module, and project context for a running agent job. Requires `workitem_id`. |
-| `tnItemMove` | `orqen_item_move` | `ItemMoveHandler` | Moves a work item directory from one lane to another within a module. Updates internal state to reflect the new lane position. |
-| `tnItemCreate` | `orqen_item_create` | `ItemCreateHandler` | Creates a new work item in a specific lane of a module. Creates the directory following naming conventions (MOD_TYPE-NNNN-name) and an empty `.yaml` file. |
-| `tnItemSearch` | `orqen_item_search` | `ItemSearchHandler` | Searches for work items in a module or lane, optionally filtered by a condition SQL-like DSL string. Returns full WorkItem objects. |
+| `tnItem` | `item` | `ItemHandler` | Returns the current work item, lane, module, and project context for a running agent job. Requires `workitem_id`. |
+| `tnItemMove` | `workitem_move` | `ItemMoveHandler` | Moves a work item directory from one lane to another within a module. Updates internal state to reflect the new lane position. |
+| `tnItemCreate` | `workitem_create` | `ItemCreateHandler` | Creates a new work item in a specific lane of a module. Creates the directory following naming conventions (MOD_TYPE-NNNN-name) and an empty `.yaml` file. |
+| `tnItemSearch` | `workitem_search` | `ItemSearchHandler` | Searches for work items in a module or lane, optionally filtered by a condition SQL-like DSL string. Returns full WorkItem objects. |
 
 ### Work Item Attribute Operations
 
 | Tool Constant | Tool Name | Handler | Description |
 |---------------|-----------|---------|-------------|
-| `tnItemAttrsSet` | `orqen_item_attrs_set` | `ItemAttrsSetHandler` | Updates attributes on a work item. Merges the provided attributes into the work item's existing attributes and persists them to disk. |
-| `tnItemAttrsDel` | `orqen_item_attrs_del` | `ItemAttrsDelHandler` | Removes specified attribute keys from a work item and persists the changes to disk. The "dependencies" key cannot be removed. |
-| `tnItemAttrsSchema` | `orqen_item_attrs_schema` | `ItemAttrSchemaHandler` | Returns all observed workitem attributes and their unique values (domains) across all workitems in a module. Use this to understand what metadata fields exist. |
+| `tnItemAttrsSet` | `workitem_attrs_set` | `ItemAttrsSetHandler` | Updates attributes on a work item. Merges the provided attributes into the work item's existing attributes and persists them to disk. |
+| `tnItemAttrsDel` | `workitem_attrs_del` | `ItemAttrsDelHandler` | Removes specified attribute keys from a work item and persists the changes to disk. The "dependencies" key cannot be removed. |
+| `tnItemAttrsSchema` | `workitem_attrs_schema` | `ItemAttrSchemaHandler` | Returns all observed workitem attributes and their unique values (domains) across all workitems in a module. Use this to understand what metadata fields exist. |
 
 ### Work Item Dependencies
 
 | Tool Constant | Tool Name | Handler | Description |
 |---------------|-----------|---------|-------------|
-| `tnItemDependencies` | `orqen_item_dependencies` | `ItemDependenciesHandler` | Checks dependency status for the current work item. Resolves them to actual work items with their status. |
+| `tnItemDependencies` | `workitem_dependencies` | `ItemDependenciesHandler` | Checks dependency status for the current work item. Resolves them to actual work items with their status. |
 
 ### Project & Lane Operations
 
 | Tool Constant | Tool Name | Handler | Description |
 |---------------|-----------|---------|-------------|
-| `tnLaneList` | `orqen_lane_list` | `LaneListHandler` | Lists all lanes in a module with their configuration, purpose, item counts, and availability. Use this to understand lane structure before creating or moving items. |
-| `tnProjectInfo` | `orqen_project_info` | `ProjectInfoHandler` | Returns the full project structure: modules, lanes, item counts, and configuration. Use this to understand the overall project layout. |
+| `tnLaneList` | `lane_list` | `LaneListHandler` | Lists all lanes in a module with their configuration, purpose, item counts, and availability. Use this to understand lane structure before creating or moving items. |
+| `tnProjectInfo` | `project_info` | `ProjectInfoHandler` | Returns the full project structure: modules, lanes, item counts, and configuration. Use this to understand the overall project layout. |
 
 ## Invocation Flow
 
@@ -168,7 +168,7 @@ The agent's view:
 6. Agent receives tool result, continues execution
 ```
 
-The agent is **unaware of the proxy**. From its perspective, it calls `orqen_move_item` and gets a result. The transport layer (stdio → HTTP → stdio) is transparent.
+The agent is **unaware of the proxy**. From its perspective, it calls `move_item` and gets a result. The transport layer (stdio → HTTP → stdio) is transparent.
 
 ### Full Call Sequence
 
@@ -180,7 +180,7 @@ Step  Agent (ACP)              Stdio Subprocess           Host Process
 
  2                             ── POST /mcp/http ───────▶
                                   {method: "tools/call",
-                                   name: "orqen_move_item",
+                                   name: "move_item",
                                    args: {workitem_seq: 1, ...}}
 
  3                                                          ItemMoveHandler()

@@ -66,7 +66,7 @@ modules:
           - "Identifique critérios de sucesso verificáveis (como saber que o objetivo foi alcançado?)"
           - "Avalie riscos: esta mudança pode quebrar algo existente?"
           - "Escreva a definição no arquivo AUTO-${SEQUENCE}-OBJETIVO.md usando o template em '.orqen/task/prompts/OBJETIVO.md'"
-          - "Use o tool orqen_move_item (orqen MCP Server) para mover o item da lane objetivo para decomposicao"
+          - "Use o tool workitem_move (orqen MCP Server) para mover o item da lane objetivo para decomposicao"
           - "Finalize a execução"
         critical_rules:
           - "Se o objetivo envolver breaking changes em APIs públicas, alerte no arquivo e finalize — não avance"
@@ -87,7 +87,7 @@ modules:
           - "Ordene as subtarefas por dependência — o que precisa ser feito primeiro?"
           - "Estime a complexidade de cada subtarefa"
           - "Escreva o plano no arquivo AUTO-${SEQUENCE}-PLANO.md usando o template em '.orqen/task/prompts/PLANO.md'"
-          - "Use o tool orqen_move_item (orqen MCP Server) para mover o item da lane decomposicao para implementando"
+          - "Use o tool workitem_move (orqen MCP Server) para mover o item da lane decomposicao para implementando"
           - "Finalize a execução"
         critical_rules:
           - "Cada subtarefa DEVE ser testável independentemente"
@@ -110,7 +110,7 @@ modules:
           - "Após implementar todas as subtarefas, execute a suite completa de testes do projeto"
           - "Execute linting e formatação"
           - "Crie o resumo da implementação no arquivo AUTO-${SEQUENCE}-SUMMARY.md usando o template em '.orqen/task/prompts/SUMMARY.md'"
-          - "Use o tool orqen_move_item (orqen MCP Server) para mover o item da lane implementando para testando"
+          - "Use o tool workitem_move (orqen MCP Server) para mover o item da lane implementando para testando"
           - "Finalize a execução"
         critical_rules:
           - "NUNCA avançar para a próxima subtarefa sem que a anterior esteja testando passando"
@@ -131,7 +131,7 @@ modules:
           - "Verifique que nenhum teste existente foi quebrado"
           - "Execute linting e verificação de estilo"
           - "Verifique que a build do projeto passa (go build, npm build, etc.)"
-          - "Se TUDO passar, use o tool orqen_move_item para mover para commit_realizado"
+          - "Se TUDO passar, use o tool workitem_move para mover para commit_realizado"
           - "Se ALGO falhar, mova para falha com detalhes do erro"
           - "Finalize a execução"
         critical_rules:
@@ -167,7 +167,7 @@ modules:
           - "Execute: git add . && git commit -m 'mensagem'"
           - "Se houver push remoto configurado, execute: git push"
           - "Atualize o SUMMARY com o hash do commit"
-          - "Use o tool orqen_move_item (orqen MCP Server) para mover para concluido"
+          - "Use o tool workitem_move (orqen MCP Server) para mover para concluido"
           - "Finalize a execução"
         critical_rules:
           - "Use commit messages convencionais: tipo(escopo): descrição"

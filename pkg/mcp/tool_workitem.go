@@ -8,7 +8,7 @@ import (
 	"github.com/nidorx/orqen/pkg/engine"
 )
 
-// orqen_status
+// status
 // Returns the current work item, lane, module, and project context
 // for the running agent job. Requires workItemID.
 
@@ -26,15 +26,15 @@ type ItemStatusOutput struct {
 	Error string                `json:"error,omitempty"`
 }
 
-const tnItem = "orqen_item"
+const tnWorkitem = "item"
 
 func init() {
-	tools[tnItem] = &mcp.Tool{
+	tools[tnWorkitem] = &mcp.Tool{
 		Description: "Returns the current work item, lane, module, and project context for the running agent job. Use this to understand what you are working on.",
 	}
 }
 
-func ItemHandler(ctx context.Context, req *mcp.CallToolRequest, input *ItemStatusInput, proj *engine.Project) (*mcp.CallToolResult, ItemStatusOutput, error) {
+func WorkitemHandler(ctx context.Context, req *mcp.CallToolRequest, input *ItemStatusInput, proj *engine.Project) (*mcp.CallToolResult, ItemStatusOutput, error) {
 	out := ItemStatusOutput{}
 
 	if proj == nil {

@@ -198,7 +198,7 @@ func applyDefaults(proj *Project) {
 				fmt.Sprintf("Analyze and decompose into %s.", mod.Prefix),
 				fmt.Sprintf("An idea may result in one or more %s - the agent should make appropriate judgment", mod.Prefix),
 				fmt.Sprintf(
-					"Create %s using orqen_item_create (orqen MCP Server).", mod.Prefix,
+					"Create %s using workitem_create (orqen MCP Server).", mod.Prefix,
 				),
 				"**Terminate execution** after processing the inbox file",
 			}

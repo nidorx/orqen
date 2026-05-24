@@ -29,7 +29,7 @@ type LaneListOutput struct {
 	Error  string       `json:"error,omitempty"`
 }
 
-const tnLaneList = "orqen_lane_list"
+const tnLaneList = "lane_list"
 
 func init() {
 	tools[tnLaneList] = &mcp.Tool{

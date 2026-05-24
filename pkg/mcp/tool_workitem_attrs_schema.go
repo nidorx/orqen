@@ -22,15 +22,15 @@ type SchemaOutput struct {
 	Error  string               `json:"error,omitempty"`
 }
 
-const tnItemAttrsSchema = "orqen_item_attrs_schema"
+const tnWorkitemAttrsSchema = "workitem_attrs_schema"
 
 func init() {
-	tools[tnItemAttrsSchema] = &mcp.Tool{
+	tools[tnWorkitemAttrsSchema] = &mcp.Tool{
 		Description: "Returns all observed workitem attributes and their unique values (domains) across all workitems in a module. Use this to understand what metadata fields exist.",
 	}
 }
 
-func ItemAttrSchemaHandler(ctx context.Context, req *mcp.CallToolRequest, input *SchemaInput, proj *engine.Project) (*mcp.CallToolResult, SchemaOutput, error) {
+func WorkitemAttrSchemaHandler(ctx context.Context, req *mcp.CallToolRequest, input *SchemaInput, proj *engine.Project) (*mcp.CallToolResult, SchemaOutput, error) {
 	out := SchemaOutput{}
 
 	if proj == nil {

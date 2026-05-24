@@ -70,14 +70,14 @@ func StartStdio(orqenPort string, projectId string, workItemID string) {
 	}
 
 	// Tools that need workItemID (auto-injected)
-	addToolProxy(server, tnItem, ItemHandler, session, workItemID)
-	addToolProxy(server, tnItemMove, ItemMoveHandler, session, workItemID)
-	addToolProxy(server, tnItemCreate, ItemCreateHandler, session, workItemID)
-	addToolProxy(server, tnItemSearch, ItemSearchHandler, session, workItemID)
-	addToolProxy(server, tnItemAttrsSet, ItemAttrsSetHandler, session, workItemID)
-	addToolProxy(server, tnItemAttrsDel, ItemAttrsDelHandler, session, workItemID)
-	addToolProxy(server, tnItemAttrsSchema, ItemAttrSchemaHandler, session, workItemID)
-	addToolProxy(server, tnItemDependencies, ItemDependenciesHandler, session, workItemID)
+	addToolProxy(server, tnWorkitem, WorkitemHandler, session, workItemID)
+	addToolProxy(server, tnWorkitemMove, WorkitemMoveHandler, session, workItemID)
+	addToolProxy(server, tnWorkitemCreate, WorkitemCreateHandler, session, workItemID)
+	addToolProxy(server, tnWorkitemSearch, WorkitemSearchHandler, session, workItemID)
+	addToolProxy(server, tnWorkitemAttrsSet, WorkitemAttrsSetHandler, session, workItemID)
+	addToolProxy(server, tnWorkitemAttrsDel, WorkitemAttrsDelHandler, session, workItemID)
+	addToolProxy(server, tnWorkitemAttrsSchema, WorkitemAttrSchemaHandler, session, workItemID)
+	addToolProxy(server, tnWorkitemDependencies, WorkitemDependenciesHandler, session, workItemID)
 	addToolProxy(server, tnLaneList, LaneListHandler, session, workItemID)
 	addToolProxy(server, tnProjectInfo, ProjectInfoHandler, session, workItemID)
 

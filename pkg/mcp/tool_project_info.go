@@ -7,7 +7,7 @@ import (
 	"github.com/nidorx/orqen/pkg/engine"
 )
 
-// orqen_project_info
+// project_info
 // Returns the full project structure: modules, lanes, prompts, agent
 // behaviors, critical rules, and configuration.
 
@@ -46,7 +46,7 @@ type ProjectInfoOutput struct {
 	SleepInterval int             `json:"sleep_interval_seconds"`
 }
 
-const tnProjectInfo = "orqen_project_info"
+const tnProjectInfo = "project_info"
 
 func init() {
 	tools[tnProjectInfo] = &mcp.Tool{

@@ -9,10 +9,6 @@ import (
 	"github.com/nidorx/orqen/pkg/engine"
 )
 
-// ============================================================================
-// Test orqen_item_attrs_del
-// ============================================================================
-
 func TestItemAttrsDelHandler(t *testing.T) {
 	proj, _ := setupTestProject(t)
 
@@ -40,7 +36,7 @@ func TestItemAttrsDelHandler(t *testing.T) {
 			Seq:    1,
 			Keys:   []string{"priority"},
 		}
-		out := callHandler(t, ItemAttrsDelHandler, input, proj)
+		out := callHandler(t, WorkitemAttrsDelHandler, input, proj)
 
 		if !out.Success {
 			t.Fatalf("expected success, got error: %s", out.Error)
@@ -60,7 +56,7 @@ func TestItemAttrsDelHandler(t *testing.T) {
 			Seq:    1,
 			Keys:   []string{"assignee", "status"},
 		}
-		out := callHandler(t, ItemAttrsDelHandler, input, proj)
+		out := callHandler(t, WorkitemAttrsDelHandler, input, proj)
 
 		if !out.Success {
 			t.Fatalf("expected success, got error: %s", out.Error)
@@ -89,7 +85,7 @@ func TestItemAttrsDelHandler(t *testing.T) {
 			Keys: []string{"description"},
 		}
 		input.WorkItemID = &workItemID
-		out := callHandler(t, ItemAttrsDelHandler, input, proj)
+		out := callHandler(t, WorkitemAttrsDelHandler, input, proj)
 
 		if !out.Success {
 			t.Fatalf("expected success, got error: %s", out.Error)
@@ -112,7 +108,7 @@ func TestItemAttrsDelHandler(t *testing.T) {
 			Seq:    1,
 			Keys:   []string{"dependencies"},
 		}
-		_ = callHandler(t, ItemAttrsDelHandler, input, proj)
+		_ = callHandler(t, WorkitemAttrsDelHandler, input, proj)
 
 		// Should succeed but dependencies should not be deleted
 		// (AttributesDel skips "dependencies" key)
@@ -142,7 +138,7 @@ func TestItemAttrsDelHandler(t *testing.T) {
 			Seq:    adrItem.Seq,
 			Keys:   []string{"reviewed_by", "approved"},
 		}
-		out := callHandler(t, ItemAttrsDelHandler, input, proj)
+		out := callHandler(t, WorkitemAttrsDelHandler, input, proj)
 
 		if !out.Success {
 			t.Fatalf("expected success, got error: %s", out.Error)
@@ -166,7 +162,7 @@ func TestItemAttrsDelHandler(t *testing.T) {
 			Seq:  1,
 			Keys: []string{"priority"},
 		}
-		out := callHandler(t, ItemAttrsDelHandler, input, nil)
+		out := callHandler(t, WorkitemAttrsDelHandler, input, nil)
 
 		if out.Error == "" {
 			t.Error("expected error for nil project")
@@ -179,7 +175,7 @@ func TestItemAttrsDelHandler(t *testing.T) {
 			Seq:    0,
 			Keys:   []string{"priority"},
 		}
-		out := callHandler(t, ItemAttrsDelHandler, input, proj)
+		out := callHandler(t, WorkitemAttrsDelHandler, input, proj)
 
 		if out.Error == "" {
 			t.Error("expected error for seq = 0")
@@ -192,7 +188,7 @@ func TestItemAttrsDelHandler(t *testing.T) {
 			Seq:    -1,
 			Keys:   []string{"priority"},
 		}
-		out := callHandler(t, ItemAttrsDelHandler, input, proj)
+		out := callHandler(t, WorkitemAttrsDelHandler, input, proj)
 
 		if out.Error == "" {
 			t.Error("expected error for seq < 0")
@@ -205,7 +201,7 @@ func TestItemAttrsDelHandler(t *testing.T) {
 			Seq:    1,
 			Keys:   []string{},
 		}
-		out := callHandler(t, ItemAttrsDelHandler, input, proj)
+		out := callHandler(t, WorkitemAttrsDelHandler, input, proj)
 
 		if out.Error == "" {
 			t.Error("expected error for empty keys")
@@ -218,7 +214,7 @@ func TestItemAttrsDelHandler(t *testing.T) {
 			Seq:    1,
 			Keys:   nil,
 		}
-		out := callHandler(t, ItemAttrsDelHandler, input, proj)
+		out := callHandler(t, WorkitemAttrsDelHandler, input, proj)
 
 		if out.Error == "" {
 			t.Error("expected error for nil keys")
@@ -231,7 +227,7 @@ func TestItemAttrsDelHandler(t *testing.T) {
 			Seq:    1,
 			Keys:   []string{"priority"},
 		}
-		out := callHandler(t, ItemAttrsDelHandler, input, proj)
+		out := callHandler(t, WorkitemAttrsDelHandler, input, proj)
 
 		if out.Error == "" {
 			t.Error("expected error for nonexistent module")
@@ -244,7 +240,7 @@ func TestItemAttrsDelHandler(t *testing.T) {
 			Seq:    9999,
 			Keys:   []string{"priority"},
 		}
-		out := callHandler(t, ItemAttrsDelHandler, input, proj)
+		out := callHandler(t, WorkitemAttrsDelHandler, input, proj)
 
 		if out.Error == "" {
 			t.Error("expected error for nonexistent item")
@@ -256,7 +252,7 @@ func TestItemAttrsDelHandler(t *testing.T) {
 			Seq:  1,
 			Keys: []string{"priority"},
 		}
-		out := callHandler(t, ItemAttrsDelHandler, input, proj)
+		out := callHandler(t, WorkitemAttrsDelHandler, input, proj)
 
 		// With multiple modules and no workitem_id, should fail
 		if out.Error == "" {
@@ -270,7 +266,7 @@ func TestItemAttrsDelHandler(t *testing.T) {
 			Seq:    1,
 			Keys:   []string{"nonexistent_key"},
 		}
-		out := callHandler(t, ItemAttrsDelHandler, input, proj)
+		out := callHandler(t, WorkitemAttrsDelHandler, input, proj)
 
 		// Should succeed even if key doesn't exist
 		if !out.Success {
@@ -288,7 +284,7 @@ func TestItemAttrsDelHandler(t *testing.T) {
 			Seq:    1,
 			Keys:   []string{"temp_attr"},
 		}
-		out := callHandler(t, ItemAttrsDelHandler, input, proj)
+		out := callHandler(t, WorkitemAttrsDelHandler, input, proj)
 
 		if !out.Success {
 			t.Fatalf("expected success, got error: %s", out.Error)

@@ -11,9 +11,8 @@ import (
 var (
 	tools = map[string]*mcp.Tool{}
 	impl  = &mcp.Implementation{
-		Name:       "orqen",
-		Title:      "Orqen MCP Server",
-		WebsiteURL: "https://orqen.ai.br",
+		Name:  "orqen",
+		Title: "Orqen MCP Server",
 	}
 )
 

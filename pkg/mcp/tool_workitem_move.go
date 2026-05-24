@@ -26,15 +26,15 @@ type ItemMoveOutput struct {
 	Error   string `json:"error,omitempty"`
 }
 
-const tnItemMove = "orqen_item_move"
+const tnWorkitemMove = "workitem_move"
 
 func init() {
-	tools[tnItemMove] = &mcp.Tool{
+	tools[tnWorkitemMove] = &mcp.Tool{
 		Description: "Moves a work item directory from one lane to another within a module. Updates internal state to reflect the new lane position.",
 	}
 }
 
-func ItemMoveHandler(ctx context.Context, req *mcp.CallToolRequest, input *ItemMoveInput, proj *engine.Project) (*mcp.CallToolResult, ItemMoveOutput, error) {
+func WorkitemMoveHandler(ctx context.Context, req *mcp.CallToolRequest, input *ItemMoveInput, proj *engine.Project) (*mcp.CallToolResult, ItemMoveOutput, error) {
 	out := ItemMoveOutput{}
 
 	if proj == nil {

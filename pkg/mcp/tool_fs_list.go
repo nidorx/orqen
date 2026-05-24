@@ -29,7 +29,7 @@ type FsListOutput struct {
 	Error   string    `json:"error,omitempty"`
 }
 
-const tnFsList = "orqen_fs_list"
+const tnFsList = "fs_list"
 
 func init() {
 	tools[tnFsList] = &mcp.Tool{

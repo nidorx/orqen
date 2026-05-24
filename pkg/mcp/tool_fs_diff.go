@@ -27,7 +27,7 @@ type FsDiffOutput struct {
 	Error string `json:"error,omitempty"`
 }
 
-const tnFsDiff = "orqen_fs_diff"
+const tnFsDiff = "fs_diff"
 
 func init() {
 	tools[tnFsDiff] = &mcp.Tool{

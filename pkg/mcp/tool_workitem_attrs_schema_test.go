@@ -6,10 +6,6 @@ import (
 	"github.com/nidorx/orqen/pkg/engine"
 )
 
-// ============================================================================
-// Test orqen_item_attrs_schema
-// ============================================================================
-
 func TestItemAttrSchemaHandler(t *testing.T) {
 	proj, _ := setupTestProject(t)
 
@@ -64,7 +60,7 @@ func TestItemAttrSchemaHandler(t *testing.T) {
 
 	t.Run("schema for task module", func(t *testing.T) {
 		input := &SchemaInput{Module: ptr("task")}
-		out := callHandler(t, ItemAttrSchemaHandler, input, proj)
+		out := callHandler(t, WorkitemAttrSchemaHandler, input, proj)
 
 		if out.Module != "task" {
 			t.Errorf("module = %q, want 'task'", out.Module)
@@ -90,7 +86,7 @@ func TestItemAttrSchemaHandler(t *testing.T) {
 
 	t.Run("schema for adr module", func(t *testing.T) {
 		input := &SchemaInput{Module: ptr("adr")}
-		out := callHandler(t, ItemAttrSchemaHandler, input, proj)
+		out := callHandler(t, WorkitemAttrSchemaHandler, input, proj)
 
 		if out.Module != "adr" {
 			t.Errorf("module = %q, want 'adr'", out.Module)
@@ -121,7 +117,7 @@ func TestItemAttrSchemaHandler(t *testing.T) {
 
 	t.Run("module not found", func(t *testing.T) {
 		input := &SchemaInput{Module: ptr("nonexistent")}
-		out := callHandler(t, ItemAttrSchemaHandler, input, proj)
+		out := callHandler(t, WorkitemAttrSchemaHandler, input, proj)
 
 		if out.Error == "" {
 			t.Error("expected error for nonexistent module")
@@ -130,7 +126,7 @@ func TestItemAttrSchemaHandler(t *testing.T) {
 
 	t.Run("nil project", func(t *testing.T) {
 		input := &SchemaInput{Module: ptr("task")}
-		out := callHandler(t, ItemAttrSchemaHandler, input, nil)
+		out := callHandler(t, WorkitemAttrSchemaHandler, input, nil)
 
 		if out.Error == "" {
 			t.Error("expected error for nil project")
@@ -141,7 +137,7 @@ func TestItemAttrSchemaHandler(t *testing.T) {
 		// When module is nil/empty, it should try to resolve from workitem_id
 		// Since we don't have a workitem_id set, it should fail
 		input := &SchemaInput{}
-		out := callHandler(t, ItemAttrSchemaHandler, input, proj)
+		out := callHandler(t, WorkitemAttrSchemaHandler, input, proj)
 
 		if out.Error == "" {
 			t.Error("expected error when module cannot be resolved")

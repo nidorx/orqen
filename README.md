@@ -164,7 +164,7 @@ modules:
 4. **Executa** — O agente age no item, cria artefatos, move para a próxima lane
 5. **Repete** — O ciclo se repete em intervalo configurável
 
-Cada invocação do agente é **stateless** — todo contexto vem do filesystem. O agente usa ferramentas MCP (`orqen_status`, `orqen_item_create`, `orqen_item_move`, etc.) para interagir com o workflow.
+Cada invocação do agente é **stateless** — todo contexto vem do filesystem. O agente usa ferramentas MCP (`workitem`, `workitem_create`, `workitem_move`, etc.) para interagir com o workflow.
 
 ## Início Rápido
 

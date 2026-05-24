@@ -188,7 +188,7 @@ func agentInvoker(proj *Project, mod *Module, lane *Lane, item *WorkItem) (Invoc
 		fmt.Fprintf(&prompt, "- lane_dir: %s\n", lane.Dir)
 		fmt.Fprintf(&prompt, "- workitem_id: %s\n", item.ID)
 		if item.Seq == 0 {
-			prompt.WriteString("- workitem_seq: NOT CREATED (0), see tool orqen_item_create from orqen MCP Server\n")
+			prompt.WriteString("- workitem_seq: NOT CREATED (0), see tool workitem_create from orqen MCP Server\n")
 		} else {
 			fmt.Fprintf(&prompt, "- workitem_seq: %d\n", item.Seq)
 		}

@@ -7,7 +7,6 @@ import (
 	"github.com/nidorx/orqen/pkg/engine"
 )
 
-// orqen_item_attrs_del
 // Removes specified attribute keys from a work item and persists
 // the changes to disk. The "dependencies" key cannot be removed.
 
@@ -27,15 +26,15 @@ type ItemAttrsDelOutput struct {
 	Error   string `json:"error,omitempty"`
 }
 
-const tnItemAttrsDel = "orqen_item_attrs_del"
+const tnWorkitemAttrsDel = "workitem_attrs_del"
 
 func init() {
-	tools[tnItemAttrsDel] = &mcp.Tool{
+	tools[tnWorkitemAttrsDel] = &mcp.Tool{
 		Description: "Removes specified attribute keys from a work item and persists the changes to disk. The \"dependencies\" key cannot be removed.",
 	}
 }
 
-func ItemAttrsDelHandler(ctx context.Context, req *mcp.CallToolRequest, input *ItemAttrsDelInput, proj *engine.Project) (*mcp.CallToolResult, ItemAttrsDelOutput, error) {
+func WorkitemAttrsDelHandler(ctx context.Context, req *mcp.CallToolRequest, input *ItemAttrsDelInput, proj *engine.Project) (*mcp.CallToolResult, ItemAttrsDelOutput, error) {
 	out := ItemAttrsDelOutput{Success: false}
 
 	if proj == nil {

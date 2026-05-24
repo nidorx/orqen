@@ -84,7 +84,7 @@ modules:
           - "Identifique o projeto/repositório alvo (se aplicável)"
           - "Escreva o pedido estruturado no arquivo PORTAL-${SEQUENCE}-PEDIDO.md usando o template em '.orqen/task/prompts/PEDIDO.md'"
           - "Notifique no Telegram: '📋 Pedido PORTAL-${SEQUENCE} recebido: <descrição curta>'"
-          - "Use o tool orqen_move_item (orqen MCP Server) para mover o item da lane pedido para gerando"
+          - "Use o tool workitem_move (orqen MCP Server) para mover o item da lane pedido para gerando"
           - "Finalize a execução"
         critical_rules:
           - "Se o pedido envolver operações destrutivas (delete, drop, force push), rejeite e notifique no Telegram"
@@ -106,7 +106,7 @@ modules:
           - "Documente o que foi gerado e qualquer decisão tomada durante o processo"
           - "Escreva o resumo no arquivo PORTAL-${SEQUENCE}-GERADO.md usando o template em '.orqen/task/prompts/GERADO.md'"
           - "Notifique no Telegram: '⏳ PORTAL-${SEQUENCE}: geração concluída, iniciando build...'"
-          - "Use o tool orqen_move_item (orqen MCP Server) para mover o item da lane gerando para build"
+          - "Use o tool workitem_move (orqen MCP Server) para mover o item da lane gerando para build"
           - "Finalize a execução"
         critical_rules:
           - "NUNCA gerar código com secrets, tokens ou credenciais hardcoded"
@@ -128,7 +128,7 @@ modules:
           - "Se TUDO passar, documente no arquivo PORTAL-${SEQUENCE}-BUILD.md usando o template em '.orqen/task/prompts/BUILD.md'"
           - "Se ALGO falhar, documente os erros e mova para falha"
           - "Notifique no Telegram o resultado do build"
-          - "Use o tool orqen_move_item (orqen MCP Server) para mover para deploy (se sucesso) ou falha (se erro)"
+          - "Use o tool workitem_move (orqen MCP Server) para mover para deploy (se sucesso) ou falha (se erro)"
           - "Finalize a execução"
         critical_rules:
           - "NUNCA aprovar build com falhas"
@@ -148,7 +148,7 @@ modules:
           - "Verifique que o deploy foi bem-sucedido (health check, smoke test)"
           - "Documente o resultado no arquivo PORTAL-${SEQUENCE}-DEPLOY.md usando o template em '.orqen/task/prompts/DEPLOY.md'"
           - "Notifique no Telegram: '🚀 PORTAL-${SEQUENCE}: deploy realizado com sucesso! URL: <url>'"
-          - "Use o tool orqen_move_item (orqen MCP Server) para mover para deploy_realizado"
+          - "Use o tool workitem_move (orqen MCP Server) para mover para deploy_realizado"
           - "Finalize a execução"
         critical_rules:
           - "NUNCA fazer deploy sem build passing"

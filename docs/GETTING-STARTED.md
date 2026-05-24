@@ -160,7 +160,7 @@ orqen/
    - Scans modules in order, lanes by priority
    - Applies ignore rules (modtime debounce, exists, dependency, attribute conditions)
    - Invokes ACP agents with synthesized prompts when work is available
-4. **Agent acts** — The agent receives a prompt, calls MCP tools (`orqen_item_create`, `orqen_item_move`, etc.), and modifies work items on disk.
+4. **Agent acts** — The agent receives a prompt, calls MCP tools (`workitem_create`, `workitem_move`, etc.), and modifies work items on disk.
 5. **Repeat** — The loop continues, picking up changes made by agents or users.
 
 ### MCP Transport Modes

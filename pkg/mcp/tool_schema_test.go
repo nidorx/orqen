@@ -7,7 +7,7 @@ import (
 )
 
 // ============================================================================
-// Test orqen_schema
+// Test schema
 // ============================================================================
 
 func TestSchemaHandler(t *testing.T) {
@@ -38,7 +38,7 @@ func TestSchemaHandler(t *testing.T) {
 		input := &SchemaInput{
 			Module: ptr("adr"),
 		}
-		out := callHandler(t, ItemAttrSchemaHandler, input, proj)
+		out := callHandler(t, WorkitemAttrSchemaHandler, input, proj)
 
 		if out.Module != "adr" {
 			t.Errorf("module = %q, want 'adr'", out.Module)
@@ -61,7 +61,7 @@ func TestSchemaHandler(t *testing.T) {
 		input := &SchemaInput{
 			Module: ptr("nonexistent"),
 		}
-		out := callHandler(t, ItemAttrSchemaHandler, input, proj)
+		out := callHandler(t, WorkitemAttrSchemaHandler, input, proj)
 
 		if out.Error == "" {
 			t.Error("expected error for nonexistent module")
@@ -72,7 +72,7 @@ func TestSchemaHandler(t *testing.T) {
 		input := &SchemaInput{
 			Module: ptr("adr"),
 		}
-		out := callHandler(t, ItemAttrSchemaHandler, input, nil)
+		out := callHandler(t, WorkitemAttrSchemaHandler, input, nil)
 
 		if out.Error == "" {
 			t.Error("expected error for nil project")

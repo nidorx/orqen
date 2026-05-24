@@ -138,7 +138,7 @@ modules:
 
 Para funcionar com Orqen, o agente deve:
 
-1. **Suportar MCP tools** - O agente precisa receber e usar ferramentas MCP (`orqen_status`, `orqen_item_create`, etc.)
+1. **Suportar MCP tools** - O agente precisa receber e usar ferramentas MCP (`workitem`, `workitem_create`, etc.)
 2. **Rodar em modo autônomo** - Não deve pedir permissão para cada ação de filesystem
 3. **Aceitar stdin/stdout** - O Orqen invoca o agente como subprocesso
 

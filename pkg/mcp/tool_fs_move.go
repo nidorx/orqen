@@ -24,7 +24,7 @@ type FsMoveOutput struct {
 	Error   string `json:"error,omitempty"`
 }
 
-const tnFsMove = "orqen_fs_move"
+const tnFsMove = "fs_move"
 
 func init() {
 	tools[tnFsMove] = &mcp.Tool{

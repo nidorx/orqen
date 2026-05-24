@@ -7,7 +7,6 @@ import (
 	"github.com/nidorx/orqen/pkg/engine"
 )
 
-// orqen_item_attrs_set
 // Updates attributes on a work item. Merges the provided attributes
 // into the work item's existing attributes and persists them to disk.
 
@@ -27,15 +26,15 @@ type ItemAttrsSetOutput struct {
 	Error   string `json:"error,omitempty"`
 }
 
-const tnItemAttrsSet = "orqen_item_attrs_set"
+const tnWorkitemAttrsSet = "workitem_attrs_set"
 
 func init() {
-	tools[tnItemAttrsSet] = &mcp.Tool{
+	tools[tnWorkitemAttrsSet] = &mcp.Tool{
 		Description: "Updates attributes on a work item. Merges the provided attributes into the work item's existing attributes and persists them to disk.",
 	}
 }
 
-func ItemAttrsSetHandler(ctx context.Context, req *mcp.CallToolRequest, input *ItemAttrsSetInput, proj *engine.Project) (*mcp.CallToolResult, ItemAttrsSetOutput, error) {
+func WorkitemAttrsSetHandler(ctx context.Context, req *mcp.CallToolRequest, input *ItemAttrsSetInput, proj *engine.Project) (*mcp.CallToolResult, ItemAttrsSetOutput, error) {
 	out := ItemAttrsSetOutput{Success: false}
 
 	if proj == nil {

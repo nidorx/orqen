@@ -71,7 +71,7 @@ modules:
         agent_behavior:
           - "Leia o arquivo de ideação para entender a ideia bruta compartilhada"
           - "Se a ideia for muito vaga ou ambígua, escreva perguntas esclarecedoras no próprio arquivo e finalize — não avance"
-          - "Use o tool orqen_create_item (orqen MCP Server) para criar um novo item na lane revisar_ideia"
+          - "Use o tool workitem_create (orqen MCP Server) para criar um novo item na lane revisar_ideia"
           - "Classifique o tema em uma categoria: Arquitetura de Software, Liderança Técnica, IA/ML, Segurança, Platform Engineering, Cultura de Engenharia, Estudo de Caso, Análise Comparativa"
           - "Avalie se o tema tem profundidade suficiente para um artigo longo (8-15 min de leitura) — se não, sugira formato LinkedIn em vez de Medium"
           - "Defina a 'hipótese de valor' — por que esse tema merece um artigo completo e qual ângulo o torna único"
@@ -108,7 +108,7 @@ modules:
           - "Identifique perspectivas divergentes e contra-argumentos — um bom artigo reconhece trade-offs"
           - "Se aplicável, identifique estudos de caso de empresas que enfrentaram o problema"
           - "Escreva a pesquisa consolidada no arquivo MED-${SEQUENCE}-PESQUISA.md usando o template em '.orqen/conteudo/prompts/PESQUISA.md'"
-          - "Use o tool orqen_move_item (orqen MCP Server) para mover o item da lane pesquisa para rascunho"
+          - "Use o tool workitem_move (orqen MCP Server) para mover o item da lane pesquisa para rascunho"
           - "Finalize a execução"
         critical_rules:
           - "Fontes devem ser credíveis e verificáveis — priorize engenharia de empresas reconhecidas, papers e documentação oficial"
@@ -134,7 +134,7 @@ modules:
           - "Sugira imagem de capa (descrição para o usuário criar ou buscar)"
           - "Estime o tempo de leitura"
           - "Compile o artigo completo no arquivo MED-${SEQUENCE}-RASCUNHO.md usando o template em '.orqen/conteudo/prompts/RASCUNHO.md'"
-          - "Use o tool orqen_move_item (orqen MCP Server) para mover o item da lane rascunho para revisar_conteudo"
+          - "Use o tool workitem_move (orqen MCP Server) para mover o item da lane rascunho para revisar_conteudo"
           - "Finalize a execução"
         critical_rules:
           - "TODO conteúdo em PORTUGUÊS DO BRASIL"
@@ -181,7 +181,7 @@ modules:
           - "Sugira imagem de capa com descrição para o usuário criar/buscar"
           - "Defina estratégia de distribuição: LinkedIn cross-post, Twitter, comunidades técnicas"
           - "Compile o checklist de publicação no arquivo MED-${SEQUENCE}-PUBLICACAO.md usando o template em '.orqen/conteudo/prompts/PUBLICACAO.md'"
-          - "Use o tool orqen_move_item (orqen MCP Server) para mover o item para publicado"
+          - "Use o tool workitem_move (orqen MCP Server) para mover o item para publicado"
           - "Finalize a execução"
         critical_rules:
           - "Tags devem ser relevantes — não genéricas demais ('Technology' é ruim, 'Distributed Systems' é bom)"

@@ -12,14 +12,14 @@ func ServerHttp(proj *engine.Project) http.Handler {
 	server := createServer()
 
 	// Register real handlers with project reference
-	addTool(server, tnItem, ItemHandler, proj)
-	addTool(server, tnItemMove, ItemMoveHandler, proj)
-	addTool(server, tnItemCreate, ItemCreateHandler, proj)
-	addTool(server, tnItemSearch, ItemSearchHandler, proj)
-	addTool(server, tnItemAttrsSet, ItemAttrsSetHandler, proj)
-	addTool(server, tnItemAttrsDel, ItemAttrsDelHandler, proj)
-	addTool(server, tnItemAttrsSchema, ItemAttrSchemaHandler, proj)
-	addTool(server, tnItemDependencies, ItemDependenciesHandler, proj)
+	addTool(server, tnWorkitem, WorkitemHandler, proj)
+	addTool(server, tnWorkitemMove, WorkitemMoveHandler, proj)
+	addTool(server, tnWorkitemCreate, WorkitemCreateHandler, proj)
+	addTool(server, tnWorkitemSearch, WorkitemSearchHandler, proj)
+	addTool(server, tnWorkitemAttrsSet, WorkitemAttrsSetHandler, proj)
+	addTool(server, tnWorkitemAttrsDel, WorkitemAttrsDelHandler, proj)
+	addTool(server, tnWorkitemAttrsSchema, WorkitemAttrSchemaHandler, proj)
+	addTool(server, tnWorkitemDependencies, WorkitemDependenciesHandler, proj)
 	addTool(server, tnLaneList, LaneListHandler, proj)
 	addTool(server, tnProjectInfo, ProjectInfoHandler, proj)
 

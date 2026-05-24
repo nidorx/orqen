@@ -10,7 +10,6 @@ import (
 	"github.com/nidorx/orqen/pkg/utils"
 )
 
-// orqen_item_search
 // Searches for work items in a module or lane, optionally filtered by
 // a condition DSL string. Returns full WorkItem objects.
 
@@ -30,15 +29,15 @@ type ItemSearchOutput struct {
 	Error string                  `json:"error,omitempty"`
 }
 
-const tnItemSearch = "orqen_item_search"
+const tnWorkitemSearch = "workitem_search"
 
 func init() {
-	tools[tnItemSearch] = &mcp.Tool{
+	tools[tnWorkitemSearch] = &mcp.Tool{
 		Description: "Searches for work items in a module or lane, optionally filtered by a condition SQL-like DSL string. Returns full WorkItem objects.",
 	}
 }
 
-func ItemSearchHandler(ctx context.Context, req *mcp.CallToolRequest, input *ItemSearchInput, proj *engine.Project) (*mcp.CallToolResult, ItemSearchOutput, error) {
+func WorkitemSearchHandler(ctx context.Context, req *mcp.CallToolRequest, input *ItemSearchInput, proj *engine.Project) (*mcp.CallToolResult, ItemSearchOutput, error) {
 	out := ItemSearchOutput{}
 
 	if proj == nil {

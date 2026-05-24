@@ -63,12 +63,12 @@ modules:
           - >
             If documentation updates are required, create an additional documentation task in the backlog using the TASK template.
             The documentation task must explicitly describe what documentation needs to be updated, created, or reviewed.         
-          - Create each task in the backlog lane using the TASK template using the orqen_create_item tool (Orqen MCP Server)
+          - Create each task in the backlog lane using the TASK template using the workitem_create tool (Orqen MCP Server)
           - > 
             Move the inbox file to the directory of the first task created from that idea - do not remove the file, just move it. 
             Then, copy the same file to the directory of all other tasks created from this idea          
         critical_rules:
-          - Create ALL tasks in the backlog in this single invocation using the orqen_create_item tool (Orqen MCP Server)
+          - Create ALL tasks in the backlog in this single invocation using the workitem_create tool (Orqen MCP Server)
           - Never ignore documentation impact analysis when decomposing tasks
 
       # ── 03_backlog ─────────────────────────────────────────────
@@ -98,7 +98,7 @@ modules:
           - "Draft new ADRs when architectural decisions are discovered that are not covered by existing accepted ADRs"
           - "Create the REFINEMENT artifact using the REFINEMENT.md template"
           - "Ensure the refinement artifact can be directly consumed by implementation agents with minimal ambiguity"
-          - "Use the tool orqen_move_item (orqen MCP Server) to move the item from the prioritized lane to refined" 
+          - "Use the tool workitem_move (orqen MCP Server) to move the item from the prioritized lane to refined" 
           - "Finalize execution"
         critical_rules:
           - "DO NOT implement production code in this lane"
@@ -207,7 +207,7 @@ modules:
           - "Run linting and formatting if applicable"
           - "Update documentation if the change affects public APIs or observable behavior"
           - "Create an implementation summary in WI-${SEQUENCE}-SUMMARY.md using the SUMMARY template"          
-          - "Use the orqen_move_item tool (Orqen MCP Server) to move the item from ready to review"
+          - "Use the workitem_move tool (Orqen MCP Server) to move the item from ready to review"
           - "Finalize execution"
         critical_rules:
           - "FOLLOW the approved refinement — do not introduce unapproved architectural changes"
@@ -227,7 +227,7 @@ modules:
           If implementation fails with a total blocker (cannot proceed), create the FAIL.md 
           artifact using the FAIL template and document the blocker in 
           detail - include what was attempted, what is needed, and suggested next steps. Then 
-          use the orqen_move_item tool (Orqen MCP Server) to move the item from ready to blocked.
+          use the workitem_move tool (Orqen MCP Server) to move the item from ready to blocked.
 
       # ── 07_blocked ─────────────────────────────────────────────
       - name: "blocked"
@@ -244,14 +244,14 @@ modules:
           - Validate ALL DoD items are satisfied
           - Review code quality, security, and performance
           - If validation PASSES, approve the task - no artifact is created.
-          - "Use the orqen_move_item tool (Orqen MCP Server) to move the item from review to push"
+          - "Use the workitem_move tool (Orqen MCP Server) to move the item from review to push"
           - "Finalize execution"
         extra_prompt: |
           If validation FAILS, create the FAIL.md artifact using the FAIL 
           template. Document all rejection 
           reasons with specific evidence - include expected vs actual results 
           for each failure, severity, and recommended actions to fix. Then 
-          use the orqen_move_item tool (Orqen MCP Server) to move the item from review to ready. 
+          use the workitem_move tool (Orqen MCP Server) to move the item from review to ready. 
           Then Finalize execution.
 
       # ── 09_push ──────────────────────────────────────────────
@@ -274,7 +274,7 @@ modules:
             If the issue IS related to implementation defects, missing requirements, failing tests 
             caused by the implementation, broken behavior, architecture problems, or incomplete work, 
             DO NOT attempt implementation fixes, follow FAIL artifact description bellow          
-          - If push succeeds, use the `orqen_move_item` tool (Orqen MCP Server) to move the item from `push` to `done`
+          - If push succeeds, use the workitem_move tool (Orqen MCP Server) to move the item from `push` to `done`
           - Finalize execution
         extra_prompt: |
           If the push process FAILS and the issue cannot be resolved automatically,
@@ -287,7 +287,7 @@ modules:
           - attempted fixes
           - recommended corrective actions
 
-          After creating FAIL.md, use the `orqen_move_item` tool
+          After creating FAIL.md, use the workitem_move tool
           (Orqen MCP Server) to move the item from `push` to `ready`
           for re-implementation or correction.
 

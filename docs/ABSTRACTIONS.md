@@ -336,16 +336,16 @@ Orqen exposes workflow operations as MCP tools that agents can call during execu
 
 | Tool | Description |
 |------|-------------|
-| `orqen_item` | Get current work item context by workitem_id |
-| `orqen_item_create` | Create a new work item in a lane |
-| `orqen_item_move` | Move a work item between lanes |
-| `orqen_item_search` | Search work items with condition DSL filter |
-| `orqen_item_attrs_set` | Update attributes on a work item |
-| `orqen_item_attrs_del` | Remove attribute keys from a work item |
-| `orqen_item_attrs_schema` | Get observed attribute schema across a module |
-| `orqen_item_dependencies` | Check dependency status for a work item |
-| `orqen_lane_list` | List all lanes in a module |
-| `orqen_project_info` | Get full project structure |
+| `item` | Get current work item context by workitem_id |
+| `item_create` | Create a new work item in a lane |
+| `item_move` | Move a work item between lanes |
+| `item_search` | Search work items with condition DSL filter |
+| `item_attrs_set` | Update attributes on a work item |
+| `item_attrs_del` | Remove attribute keys from a work item |
+| `item_attrs_schema` | Get observed attribute schema across a module |
+| `item_dependencies` | Check dependency status for a work item |
+| `lane_list` | List all lanes in a module |
+| `project_info` | Get full project structure |
 
 ### Transport Modes
 

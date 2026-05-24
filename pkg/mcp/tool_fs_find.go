@@ -29,7 +29,7 @@ type FsFindOutput struct {
 	Error   string   `json:"error,omitempty"`
 }
 
-const tnFsFind = "orqen_fs_find"
+const tnFsFind = "fs_find"
 
 func init() {
 	tools[tnFsFind] = &mcp.Tool{

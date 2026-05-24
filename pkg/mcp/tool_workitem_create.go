@@ -26,15 +26,15 @@ type ItemCreateOutput struct {
 	Error    string                `json:"error,omitempty"`
 }
 
-const tnItemCreate = "orqen_item_create"
+const tnWorkitemCreate = "workitem_create"
 
 func init() {
-	tools[tnItemCreate] = &mcp.Tool{
+	tools[tnWorkitemCreate] = &mcp.Tool{
 		Description: "Creates a new work item in a specific lane of a module. Creates the directory following naming conventions (MOD_TYPE-NNNN-name) and an empty .yaml file.",
 	}
 }
 
-func ItemCreateHandler(ctx context.Context, req *mcp.CallToolRequest, input *ItemCreateInput, proj *engine.Project) (*mcp.CallToolResult, ItemCreateOutput, error) {
+func WorkitemCreateHandler(ctx context.Context, req *mcp.CallToolRequest, input *ItemCreateInput, proj *engine.Project) (*mcp.CallToolResult, ItemCreateOutput, error) {
 	out := ItemCreateOutput{}
 
 	if proj == nil {

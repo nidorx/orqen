@@ -25,15 +25,15 @@ type DependenciesOutput struct {
 	Error        string                  `json:"error,omitempty"`
 }
 
-const tnItemDependencies = "orqen_item_dependencies"
+const tnWorkitemDependencies = "workitem_dependencies"
 
 func init() {
-	tools[tnItemDependencies] = &mcp.Tool{
+	tools[tnWorkitemDependencies] = &mcp.Tool{
 		Description: "Checks dependency status for the current work item. Resolves them to actual work items with their status.",
 	}
 }
 
-func ItemDependenciesHandler(ctx context.Context, req *mcp.CallToolRequest, input *DependenciesInput, proj *engine.Project) (*mcp.CallToolResult, DependenciesOutput, error) {
+func WorkitemDependenciesHandler(ctx context.Context, req *mcp.CallToolRequest, input *DependenciesInput, proj *engine.Project) (*mcp.CallToolResult, DependenciesOutput, error) {
 	out := DependenciesOutput{}
 
 	if proj == nil {

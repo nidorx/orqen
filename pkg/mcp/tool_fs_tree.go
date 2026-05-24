@@ -25,7 +25,7 @@ type FsTreeOutput struct {
 	Error string   `json:"error,omitempty"`
 }
 
-const tnFsTree = "orqen_fs_tree"
+const tnFsTree = "fs_tree"
 
 func init() {
 	tools[tnFsTree] = &mcp.Tool{

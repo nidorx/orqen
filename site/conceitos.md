@@ -107,10 +107,10 @@ O [**ACP** é o protocolo](https://agentclientprotocol.com/get-started/introduct
 
 | Ferramenta | Descrição |
 |------------|-----------|
-| `orqen_status` | Consulta o status do workflow |
-| `orqen_item_create` | Cria um novo item de trabalho |
-| `orqen_item_move` | Move um item entre lanes |
-| `orqen_item_list` | Lista itens em uma lane |
+| `workitem` | Consulta o status do workflow |
+| `workitem_create` | Cria um novo item de trabalho |
+| `workitem_move` | Move um item entre lanes |
+| `workitem_list` | Lista itens em uma lane |
 | outras | Detalhes em https://github.com/nidorx/orqen/tree/main/pkg/mcp | 
 
 ## Fluxo de Execução Completo
