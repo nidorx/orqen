@@ -23,6 +23,16 @@ func ServerHttp(proj *engine.Project) http.Handler {
 	addTool(server, tnLaneList, LaneListHandler, proj)
 	addTool(server, tnProjectInfo, ProjectInfoHandler, proj)
 
+	// Filesystem tools
+	addTool(server, tnFsMove, FsMoveHandler, proj)
+	addTool(server, tnFsCopy, FsCopyHandler, proj)
+	addTool(server, tnFsList, FsListHandler, proj)
+	addTool(server, tnFsTree, FsTreeHandler, proj)
+	addTool(server, tnFsFind, FsFindHandler, proj)
+	addTool(server, tnFsGrep, FsGrepHandler, proj)
+	addTool(server, tnFsCat, FsCatHandler, proj)
+	addTool(server, tnFsDiff, FsDiffHandler, proj)
+
 	return mcp.NewStreamableHTTPHandler(func(request *http.Request) *mcp.Server {
 		return server
 	}, nil)

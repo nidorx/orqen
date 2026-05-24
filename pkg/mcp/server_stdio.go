@@ -80,6 +80,16 @@ func StartStdio(orqenPort string, projectId string, workItemID string) {
 	addToolProxy(server, tnItemDependencies, ItemDependenciesHandler, session, workItemID)
 	addToolProxy(server, tnLaneList, LaneListHandler, session, workItemID)
 	addToolProxy(server, tnProjectInfo, ProjectInfoHandler, session, workItemID)
+
+	// Filesystem tools (implement SetWorkItemID as no-op)
+	addToolProxy(server, tnFsMove, FsMoveHandler, session, workItemID)
+	addToolProxy(server, tnFsCopy, FsCopyHandler, session, workItemID)
+	addToolProxy(server, tnFsList, FsListHandler, session, workItemID)
+	addToolProxy(server, tnFsTree, FsTreeHandler, session, workItemID)
+	addToolProxy(server, tnFsFind, FsFindHandler, session, workItemID)
+	addToolProxy(server, tnFsGrep, FsGrepHandler, session, workItemID)
+	addToolProxy(server, tnFsCat, FsCatHandler, session, workItemID)
+	addToolProxy(server, tnFsDiff, FsDiffHandler, session, workItemID)
 	if DEBUG_STDIO {
 		debugAny("MCP_TOOLS_ADDED", time.Now())
 	}

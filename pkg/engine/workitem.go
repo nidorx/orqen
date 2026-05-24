@@ -60,7 +60,7 @@ func (item *WorkItem) AttributesLoad() {
 	if item.Seq <= 0 {
 		return
 	}
-	path := filepath.Clean(filepath.Join(item.Lane.DirAbs, item.Name, fmt.Sprintf("%s-%d.yaml", item.Lane.Module.Prefix, item.Seq)))
+	path := filepath.Clean(filepath.Join(item.Lane.DirAbs, item.Name, fmt.Sprintf("%s-%04d.yaml", item.Lane.Module.Prefix, item.Seq)))
 	info, _ := os.Stat(path)
 	if info != nil && item.attributesModTime.Before(info.ModTime()) {
 		item.Attributes.LoadFromYAML(path)
@@ -74,7 +74,7 @@ func (item *WorkItem) AttributesSave(other Attributes) error {
 	}
 
 	item.Attributes.Merge(other)
-	path := filepath.Clean(filepath.Join(item.Lane.DirAbs, item.Name, fmt.Sprintf("%s-%d.yaml", item.Lane.Module.Prefix, item.Seq)))
+	path := filepath.Clean(filepath.Join(item.Lane.DirAbs, item.Name, fmt.Sprintf("%s-%04d.yaml", item.Lane.Module.Prefix, item.Seq)))
 	return item.Attributes.SaveToYAML(path)
 }
 
@@ -90,7 +90,7 @@ func (item *WorkItem) AttributesDel(keys []string) error {
 		item.Attributes.Delete(key)
 	}
 
-	path := filepath.Clean(filepath.Join(item.Lane.DirAbs, item.Name, fmt.Sprintf("%s-%d.yaml", item.Lane.Module.Prefix, item.Seq)))
+	path := filepath.Clean(filepath.Join(item.Lane.DirAbs, item.Name, fmt.Sprintf("%s-%04d.yaml", item.Lane.Module.Prefix, item.Seq)))
 	return item.Attributes.SaveToYAML(path)
 }
 

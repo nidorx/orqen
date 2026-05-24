@@ -123,6 +123,23 @@ Do not create markdown frontmatter for workflow metadata management unless expli
 | `orqen_lane_list` | List all lanes in a module |
 | `orqen_project_info` | Get full project structure |
 
+### Filesystem Tools
+
+You also have access to filesystem tools for cross-platform file operations. These tools work independently of the workflow system and do not require workitem_id.
+
+| Tool | Description |
+|------|-------------|
+| `orqen_fs_move src dst` | Move file/directory from source to destination. Handles cross-device moves automatically. |
+| `orqen_fs_copy src dst` | Copy file/directory from source to destination. Preserves directory structure. |
+| `orqen_fs_list dir` | List directory contents. Excludes `.orqen/` and `.git/` paths. Returns name, type, and size. |
+| `orqen_fs_tree dir` | Display directory tree structure with indentation. Default max depth is 3. |
+| `orqen_fs_find pattern [dir]` | Find files/directories matching glob pattern. Supports max_results, max_depth, and file_type filters. |
+| `orqen_fs_grep pattern filepath` | Search for regex pattern in file contents. Returns matching lines with line numbers. Supports ignore_case and max_results. |
+| `orqen_fs_cat file` | Display file contents. Limited to 100KB to prevent excessive output. |
+| `orqen_fs_diff file1 file2` | Show unified diff between two files (similar to `diff -u`). Configurable context lines. |
+
+**Security:** All filesystem tools validate paths against `.orqen/` and `.git/` blocked prefixes and prevent path traversal attacks.
+
 
 # Module _$_MOD_TYPE_$_ Instructions
 
@@ -148,4 +165,3 @@ Pattern: `_$_MOD_PREFIX_$_-${SEQUENCE}.md`
 - `_$_MOD_PREFIX_$_-0003.md`
 
 _$_ARTIFACTS_INSTRUCTIONS_$_
-

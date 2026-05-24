@@ -8,7 +8,7 @@ agents:
 
 execution:
   max_agents: 10
-  sleep_interval_seconds: 60
+  sleep_interval_seconds: 30
 
 # chat:
 #   telegram:
@@ -18,7 +18,7 @@ execution:
 modules:
   - name: task
     dir: "tasks"
-    order: ["doing", "learning", "review", "inbox", "prioritized", "ready"]
+    order: ["push", "review", "inbox", "prioritized", "ready"]
     extra_prompt: |
       > Quick links: 
       - [Architecture](docs/ARCHITECTURE.md)
@@ -59,12 +59,17 @@ modules:
           - Read the provided inbox file description and all comments fully to understand the idea
           - Check `docs/adr/` for relevant architecture decisions before structural choices
           - Analyze and decompose into one or more executable tasks - each task should deliver a single piece of value and be independently testable          
+          - Identify whether the proposed changes require updates to the documentation located at `site`
+          - >
+            If documentation updates are required, create an additional documentation task in the backlog using the TASK template.
+            The documentation task must explicitly describe what documentation needs to be updated, created, or reviewed.         
           - Create each task in the backlog lane using the TASK template using the orqen_create_item tool (Orqen MCP Server)
           - > 
             Move the inbox file to the directory of the first task created from that idea - do not remove the file, just move it. 
             Then, copy the same file to the directory of all other tasks created from this idea          
         critical_rules:
           - Create ALL tasks in the backlog in this single invocation using the orqen_create_item tool (Orqen MCP Server)
+          - Never ignore documentation impact analysis when decomposing tasks
 
       # ── 03_backlog ─────────────────────────────────────────────
       - name: "backlog"
@@ -188,8 +193,8 @@ modules:
         purpose: "Approved tasks ready for autonomous implementation by the agent"
         artifacts: ["SUMMARY", "FAIL"]
         max_agents: 1
-        ignore_if_exists: ["blocked", "review"]
-        ignore_if_dependency: ["ready", "blocked", "review"]
+        ignore_if_exists: ["blocked", "review", "push"]
+        ignore_if_dependency: ["ready", "blocked", "review", "push"]
         agent_behavior:
           - "Read WI-${SEQUENCE}-TASK.md to understand the original task and context"
           - "Read WI-${SEQUENCE}-REFINEMENT.md to understand the approved implementation plan and technical decisions"
@@ -239,7 +244,7 @@ modules:
           - Validate ALL DoD items are satisfied
           - Review code quality, security, and performance
           - If validation PASSES, approve the task - no artifact is created.
-          - "Use the orqen_move_item tool (Orqen MCP Server) to move the item from review to done"
+          - "Use the orqen_move_item tool (Orqen MCP Server) to move the item from review to push"
           - "Finalize execution"
         extra_prompt: |
           If validation FAILS, create the FAIL.md artifact using the FAIL 
@@ -248,11 +253,54 @@ modules:
           for each failure, severity, and recommended actions to fix.  Then 
           use the orqen_move_item tool (Orqen MCP Server) to move the item from review to ready
 
-      # ── 09_docs ────────────────────────────────────────────────
-      # TODO: Criar uma Lane para atualizar a documentação, ou acima como requisito da tarefa
+      # ── 09_push ──────────────────────────────────────────────
+      - name: "push"
+        purpose: "Commit and push the completed implementation to the repository"
+        artifacts: ["FAIL"]
+        agent_behavior:
+          - Ensure the current branch is `main`
+          - NEVER create branches or pull requests
+          - Execute `git add .`
+          - Read `.agents\skills\git-commit-message\SKILL.md`
+          - Generate a commit message following the skill guidelines
+          - Execute `git commit -m "<generated-message>"`
+          - Execute `git push origin main`
+          - If pre-commit or pre-push hooks fail, analyze the error carefully
+          - "If the issue is NOT related to implementation logic (examples: formatting, lint, trivial merge issue, generated file update, metadata adjustment), fix the issue and retry"
+          - Commit any non-implementation fixes using a new commit message generated from the same skill
+          - Retry `git push origin main`
+          - > 
+            If the issue IS related to implementation defects, missing requirements, failing tests 
+            caused by the implementation, broken behavior, architecture problems, or incomplete work, 
+            DO NOT attempt implementation fixes, follow FAIL artifact description bellow          
+          - If push succeeds, use the `orqen_move_item` tool (Orqen MCP Server) to move the item from `push` to `done`
+          - Finalize execution
+        extra_prompt: |
+          If the push process FAILS and the issue cannot be resolved automatically,
+          create the FAIL.md artifact using the FAIL template.
+
+          Document:
+          - the failed command
+          - the complete error output
+          - root cause analysis
+          - attempted fixes
+          - recommended corrective actions
+
+          After creating FAIL.md, use the `orqen_move_item` tool
+          (Orqen MCP Server) to move the item from `push` to `ready`
+          for re-implementation or correction.
+
+          Repository requirements:
+          - Work ONLY on the `main` branch
+          - Push directly to `main`
+          - NEVER create branches
+          - NEVER create pull requests
+          - NEVER use `--no-verify`
+          - Respect all pre-commit and pre-push hooks
+          - If hooks fail, fix the underlying problem instead of bypassing validation
+
 
       # ── 10_done ────────────────────────────────────────────────
       - name: "done"
         purpose: "Archive of successfully completed tasks. Long-term storage of completed tasks"
         user_action: "archive, cleanup"
-
