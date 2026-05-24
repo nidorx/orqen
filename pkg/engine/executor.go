@@ -104,6 +104,12 @@ func (e *Executor) processWorkItems() {
 				continue
 			}
 
+			// Schedule check: skip lane if not within execution window
+			if lane.Schedule != nil && !lane.Schedule.IsDue(time.Now()) {
+				log.Printf("INFO: lane %s in module %s skipped — outside schedule window", lane.Name, mod.Name)
+				continue
+			}
+
 			// Check if project has available slots
 			if !e.project.HasAvailableSlot() {
 				return

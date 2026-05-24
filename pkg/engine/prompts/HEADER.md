@@ -108,6 +108,18 @@ For example:
 
 Do not create markdown frontmatter for workflow metadata management unless explicitly required. Use the tools `workitem_attrs_del` and `workitem_attrs_set` to manage item attributes, and use the `workitem` and `workitem_attrs_schema` tools to retrieve item details, including their attributes.
 
+In some environments, tools may be exposed with the `mcp__orqen__` prefix.  
+For example:
+
+- `workitem` → `mcp__orqen__workitem`
+- `workitem_create` → `mcp__orqen__workitem_create`
+- `fs_list` → `mcp__orqen__fs_list`
+- `fs_move` → `mcp__orqen__fs_move`
+- `fs_find` → `mcp__orqen__fs_find`
+- `fs_tree` → `mcp__orqen__fs_tree`
+
+Tool behavior remains the same regardless of prefixing.
+
 ### Tools
 
 | Tool | Description |

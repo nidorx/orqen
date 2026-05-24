@@ -14,7 +14,7 @@ import (
 // a condition DSL string. Returns full WorkItem objects.
 
 type ItemSearchInput struct {
-	WorkItemID *string `json:"workitem_id" jsonschema:"Work Item ID (auto-injected)"`
+	WorkItemID *string `json:"workitem_id,omitempty" jsonschema:"Work Item ID (auto-injected)"`
 	Module     *string `json:"module,omitempty" jsonschema:"module name (omit for current module)"`
 	Lane       string  `json:"lane,omitempty" jsonschema:"optional lane name to filter within the module"`
 	Condition  string  `json:"condition,omitempty" jsonschema:"optional condition SQL-like DSL string for filtering (e.g., \"priority > 3\")"`

@@ -12,7 +12,7 @@ import (
 // behaviors, critical rules, and configuration.
 
 type ProjectInfoInput struct {
-	WorkItemID *string `json:"workitem_id" jsonschema:"Work Item ID (auto-injected)"`
+	WorkItemID *string `json:"workitem_id,omitempty" jsonschema:"Work Item ID (auto-injected)"`
 	Verbose    bool    `json:"verbose,omitempty" jsonschema:"include full prompts and agent behavior details"`
 }
 

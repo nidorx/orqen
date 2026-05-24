@@ -8,7 +8,7 @@ import (
 )
 
 type SchemaInput struct {
-	WorkItemID *string `json:"workitem_id" jsonschema:"Work Item ID (auto-injected)"`
+	WorkItemID *string `json:"workitem_id,omitempty" jsonschema:"Work Item ID (auto-injected)"`
 	Module     *string `json:"module,omitempty" jsonschema:"module name (omit for current module)"`
 }
 

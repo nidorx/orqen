@@ -11,7 +11,7 @@ import (
 )
 
 type DependenciesInput struct {
-	WorkItemID *string `json:"workitem_id" jsonschema:"Work Item ID (auto-injected)"`
+	WorkItemID *string `json:"workitem_id,omitempty" jsonschema:"Work Item ID (auto-injected)"`
 }
 
 func (i *DependenciesInput) SetWorkItemID(workItemID string) {

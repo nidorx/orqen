@@ -217,10 +217,6 @@ func (l *Lane) onFsysUpdate(ev FsysEvent) {
 
 	var item *WorkItem
 
-	if l.Name == "push" {
-		fmt.Print("aqui\n")
-	}
-
 	// Check if this is a work item directory (e.g., WI-001-name, ADR-001-title)
 	if l.isWorkItemDir(itemName) {
 		seq := l.extractItemSeq(itemName)
@@ -399,6 +395,11 @@ func (l *Lane) onFsysUpdate(ev FsysEvent) {
 			return
 		}
 
+		// check if exists in this module
+		if _, err := os.Stat(path.Join(l.DirAbs, itemName)); err != nil {
+			return
+		}
+
 		// Reuse existing item if it exists to preserve InProgress state
 		if existingInboxItem, exists := l.workItemsByID.Get(id); exists {
 			item = existingInboxItem
@@ -430,12 +431,6 @@ func (l *Lane) onFsysUpdate(ev FsysEvent) {
 		if modTime := ev.FileInfo.ModTime(); modTime.After(item.ModTime) {
 			item.ModTime = modTime
 		}
-	}
-
-	fmt.Printf("\n>>> SET workItemsByID  %s - %s\n\n", l.Name, item.Name)
-
-	if l.Name == "push" {
-		fmt.Print("aqui\n")
 	}
 
 	l.workItemsByID.Set(item.ID, item)

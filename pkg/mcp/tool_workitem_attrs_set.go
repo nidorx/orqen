@@ -11,7 +11,7 @@ import (
 // into the work item's existing attributes and persists them to disk.
 
 type ItemAttrsSetInput struct {
-	WorkItemID *string           `json:"workitem_id" jsonschema:"Work Item ID (auto-injected)"`
+	WorkItemID *string           `json:"workitem_id,omitempty" jsonschema:"Work Item ID (auto-injected)"`
 	Module     *string           `json:"module,omitempty" jsonschema:"module name (omit for current module)"`
 	Seq        int               `json:"seq" jsonschema:"work item sequence number"`
 	Attributes engine.Attributes `json:"attributes" jsonschema:"key-value pairs of attributes to set or update"`

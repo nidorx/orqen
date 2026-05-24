@@ -3,6 +3,7 @@ package engine
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/goccy/go-yaml"
 )
@@ -552,5 +553,251 @@ func TestValidateSchedule_ErrorMessages_Context(t *testing.T) {
 
 	if !strings.Contains(err.Error(), "module mymodule lane mylane") {
 		t.Errorf("expected error to contain context, got: %v", err)
+	}
+}
+
+// Tests for IsDue() method
+
+func TestIsDue_NilSchedule(t *testing.T) {
+	var ls *LaneSchedule
+	if !ls.IsDue(time.Now()) {
+		t.Error("nil schedule should return true")
+	}
+}
+
+func TestIsDue_Daily_ExactMatch(t *testing.T) {
+	ls := &LaneSchedule{
+		Frequency: ScheduleDaily,
+		Time:      []string{"14:30"},
+	}
+	now := time.Date(2026, 5, 24, 14, 30, 0, 0, time.UTC)
+	if !ls.IsDue(now) {
+		t.Error("expected true for exact time match")
+	}
+}
+
+func TestIsDue_Daily_WithinTolerance(t *testing.T) {
+	ls := &LaneSchedule{
+		Frequency: ScheduleDaily,
+		Time:      []string{"14:30"},
+	}
+	now := time.Date(2026, 5, 24, 14, 31, 0, 0, time.UTC)
+	if !ls.IsDue(now) {
+		t.Error("expected true for time within tolerance")
+	}
+}
+
+func TestIsDue_Daily_OutsideWindow(t *testing.T) {
+	ls := &LaneSchedule{
+		Frequency: ScheduleDaily,
+		Time:      []string{"14:30"},
+	}
+	now := time.Date(2026, 5, 24, 15, 0, 0, 0, time.UTC)
+	if ls.IsDue(now) {
+		t.Error("expected false for time outside window")
+	}
+}
+
+func TestIsDue_Daily_MultipleTimes(t *testing.T) {
+	ls := &LaneSchedule{
+		Frequency: ScheduleDaily,
+		Time:      []string{"02:00", "06:00", "10:00"},
+	}
+	now := time.Date(2026, 5, 24, 6, 1, 0, 0, time.UTC)
+	if !ls.IsDue(now) {
+		t.Error("expected true for match on second time entry")
+	}
+}
+
+func TestIsDue_Daily_MidnightCrossing(t *testing.T) {
+	ls := &LaneSchedule{
+		Frequency: ScheduleDaily,
+		Time:      []string{"23:59"},
+	}
+	now := time.Date(2026, 5, 24, 0, 0, 0, 0, time.UTC)
+	if !ls.IsDue(now) {
+		t.Error("expected true for midnight crossing (23:59 -> 00:00)")
+	}
+}
+
+func TestIsDue_Weekly_CorrectDay(t *testing.T) {
+	ls := &LaneSchedule{
+		Frequency:  ScheduleWeekly,
+		Time:       []string{"14:30"},
+		DaysOfWeek: []string{"Monday", "Wednesday", "Friday"},
+	}
+	// May 24, 2026 is a Sunday. May 25, 2026 is a Monday.
+	now := time.Date(2026, 5, 25, 14, 30, 0, 0, time.UTC)
+	if !ls.IsDue(now) {
+		t.Error("expected true for Monday match")
+	}
+}
+
+func TestIsDue_Weekly_WrongDay(t *testing.T) {
+	ls := &LaneSchedule{
+		Frequency:  ScheduleWeekly,
+		Time:       []string{"14:30"},
+		DaysOfWeek: []string{"Monday", "Wednesday", "Friday"},
+	}
+	// May 26, 2026 is a Tuesday.
+	now := time.Date(2026, 5, 26, 14, 30, 0, 0, time.UTC)
+	if ls.IsDue(now) {
+		t.Error("expected false for Tuesday (not in daysOfWeek)")
+	}
+}
+
+func TestIsDue_Weekly_CorrectDayWrongTime(t *testing.T) {
+	ls := &LaneSchedule{
+		Frequency:  ScheduleWeekly,
+		Time:       []string{"14:30"},
+		DaysOfWeek: []string{"Monday"},
+	}
+	// May 25, 2026 is a Monday, but time is 16:00.
+	now := time.Date(2026, 5, 25, 16, 0, 0, 0, time.UTC)
+	if ls.IsDue(now) {
+		t.Error("expected false for correct day but wrong time")
+	}
+}
+
+func TestIsDue_Monthly_CorrectDay(t *testing.T) {
+	ls := &LaneSchedule{
+		Frequency:   ScheduleMonthly,
+		Time:        []string{"00:00"},
+		DaysOfMonth: []int{1, 15},
+	}
+	now := time.Date(2026, 5, 15, 0, 1, 0, 0, time.UTC)
+	if !ls.IsDue(now) {
+		t.Error("expected true for 15th of month")
+	}
+}
+
+func TestIsDue_Monthly_WrongDay(t *testing.T) {
+	ls := &LaneSchedule{
+		Frequency:   ScheduleMonthly,
+		Time:        []string{"00:00"},
+		DaysOfMonth: []int{1, 15},
+	}
+	now := time.Date(2026, 5, 10, 0, 0, 0, 0, time.UTC)
+	if ls.IsDue(now) {
+		t.Error("expected false for 10th (not in daysOfMonth)")
+	}
+}
+
+func TestIsDue_Cron_EveryMinute(t *testing.T) {
+	ls := &LaneSchedule{
+		Frequency:      ScheduleCron,
+		CronExpression: "* * * * *",
+	}
+	now := time.Date(2026, 5, 24, 14, 30, 0, 0, time.UTC)
+	if !ls.IsDue(now) {
+		t.Error("expected true for * * * * *")
+	}
+}
+
+func TestIsDue_Cron_ExactHour(t *testing.T) {
+	ls := &LaneSchedule{
+		Frequency:      ScheduleCron,
+		CronExpression: "0 2 * * *",
+	}
+	now := time.Date(2026, 5, 24, 2, 0, 0, 0, time.UTC)
+	if !ls.IsDue(now) {
+		t.Error("expected true for 0 2 * * * at 02:00")
+	}
+}
+
+func TestIsDue_Cron_StepExpression(t *testing.T) {
+	ls := &LaneSchedule{
+		Frequency:      ScheduleCron,
+		CronExpression: "*/15 * * * *",
+	}
+	now := time.Date(2026, 5, 24, 14, 30, 0, 0, time.UTC)
+	if !ls.IsDue(now) {
+		t.Error("expected true for */15 at minute 30")
+	}
+}
+
+func TestIsDue_Cron_RangeExpression(t *testing.T) {
+	ls := &LaneSchedule{
+		Frequency:      ScheduleCron,
+		CronExpression: "0 9-17 * * 1-5",
+	}
+	// May 25, 2026 is Monday, 10:00
+	now := time.Date(2026, 5, 25, 10, 0, 0, 0, time.UTC)
+	if !ls.IsDue(now) {
+		t.Error("expected true for business hours on weekday")
+	}
+}
+
+func TestIsDue_Cron_WeekendExcluded(t *testing.T) {
+	ls := &LaneSchedule{
+		Frequency:      ScheduleCron,
+		CronExpression: "0 9-17 * * 1-5",
+	}
+	// May 23, 2026 is Saturday, 10:00
+	now := time.Date(2026, 5, 23, 10, 0, 0, 0, time.UTC)
+	if ls.IsDue(now) {
+		t.Error("expected false for Saturday (outside 1-5)")
+	}
+}
+
+func TestIsDue_Cron_InvalidExpression(t *testing.T) {
+	ls := &LaneSchedule{
+		Frequency:      ScheduleCron,
+		CronExpression: "invalid",
+	}
+	now := time.Date(2026, 5, 24, 14, 0, 0, 0, time.UTC)
+	if ls.IsDue(now) {
+		t.Error("expected false for invalid cron expression")
+	}
+}
+
+func TestIsDue_DefaultFrequency(t *testing.T) {
+	ls := &LaneSchedule{
+		Frequency: "unknown",
+	}
+	now := time.Date(2026, 5, 24, 14, 0, 0, 0, time.UTC)
+	if !ls.IsDue(now) {
+		t.Error("expected true for unknown frequency (default behavior)")
+	}
+}
+
+func TestMatchesTime_MidnightCrossing_Reverse(t *testing.T) {
+	ls := &LaneSchedule{
+		Frequency: ScheduleDaily,
+		Time:      []string{"00:01"},
+	}
+	now := time.Date(2026, 5, 24, 23, 59, 0, 0, time.UTC)
+	if !ls.IsDue(now) {
+		t.Error("expected true for midnight crossing (00:01 -> 23:59)")
+	}
+}
+
+func TestMatchesCron_ListExpression(t *testing.T) {
+	ls := &LaneSchedule{
+		Frequency:      ScheduleCron,
+		CronExpression: "0 2 * * 1,3,5",
+	}
+	// May 25, 2026 is Monday
+	now := time.Date(2026, 5, 25, 2, 0, 0, 0, time.UTC)
+	if !ls.IsDue(now) {
+		t.Error("expected true for Monday at 02:00")
+	}
+
+	// May 27, 2026 is Wednesday
+	now = time.Date(2026, 5, 27, 2, 0, 0, 0, time.UTC)
+	if !ls.IsDue(now) {
+		t.Error("expected true for Wednesday at 02:00")
+	}
+}
+
+func TestMatchesCron_SundayAsSeven(t *testing.T) {
+	ls := &LaneSchedule{
+		Frequency:      ScheduleCron,
+		CronExpression: "0 2 * * 7",
+	}
+	// May 24, 2026 is Sunday (time.Weekday() = 0)
+	now := time.Date(2026, 5, 24, 2, 0, 0, 0, time.UTC)
+	if !ls.IsDue(now) {
+		t.Error("expected true for Sunday (cron 7 = Go 0)")
 	}
 }

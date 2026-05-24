@@ -73,9 +73,9 @@ type AgentClient struct {
 //	    - name: "API_KEY"
 //	      value: "secret"
 type McpServerStdioConfig struct {
-	Command string         `yaml:"command"`
-	Args    []string       `yaml:"args"`
-	Env     []McpEnvVar    `yaml:"env"`
+	Command string      `yaml:"command"`
+	Args    []string    `yaml:"args"`
+	Env     []McpEnvVar `yaml:"env"`
 }
 
 // McpEnvVar defines an environment variable for an MCP server.
@@ -186,6 +186,200 @@ type LaneSchedule struct {
 	CronExpression string            `yaml:"cronExpression,omitempty"` // Standard cron expression for custom schedules
 }
 
+// IsDue returns true if the current time matches the schedule window.
+// Returns true for nil receiver (no schedule → always eligible).
+func (ls *LaneSchedule) IsDue(now time.Time) bool {
+	if ls == nil {
+		return true // no schedule → always eligible
+	}
+	switch ls.Frequency {
+	case ScheduleDaily:
+		return ls.matchesTime(now)
+	case ScheduleWeekly:
+		return ls.matchesDayOfWeek(now) && ls.matchesTime(now)
+	case ScheduleMonthly:
+		return ls.matchesDayOfMonth(now) && ls.matchesTime(now)
+	case ScheduleCron:
+		return ls.matchesCron(now)
+	default:
+		return true
+	}
+}
+
+// scheduleTolerance defines the default window tolerance in minutes
+// for time matching. If the executor tick falls within this window
+// of a configured time, the lane is eligible.
+const scheduleTolerance = 2 * time.Minute
+
+// matchesTime checks if now is within tolerance of any configured Time entry.
+func (ls *LaneSchedule) matchesTime(now time.Time) bool {
+	currentMinutes := now.Hour()*60 + now.Minute()
+	for _, t := range ls.Time {
+		parts := strings.Split(t, ":")
+		if len(parts) != 2 {
+			continue
+		}
+		hour := parseIntSafe(parts[0])
+		minute := parseIntSafe(parts[1])
+		configuredMinutes := hour*60 + minute
+
+		diff := currentMinutes - configuredMinutes
+		if diff < 0 {
+			diff = -diff
+		}
+		// Handle midnight crossing: e.g., 23:59 vs 00:01
+		if diff > 720 { // 12 hours
+			diff = 1440 - diff
+		}
+		if time.Duration(diff)*time.Minute <= scheduleTolerance {
+			return true
+		}
+	}
+	return false
+}
+
+// matchesDayOfWeek checks if now.Weekday() is in DaysOfWeek.
+func (ls *LaneSchedule) matchesDayOfWeek(now time.Time) bool {
+	if len(ls.DaysOfWeek) == 0 {
+		return true
+	}
+	currentDay := strings.ToLower(now.Weekday().String())
+	for _, day := range ls.DaysOfWeek {
+		if strings.ToLower(day) == currentDay {
+			return true
+		}
+	}
+	return false
+}
+
+// matchesDayOfMonth checks if now.Day() is in DaysOfMonth.
+func (ls *LaneSchedule) matchesDayOfMonth(now time.Time) bool {
+	if len(ls.DaysOfMonth) == 0 {
+		return true
+	}
+	currentDay := now.Day()
+	for _, day := range ls.DaysOfMonth {
+		if day == currentDay {
+			return true
+		}
+	}
+	return false
+}
+
+// matchesCron parses and evaluates a standard 5-field cron expression.
+// Fields: minute hour day-of-month month day-of-week
+// Supports: *, */N, N, N-M, N,M,O
+func (ls *LaneSchedule) matchesCron(now time.Time) bool {
+	if ls.CronExpression == "" {
+		return false
+	}
+	fields := strings.Fields(ls.CronExpression)
+	if len(fields) < 5 || len(fields) > 6 {
+		return false
+	}
+
+	// Use first 5 fields (ignore year if 6-field)
+	minuteField := fields[0]
+	hourField := fields[1]
+	domField := fields[2]
+	monthField := fields[3]
+	dowField := fields[4]
+
+	return matchCronField(minuteField, now.Minute(), 0, 59) &&
+		matchCronField(hourField, now.Hour(), 0, 23) &&
+		matchCronField(domField, now.Day(), 1, 31) &&
+		matchCronField(monthField, int(now.Month()), 1, 12) &&
+		matchCronFieldDow(dowField, int(now.Weekday()), 0, 6)
+}
+
+// parseIntSafe parses a string to int, returns 0 on failure.
+func parseIntSafe(s string) int {
+	var n int
+	for _, c := range s {
+		if c < '0' || c > '9' {
+			return 0
+		}
+		n = n*10 + int(c-'0')
+	}
+	return n
+}
+
+// matchCronField checks if a value matches a single cron field expression.
+// Supports: *, */N, N, N-M, N,M,O
+func matchCronField(expr string, value, minVal, maxVal int) bool {
+	if expr == "*" {
+		return true
+	}
+
+	// Handle */N (step)
+	if strings.HasPrefix(expr, "*/") {
+		step := parseIntSafe(expr[2:])
+		if step <= 0 {
+			return false
+		}
+		return (value-minVal)%step == 0
+	}
+
+	// Handle comma-separated list
+	parts := strings.Split(expr, ",")
+	for _, part := range parts {
+		// Handle range N-M
+		if idx := strings.Index(part, "-"); idx != -1 {
+			start := parseIntSafe(part[:idx])
+			end := parseIntSafe(part[idx+1:])
+			if value >= start && value <= end {
+				return true
+			}
+		} else {
+			// Exact value
+			if parseIntSafe(part) == value {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// matchCronFieldDow handles day-of-week matching with Sunday=0/7 convention.
+// Go's time.Weekday(): Sunday=0, Monday=1, ..., Saturday=6
+// Cron: Sunday=0 or 7, Monday=1, ..., Saturday=6
+func matchCronFieldDow(expr string, value, minVal, maxVal int) bool {
+	// Normalize: if value is 0 (Sunday), also match 7
+	if expr == "*" {
+		return true
+	}
+
+	// Handle */N (step)
+	if strings.HasPrefix(expr, "*/") {
+		step := parseIntSafe(expr[2:])
+		if step <= 0 {
+			return false
+		}
+		return (value-minVal)%step == 0
+	}
+
+	// Handle comma-separated list
+	parts := strings.Split(expr, ",")
+	for _, part := range parts {
+		// Handle range N-M
+		if idx := strings.Index(part, "-"); idx != -1 {
+			start := parseIntSafe(part[:idx])
+			end := parseIntSafe(part[idx+1:])
+			// Sunday can be 0 or 7
+			if (value >= start && value <= end) || (value == 0 && end == 7 && start <= 7) {
+				return true
+			}
+		} else {
+			// Exact value (match 0 or 7 for Sunday)
+			n := parseIntSafe(part)
+			if n == value || (value == 0 && n == 7) || (value == 7 && n == 0) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // laneScheduleYAML is used for custom YAML unmarshaling
 type laneScheduleYAML struct {
 	Frequency      ScheduleFrequency `yaml:"frequency"`
@@ -197,9 +391,10 @@ type laneScheduleYAML struct {
 
 // UnmarshalYAML implements custom YAML parsing for LaneSchedule.
 // Supports both single string and array formats for the Time field:
-//   time: "02:00"        → []string{"02:00"}
-//   time: ["02:00"]      → []string{"02:00"}
-//   time: ["02:00", "06:00"] → []string{"02:00", "06:00"}
+//
+//	time: "02:00"        → []string{"02:00"}
+//	time: ["02:00"]      → []string{"02:00"}
+//	time: ["02:00", "06:00"] → []string{"02:00", "06:00"}
 func (ls *LaneSchedule) UnmarshalYAML(b []byte) error {
 	var aux laneScheduleYAML
 	if err := yaml.Unmarshal(b, &aux); err != nil {
@@ -256,10 +451,10 @@ func (e *HookTimeoutError) Error() string {
 // HookDefinition maps a hook name to its command array.
 // OS-specific variants use suffix: .windows, .darwin, .linux
 type HookDefinition struct {
-	Command []string `yaml:"-"` // base command (no OS suffix)
-	Windows []string `yaml:"-"` // .windows variant
-	Darwin  []string `yaml:"-"` // .darwin variant
-	Linux   []string `yaml:"-"` // .linux variant
+	Command []string      `yaml:"-"`                 // base command (no OS suffix)
+	Windows []string      `yaml:"-"`                 // .windows variant
+	Darwin  []string      `yaml:"-"`                 // .darwin variant
+	Linux   []string      `yaml:"-"`                 // .linux variant
 	Timeout time.Duration `yaml:"timeout,omitempty"` // default 5m
 }
 
