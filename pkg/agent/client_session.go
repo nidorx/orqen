@@ -150,7 +150,8 @@ func (c *ClientSession) SessionUpdate(ctx context.Context, params acp.SessionNot
 					c.logger.Log("\033[90m(Tool call %s)\033[0m %s\n", statusP, v)
 				} else {
 					if len(uToolCall.Content) > 0 {
-						c.logger.Log("\033[90m(Tool call %s)\033[0m (%v) (%v)\n", statusP, uToolCall.Meta, uToolCall.Content[0])
+						b, _ := uToolCall.Content[0].MarshalJSON()
+						c.logger.Log("\033[90m(Tool call %s)\033[0m (%v) (%s)\n", statusP, uToolCall.Meta, b)
 					} else {
 						c.logger.Log("\033[90m(Tool call %s)\033[0m (%v)\n", statusP, uToolCall.Meta)
 					}
