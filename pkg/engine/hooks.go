@@ -124,12 +124,26 @@ func buildEnvVars(vars map[string]string) []string {
 // wildcardRegex matches $VAR patterns (letters, digits, underscores).
 var wildcardRegex = regexp.MustCompile(`\$[A-Za-z_][A-Za-z0-9_]*`)
 
-// ExpandWildcards replaces $VAR patterns in command arguments with values from the vars map.
+// bracedWildcardRegex matches ${VAR} patterns (letters, digits, underscores).
+var bracedWildcardRegex = regexp.MustCompile(`\$\{([A-Za-z_][A-Za-z0-9_]*)\}`)
+
+// ExpandWildcards replaces $VAR and ${VAR} patterns in command arguments with values from the vars map.
 // Unknown wildcards are left as-is (no error, pass through).
 func ExpandWildcards(args []string, vars map[string]string) []string {
 	result := make([]string, len(args))
 	for i, arg := range args {
-		result[i] = wildcardRegex.ReplaceAllStringFunc(arg, func(match string) string {
+		// First: resolve ${VAR} syntax (braced wildcards)
+		resolved := bracedWildcardRegex.ReplaceAllStringFunc(arg, func(match string) string {
+			// Extract variable name from ${VAR} (strip ${ and })
+			varName := match[2 : len(match)-1]
+			if value, exists := vars[varName]; exists {
+				return value
+			}
+			// Unknown wildcard: leave as-is
+			return match
+		})
+		// Then: resolve $VAR syntax (bare wildcards)
+		resolved = wildcardRegex.ReplaceAllStringFunc(resolved, func(match string) string {
 			// Remove the $ prefix to get the variable name
 			varName := match[1:]
 			if value, exists := vars[varName]; exists {
@@ -138,6 +152,7 @@ func ExpandWildcards(args []string, vars map[string]string) []string {
 			// Unknown wildcard: leave as-is
 			return match
 		})
+		result[i] = resolved
 	}
 	return result
 }

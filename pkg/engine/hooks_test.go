@@ -586,6 +586,54 @@ func TestExpandWildcards(t *testing.T) {
 			vars:     map[string]string{"WI": "04_prioritized/WI-0002"},
 			expected: []string{"script.sh", "--path=/tmp/04_prioritized/WI-0002/output"},
 		},
+		{
+			name:     "braced wildcard syntax",
+			args:     []string{"script.sh", "${WI}"},
+			vars:     map[string]string{"WI": "04_prioritized/WI-0002-test"},
+			expected: []string{"script.sh", "04_prioritized/WI-0002-test"},
+		},
+		{
+			name:     "braced wildcard with adjacent text",
+			args:     []string{"script.sh", "${WI}-suffix"},
+			vars:     map[string]string{"WI": "04_prioritized/WI-0002"},
+			expected: []string{"script.sh", "04_prioritized/WI-0002-suffix"},
+		},
+		{
+			name:     "braced unknown wildcard left as-is",
+			args:     []string{"script.sh", "${UNKNOWN}"},
+			vars:     map[string]string{"WI": "04_prioritized/WI-0002"},
+			expected: []string{"script.sh", "${UNKNOWN}"},
+		},
+		{
+			name:     "mixed braced and bare wildcards",
+			args:     []string{"script.sh", "$MODULE/${WI}/$LANE"},
+			vars:     map[string]string{"MODULE": "task", "LANE": "ready", "WI": "06_ready/WI-0002"},
+			expected: []string{"script.sh", "task/06_ready/WI-0002/ready"},
+		},
+		{
+			name:     "ITEM_SEQ wildcard",
+			args:     []string{"script.sh", "$ITEM_SEQ"},
+			vars:     map[string]string{"ITEM_SEQ": "0003"},
+			expected: []string{"script.sh", "0003"},
+		},
+		{
+			name:     "braced ITEM_SEQ wildcard",
+			args:     []string{"script.sh", "${ITEM_SEQ}"},
+			vars:     map[string]string{"ITEM_SEQ": "0003"},
+			expected: []string{"script.sh", "0003"},
+		},
+		{
+			name:     "WI_JSON wildcard",
+			args:     []string{"script.sh", "$WI_JSON"},
+			vars:     map[string]string{"WI_JSON": `{"title":"test","type":"feature"}`},
+			expected: []string{"script.sh", `{"title":"test","type":"feature"}`},
+		},
+		{
+			name:     "braced WI_JSON wildcard",
+			args:     []string{"script.sh", "${WI_JSON}"},
+			vars:     map[string]string{"WI_JSON": `{"title":"test","type":"feature"}`},
+			expected: []string{"script.sh", `{"title":"test","type":"feature"}`},
+		},
 	}
 
 	for _, tt := range tests {

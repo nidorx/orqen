@@ -145,13 +145,14 @@ func (e *Executor) invokeItem(module *Module, lane *Lane, item *WorkItem) error 
 
 	// Build wildcard variables
 	itemJSON, _ := json.Marshal(item.Alias())
-	
+
 	wildcardVars := map[string]string{
 		"WI":          item.RelativePath(),
 		"MODULE":      module.Name,
 		"LANE":        lane.Name,
 		"PROJECT_DIR": e.project.DirAbs,
 		"WI_JSON":     string(itemJSON),
+		"ITEM_SEQ":    fmt.Sprintf("%04d", item.Seq),
 	}
 
 	// Execute pre-hooks
@@ -160,7 +161,7 @@ func (e *Executor) invokeItem(module *Module, lane *Lane, item *WorkItem) error 
 		if result.ExitCode != 0 {
 			// Pre-hook failed → abort, create HOOK-FAIL artifact
 			log.Printf("ERROR: pre-hook %s failed with exit code %d: %s", hook.Name, result.ExitCode, result.Stderr)
-			
+
 			// Create FAIL artifact
 			if err := CreateHookFailArtifact(item, hook, result); err != nil {
 				log.Printf("WARNING: failed to create HOOK-FAIL artifact: %v", err)

@@ -98,7 +98,14 @@ Hook commands support the following wildcards:
 
 | Wildcard | Description | Example |
 |----------|-------------|---------|
-| `$WI` | Work item name (e.g., `01_vision/my-task.md`, `03_backlog/WI-0001-my-task`) | `["notify.sh", "$WI"]` |
+| `$WI` or `${WI}` | Work item name (e.g., `01_vision/my-task.md`, `03_backlog/WI-0001-my-task`) | `["notify.sh", "$WI"]` |
+| `$MODULE` or `${MODULE}` | Module name | `["echo", "$MODULE"]` |
+| `$LANE` or `${LANE}` | Lane name | `["echo", "$LANE"]` |
+| `$ITEM_SEQ` or `${ITEM_SEQ}` | Item sequence number (4-digit) | `["echo", "$ITEM_SEQ"]` |
+| `$PROJECT_DIR` or `${PROJECT_DIR}` | Absolute project root path | `["echo", "$PROJECT_DIR"]` |
+| `$WI_JSON` or `${WI_JSON}` | Work item attributes as JSON (WorkItemAlias struct) | `["echo", "$WI_JSON"]` |
+
+**Note:** Both `$VAR` and `${VAR}` syntaxes are supported. The braced syntax (`${VAR}`) is useful when the wildcard is adjacent to other text (e.g., `${WI}-suffix`). Undefined wildcards resolve to the literal wildcard string (e.g., `$UNKNOWN` → `$UNKNOWN`).
 
 ### Module and Lane Bindings
 

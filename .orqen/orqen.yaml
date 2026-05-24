@@ -248,7 +248,10 @@ modules:
           for each failure, severity, and recommended actions to fix.  Then 
           use the orqen_move_item tool (Orqen MCP Server) to move the item from review to ready
 
-      # ── 09_done ────────────────────────────────────────────────
+      # ── 09_docs ────────────────────────────────────────────────
+      # TODO: Criar uma Lane para atualizar a documentação, ou acima como requisito da tarefa
+
+      # ── 10_done ────────────────────────────────────────────────
       - name: "done"
         purpose: "Archive of successfully completed tasks. Long-term storage of completed tasks"
         user_action: "archive, cleanup"
