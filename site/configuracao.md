@@ -136,6 +136,102 @@ modules:
 
 **Raciocínio:** Verificar `doing` primeiro retoma trabalho em progresso. Depois `review` valida trabalho completo. Por último `inbox` pega trabalho novo.
 
+## 4. Hooks - Scripts Pré e Pós Execução
+
+Hooks permitem executar scripts automaticamente antes (pre) e depois (post) da execução de uma tarefa em uma lane.
+
+### Definindo Hooks
+
+Hooks são definidos com nome e podem ter variantes por sistema operacional:
+
+```yaml
+hooks:
+  notify: ["echo", "Iniciando $WI"]
+  notify.windows: ["cmd", "/c", "echo", "Iniciando %WI%"]
+  setup: ["./scripts/setup.sh", "--item", "$WI", "--seq", "$ITEM_SEQ"]
+```
+
+| Campo | Descrição |
+|-------|-----------|
+| `hook_name` | Comando padrão (Unix/macOS/Linux) |
+| `hook_name.windows` | Comando alternativo para Windows |
+| `hook_name.darwin` | Comando alternativo para macOS |
+| `hook_name.linux` | Comando alternativo para Linux |
+
+> **Nota:** O sistema seleciona automaticamente a variante do SO. Se não houver variante para o SO atual, usa o comando padrão.
+
+### Vinculando Hooks a Módulos e Lanes
+
+Hooks podem ser vinculados no nível do módulo (afeta todas as lanes) ou no nível da lane (substitui ou estende os do módulo):
+
+```yaml
+modules:
+  - name: task
+    dir: "tasks"
+    hooks:
+      pre:
+        - notify        # Executa antes de cada tarefa em qualquer lane
+      post:
+        - setup         # Executa após cada tarefa em qualquer lane
+    lanes:
+      - name: "inbox"
+        purpose: "Ideias do usuário"
+        hooks:
+          post:
+            - notify    # Hook específico apenas para esta lane
+```
+
+### Sintaxe de Exclusão (`!hook_name`)
+
+Lanes podem excluir hooks herdados do módulo usando `!` antes do nome. **Atenção:** o valor deve estar entre aspas para o YAML não interpretar `!` como tag:
+
+```yaml
+lanes:
+  - name: "review"
+    hooks:
+      post:
+        - "!notify"     # NÃO executa notify nesta lane
+        - setup         # Mas ainda executa setup
+```
+
+| Sintaxe | Significado |
+|---------|-------------|
+| `- notify` | Executa o hook `notify` |
+| `- "!notify"` | **Remove** o hook `notify` herdado do módulo |
+
+### Wildcards em Hooks
+
+Dentro dos comandos de hook, as seguintes variáveis são expandidas automaticamente:
+
+| Wildcard | Descrição | Exemplo |
+|----------|-----------|---------|
+| `$WI` | Caminho relativo do work item | `03_backlog/WI-0001-minha-tarefa` |
+| `$MODULE` | Nome do módulo | `task` |
+| `$LANE` | Nome da lane | `backlog` |
+| `$ITEM_SEQ` | Número sequencial | `0001` |
+| `$PROJECT_DIR` | Diretório raiz do projeto | `/home/user/meu-projeto` |
+| `$WI_JSON` | Work item como string JSON | `{"id":"WI-0001",...}` |
+
+Você pode usar `$VAR` ou `${VAR}` (útil para evitar ambiguidade, como `${WI}_extra`).
+
+### Comportamento de Execução
+
+| Tipo | Quando executa | Se falha |
+|------|----------------|----------|
+| **Pre-hook** | Antes da invocação do agente | Aborta a tarefa e cria artefato FAIL |
+| **Post-hook** | Após a invocação do agente | Registra aviso e continua normalmente |
+
+### Timeout
+
+O tempo máximo de execução de um hook é configurado em `execution.hook_timeout_seconds` (padrão: 300 segundos = 5 minutos). Hooks que excedem este limite são interrompidos.
+
+```yaml
+execution:
+  hook_timeout_seconds: 600    # 10 minutos
+```
+
+→ Para referência completa de todos os atributos, consulte [Referência Completa de Configuração](https://github.com/nidorx/orqen/blob/main/docs/CONFIG.md).
+
 ## Exemplo Completo Simplificado
 
 ```yaml
@@ -150,11 +246,19 @@ agents:
 execution:
   max_agents: 10
   sleep_interval_seconds: 60
+  hook_timeout_seconds: 300
+
+hooks:
+  notify: ["echo", "Processando $WI na lane $LANE"]
+  notify.windows: ["cmd", "/c", "echo", "Processando %WI% na lane %LANE%"]
 
 modules:
   - name: task
     dir: "tasks"
     order: ["doing", "review", "inbox"]
+    hooks:
+      pre:
+        - notify
     lanes:
       - name: "inbox"
         purpose: "Ideias prontas para virar tarefas"
@@ -176,6 +280,9 @@ modules:
 
       - name: "review"
         purpose: "Implementação aguardando revisão"
+        hooks:
+          pre:
+            - "!notify"
         agent_behavior:
           - "Valida critérios de aceitação"
           - "Revisa qualidade do código"
