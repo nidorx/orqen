@@ -244,6 +244,64 @@ lanes:
 | `ignore_if_dependency` | array of string | No | - | Skip a work item if it has **dependencies** attribute pointing to items in the referenced lanes. Prevents the agent from working on items whose prerequisites are still in progress. |
 | `ignore_if_attr` | string | No | - | Skip work items whose **attributes** match the condition. Uses a SQL-like DSL (see [Condition Language](#condition-language-for-ignore_if_attr)). Evaluated against each work item's YAML attribute file. |
 | `schedule` | object | No | - | Schedule configuration that restricts when the lane executes (see [Lane Schedule Configuration](#lane-schedule-configuration)). Enables time-based workflows like automated publishing or scheduled operations. |
+| `allowed_next` | array of string | No | Next lane in declaration order | Restricts which lanes a work item can be moved to from this lane (see [Lane Move Validation](#lane-move-validation)). Add guardrails so the agent strictly follows the user-defined workflow. |
+
+### Lane Move Validation (`allowed_next`)
+
+The `allowed_next` attribute controls which lanes a work item can be moved to when using the `workitem_move` MCP tool. This adds workflow guardrails so the agent follows the exact lane transitions you define.
+
+#### Default Behavior
+
+When `allowed_next` is **not specified**, the engine allows moves only to the **next lane in declaration order**. For example:
+
+```yaml
+modules:
+  - name: task
+    lanes:
+      - name: "prioritized"    # can only move to → "refined"
+      - name: "refined"        # can only move to → "ready"
+      - name: "ready"          # can only move to → "blocked"
+      - name: "blocked"        # can only move to → "done"
+      - name: "done"           # last lane — no moves allowed
+```
+
+#### Explicit Configuration
+
+When `allowed_next` is configured, **only** the listed lanes are valid move targets:
+
+```yaml
+modules:
+  - name: task
+    lanes:
+      - name: "prioritized"
+      - name: "refined"
+      - name: "ready"
+        allowed_next: ["blocked", "done"]   # from "ready" can only move to these two
+      - name: "blocked"
+      - name: "done"
+```
+
+In this example, when a work item is in the `ready` lane, it can only be moved to `blocked` or `done`. Attempts to move to any other lane will fail with an error.
+
+#### Wildcard
+
+Use `"*"` to allow moves to **any lane** in the module:
+
+```yaml
+lanes:
+  - name: "flexible"
+    allowed_next: ["*"]   # can move to any lane
+```
+
+#### Validation Errors
+
+When a move violates the `allowed_next` constraint, the `workitem_move` tool returns an error in its `Error` field:
+
+- With `allowed_next` configured: `"move not allowed: from lane 'ready' only allows moves to [blocked done]"`
+- With default behavior: `"move not allowed: from lane 'prioritized' only allows moves to ['refined'] (next lane in order)"`
+- Last lane: `"move not allowed: lane 'done' is the last lane in order, no moves allowed"`
+
+Agents receive this error immediately and can adjust their execution accordingly.
 
 ### Reference Format for Ignore Rules
 
