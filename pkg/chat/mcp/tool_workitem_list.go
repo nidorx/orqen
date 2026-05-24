@@ -14,8 +14,8 @@ type ChatWorkitemListInput struct {
 }
 
 type ChatWorkitemListOutput struct {
-	Items []WorkitemSummary `json:"items"`
-	Error string            `json:"error,omitempty"`
+	Items []*engine.WorkItemAlias `json:"items"`
+	Error string                  `json:"error,omitempty"`
 }
 
 const tnChatWorkitemList = "chat_workitem_list"
@@ -63,12 +63,7 @@ func ChatWorkitemListHandler(
 					if title == "" {
 						title = wi.Name
 					}
-					out.Items = append(out.Items, WorkitemSummary{
-						ID:    wi.ID,
-						Name:  wi.Name,
-						Lane:  lane.Name,
-						Title: title,
-					})
+					out.Items = append(out.Items, wi.Alias())
 					count++
 				}
 			}()

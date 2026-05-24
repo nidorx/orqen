@@ -65,6 +65,25 @@ func (p *Project) GetModule(name string) *Module {
 	return nil
 }
 
+// findTargetModule scans all modules and lanes to find the module
+// that contains a work item with the given ID.
+func (p *Project) FindModule(module *string) (*Module, error) {
+	var targetModule *Module
+	if module != nil && *module != "" {
+		if targetModule = p.GetModule(*module); targetModule == nil {
+			return nil, fmt.Errorf("module not found: %s", *module)
+		} else {
+			return targetModule, nil
+		}
+	}
+
+	if len(p.Modules) == 1 {
+		return p.Modules[0], nil
+	}
+
+	return nil, nil
+}
+
 // WorkItems returns all work items in this project.
 func (p *Project) WorkItems() iter.Seq[*WorkItem] {
 	return func(yield func(*WorkItem) bool) {
@@ -77,16 +96,6 @@ func (p *Project) WorkItems() iter.Seq[*WorkItem] {
 			}
 		}
 	}
-}
-
-// GetWorkItemById finds a work item by its ID.
-func (p *Project) GetWorkItemById(workItemID string) *WorkItem {
-	for _, mod := range p.Modules {
-		if item := mod.GetWorkItemById(workItemID); item != nil {
-			return item
-		}
-	}
-	return nil
 }
 
 // ActiveAgentCount returns the total number of active agents across all modules.
@@ -186,7 +195,7 @@ func agentInvoker(proj *Project, mod *Module, lane *Lane, item *WorkItem) (Invoc
 		prompt.WriteString("**REQUIRED ACTION:** Work on item bellow\n")
 		fmt.Fprintf(&prompt, "- lane_name: %s\n", lane.Name)
 		fmt.Fprintf(&prompt, "- lane_dir: %s\n", lane.Dir)
-		fmt.Fprintf(&prompt, "- workitem_id: %s\n", item.ID)
+		fmt.Fprintf(&prompt, "- module_name: %s\n", mod.Name)
 		if item.Seq == 0 {
 			prompt.WriteString("- workitem_seq: NOT CREATED (0), see tool workitem_create from orqen MCP Server\n")
 		} else {

@@ -20,7 +20,7 @@ var (
 	dFile       *os.File
 )
 
-func StartStdio(orqenPort string, projectId string, workItemID string) {
+func StartStdio(orqenPort string, projectId string) {
 
 	if DEBUG_STDIO {
 		if r := recover(); r != nil {
@@ -33,7 +33,7 @@ func StartStdio(orqenPort string, projectId string, workItemID string) {
 		}()
 
 		var openErr error
-		dFile, openErr = os.OpenFile(fmt.Sprintf("./debug_mcp_stdio_%s.txt", workItemID), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		dFile, openErr = os.OpenFile("./debug_mcp_stdio.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if openErr != nil {
 			panic(openErr)
 		}
@@ -70,25 +70,25 @@ func StartStdio(orqenPort string, projectId string, workItemID string) {
 	}
 
 	// Tools that need workItemID (auto-injected)
-	addToolProxy(server, tnWorkitem, WorkitemHandler, session, workItemID)
-	addToolProxy(server, tnWorkitemMove, WorkitemMoveHandler, session, workItemID)
-	addToolProxy(server, tnWorkitemCreate, WorkitemCreateHandler, session, workItemID)
-	addToolProxy(server, tnWorkitemSearch, WorkitemSearchHandler, session, workItemID)
-	addToolProxy(server, tnWorkitemAttrsSet, WorkitemAttrsSetHandler, session, workItemID)
-	addToolProxy(server, tnWorkitemAttrsDel, WorkitemAttrsDelHandler, session, workItemID)
-	addToolProxy(server, tnWorkitemAttrsSchema, WorkitemAttrSchemaHandler, session, workItemID)
-	addToolProxy(server, tnWorkitemDependencies, WorkitemDependenciesHandler, session, workItemID)
-	addToolProxy(server, tnLaneList, LaneListHandler, session, workItemID)
-	addToolProxy(server, tnProjectInfo, ProjectInfoHandler, session, workItemID)
+	addToolProxy(server, tnWorkitem, WorkitemHandler, session)
+	addToolProxy(server, tnWorkitemMove, WorkitemMoveHandler, session)
+	addToolProxy(server, tnWorkitemCreate, WorkitemCreateHandler, session)
+	addToolProxy(server, tnWorkitemSearch, WorkitemSearchHandler, session)
+	addToolProxy(server, tnWorkitemAttrsSet, WorkitemAttrsSetHandler, session)
+	addToolProxy(server, tnWorkitemAttrsDel, WorkitemAttrsDelHandler, session)
+	addToolProxy(server, tnWorkitemAttrsSchema, WorkitemAttrSchemaHandler, session)
+	addToolProxy(server, tnWorkitemDependencies, WorkitemDependenciesHandler, session)
+	addToolProxy(server, tnLaneList, LaneListHandler, session)
+	addToolProxy(server, tnProjectInfo, ProjectInfoHandler, session)
 
 	// Filesystem tools (implement SetWorkItemID as no-op)
-	addToolProxy(server, tnFsMove, FsMoveHandler, session, workItemID)
-	addToolProxy(server, tnFsCopy, FsCopyHandler, session, workItemID)
-	addToolProxy(server, tnFsList, FsListHandler, session, workItemID)
-	addToolProxy(server, tnFsTree, FsTreeHandler, session, workItemID)
-	addToolProxy(server, tnFsFind, FsFindHandler, session, workItemID)
-	addToolProxy(server, tnFsGrep, FsGrepHandler, session, workItemID)
-	addToolProxy(server, tnFsDiff, FsDiffHandler, session, workItemID)
+	addToolProxy(server, tnFsMove, FsMoveHandler, session)
+	addToolProxy(server, tnFsCopy, FsCopyHandler, session)
+	addToolProxy(server, tnFsList, FsListHandler, session)
+	addToolProxy(server, tnFsTree, FsTreeHandler, session)
+	addToolProxy(server, tnFsFind, FsFindHandler, session)
+	addToolProxy(server, tnFsGrep, FsGrepHandler, session)
+	addToolProxy(server, tnFsDiff, FsDiffHandler, session)
 	if DEBUG_STDIO {
 		debugAny("MCP_TOOLS_ADDED", time.Now())
 	}
@@ -99,17 +99,13 @@ func StartStdio(orqenPort string, projectId string, workItemID string) {
 	}
 }
 
-func addToolProxy[In InputWithWorkItemID, Out any](
-	s *mcp.Server, tool string, h ToolProjectHandler[In, Out], cs *mcp.ClientSession, workItemID string,
-) {
-	mcp.AddTool(s, tools[tool], sseProxy(tool, projectHandler2MCP(nil, h), cs, workItemID))
+func addToolProxy[In any, Out any](s *mcp.Server, tool string, h ToolProjectHandler[In, Out], cs *mcp.ClientSession) {
+	mcp.AddTool(s, tools[tool], sseProxy(tool, projectHandler2MCP(nil, h), cs))
 }
 
-func sseProxy[In InputWithWorkItemID, Out any](
-	tool string, _ mcp.ToolHandlerFor[In, Out], cs *mcp.ClientSession, workItemID string,
-) mcp.ToolHandlerFor[In, Out] {
+func sseProxy[In any, Out any](tool string, _ mcp.ToolHandlerFor[In, Out], cs *mcp.ClientSession) mcp.ToolHandlerFor[In, Out] {
 	return func(ctx context.Context, req *mcp.CallToolRequest, input In) (result *mcp.CallToolResult, output Out, err error) {
-		input.SetWorkItemID(workItemID)
+		// input.SetWorkItemID(workItemID)
 
 		if DEBUG_STDIO {
 			debugAny("CALL_TOOL_REQUEST", req)

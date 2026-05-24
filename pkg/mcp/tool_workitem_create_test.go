@@ -28,7 +28,7 @@ func TestCreateItemHandler(t *testing.T) {
 
 		// Item ID should be 4 (we have 0001, 0002, 0003)
 		if out.WorkItem.Seq != 4 {
-			t.Errorf("workitem_id = %d, want 4", out.WorkItem.Seq)
+			t.Errorf("workitem_seq = %d, want 4", out.WorkItem.Seq)
 		}
 
 		// Directory name

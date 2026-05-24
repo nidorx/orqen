@@ -12,13 +12,8 @@ import (
 )
 
 type FsCopyInput struct {
-	WorkItemID *string `json:"workitem_id,omitempty" jsonschema:"Work Item ID (auto-injected)"`
-	Src        string  `json:"src" jsonschema:"source file or directory path"`
-	Dst        string  `json:"dst" jsonschema:"destination file or directory path"`
-}
-
-func (i *FsCopyInput) SetWorkItemID(workItemID string) {
-	i.WorkItemID = &workItemID
+	Src string `json:"src" jsonschema:"source file or directory path"`
+	Dst string `json:"dst" jsonschema:"destination file or directory path"`
 }
 
 type FsCopyOutput struct {

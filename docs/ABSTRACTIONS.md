@@ -152,6 +152,7 @@ type Lane struct {
     IgnoreIfNotExists  []string // skip if referenced lanes/files are empty
     IgnoreIfDependency []string // skip if item's dependencies are in referenced lanes
     ExtraPrompt        string   // additional context
+    AllowedNext        []string // restricts which lanes items can move to from this lane (default: next lane in order)
     Module             *Module  // back-reference
 }
 ```
@@ -169,6 +170,7 @@ type Lane struct {
 | `agent_behavior` | []string | No | — | **Sequential steps** the agent follows. Each item becomes a numbered step. |
 | `critical_rules` | []string | No | — | **Absolute, non-negotiable rules**. Rendered in a separate, highlighted section. |
 | `extra_prompt` | string | No | — | Additional context injected **after** `agent_behavior`. Not step-by-step instructions. |
+| `allowed_next` | []string | No | Next lane in order | Restricts which lanes work items can be moved to from this lane. Use `"*"` to allow any lane. |
 
 ### Ignore Rules
 
@@ -211,11 +213,8 @@ type WorkItem struct {
 
 ```
 {module}/{lane}/{PREFIX}-NNNN-slug/
-├── {PREFIX}-NNNN-slug.yaml   # metadata (attributes)
-├── description.md             # task description / main artifact
-├── SUMMARY.md                 # completion summary (optional)
-├── FAIL.md                    # failure artifact (optional)
-└── DEP_NNNN                   # dependency file (references another item)
+├── {PREFIX}-NNNN.yaml                  # metadata (attributes)
+└── {PREFIX}-NNNN-{ARCTIFACT}.md        # artifacts
 ```
 
 ### Naming Convention

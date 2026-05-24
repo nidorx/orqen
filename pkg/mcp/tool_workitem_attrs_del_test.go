@@ -32,9 +32,9 @@ func TestItemAttrsDelHandler(t *testing.T) {
 
 	t.Run("delete single attribute", func(t *testing.T) {
 		input := &ItemAttrsDelInput{
-			Module: ptr("task"),
-			Seq:    1,
-			Keys:   []string{"priority"},
+			Module:      ptr("task"),
+			WorkItemSeq: 1,
+			Keys:        []string{"priority"},
 		}
 		out := callHandler(t, WorkitemAttrsDelHandler, input, proj)
 
@@ -52,9 +52,9 @@ func TestItemAttrsDelHandler(t *testing.T) {
 
 	t.Run("delete multiple attributes", func(t *testing.T) {
 		input := &ItemAttrsDelInput{
-			Module: ptr("task"),
-			Seq:    1,
-			Keys:   []string{"assignee", "status"},
+			Module:      ptr("task"),
+			WorkItemSeq: 1,
+			Keys:        []string{"assignee", "status"},
 		}
 		out := callHandler(t, WorkitemAttrsDelHandler, input, proj)
 
@@ -79,12 +79,11 @@ func TestItemAttrsDelHandler(t *testing.T) {
 	})
 
 	t.Run("delete attributes using workitem_id resolution", func(t *testing.T) {
-		workItemID := testItem.ID
 		input := &ItemAttrsDelInput{
-			Seq:  1,
-			Keys: []string{"description"},
+			WorkItemSeq: 1,
+			Keys:        []string{"description"},
 		}
-		input.WorkItemID = &workItemID
+
 		out := callHandler(t, WorkitemAttrsDelHandler, input, proj)
 
 		if !out.Success {
@@ -104,9 +103,9 @@ func TestItemAttrsDelHandler(t *testing.T) {
 		testItem.AttributesSave(testItem.Attributes)
 
 		input := &ItemAttrsDelInput{
-			Module: ptr("task"),
-			Seq:    1,
-			Keys:   []string{"dependencies"},
+			Module:      ptr("task"),
+			WorkItemSeq: 1,
+			Keys:        []string{"dependencies"},
 		}
 		_ = callHandler(t, WorkitemAttrsDelHandler, input, proj)
 
@@ -134,9 +133,9 @@ func TestItemAttrsDelHandler(t *testing.T) {
 		}
 
 		input := &ItemAttrsDelInput{
-			Module: ptr("adr"),
-			Seq:    adrItem.Seq,
-			Keys:   []string{"reviewed_by", "approved"},
+			Module:      ptr("adr"),
+			WorkItemSeq: adrItem.Seq,
+			Keys:        []string{"reviewed_by", "approved"},
 		}
 		out := callHandler(t, WorkitemAttrsDelHandler, input, proj)
 
@@ -159,8 +158,8 @@ func TestItemAttrsDelHandler(t *testing.T) {
 
 	t.Run("nil project", func(t *testing.T) {
 		input := &ItemAttrsDelInput{
-			Seq:  1,
-			Keys: []string{"priority"},
+			WorkItemSeq: 1,
+			Keys:        []string{"priority"},
 		}
 		out := callHandler(t, WorkitemAttrsDelHandler, input, nil)
 
@@ -171,9 +170,9 @@ func TestItemAttrsDelHandler(t *testing.T) {
 
 	t.Run("invalid seq zero", func(t *testing.T) {
 		input := &ItemAttrsDelInput{
-			Module: ptr("task"),
-			Seq:    0,
-			Keys:   []string{"priority"},
+			Module:      ptr("task"),
+			WorkItemSeq: 0,
+			Keys:        []string{"priority"},
 		}
 		out := callHandler(t, WorkitemAttrsDelHandler, input, proj)
 
@@ -184,9 +183,9 @@ func TestItemAttrsDelHandler(t *testing.T) {
 
 	t.Run("invalid seq negative", func(t *testing.T) {
 		input := &ItemAttrsDelInput{
-			Module: ptr("task"),
-			Seq:    -1,
-			Keys:   []string{"priority"},
+			Module:      ptr("task"),
+			WorkItemSeq: -1,
+			Keys:        []string{"priority"},
 		}
 		out := callHandler(t, WorkitemAttrsDelHandler, input, proj)
 
@@ -197,9 +196,9 @@ func TestItemAttrsDelHandler(t *testing.T) {
 
 	t.Run("empty keys", func(t *testing.T) {
 		input := &ItemAttrsDelInput{
-			Module: ptr("task"),
-			Seq:    1,
-			Keys:   []string{},
+			Module:      ptr("task"),
+			WorkItemSeq: 1,
+			Keys:        []string{},
 		}
 		out := callHandler(t, WorkitemAttrsDelHandler, input, proj)
 
@@ -210,9 +209,9 @@ func TestItemAttrsDelHandler(t *testing.T) {
 
 	t.Run("nil keys", func(t *testing.T) {
 		input := &ItemAttrsDelInput{
-			Module: ptr("task"),
-			Seq:    1,
-			Keys:   nil,
+			Module:      ptr("task"),
+			WorkItemSeq: 1,
+			Keys:        nil,
 		}
 		out := callHandler(t, WorkitemAttrsDelHandler, input, proj)
 
@@ -223,9 +222,9 @@ func TestItemAttrsDelHandler(t *testing.T) {
 
 	t.Run("module not found", func(t *testing.T) {
 		input := &ItemAttrsDelInput{
-			Module: ptr("nonexistent"),
-			Seq:    1,
-			Keys:   []string{"priority"},
+			Module:      ptr("nonexistent"),
+			WorkItemSeq: 1,
+			Keys:        []string{"priority"},
 		}
 		out := callHandler(t, WorkitemAttrsDelHandler, input, proj)
 
@@ -236,9 +235,9 @@ func TestItemAttrsDelHandler(t *testing.T) {
 
 	t.Run("item not found", func(t *testing.T) {
 		input := &ItemAttrsDelInput{
-			Module: ptr("task"),
-			Seq:    9999,
-			Keys:   []string{"priority"},
+			Module:      ptr("task"),
+			WorkItemSeq: 9999,
+			Keys:        []string{"priority"},
 		}
 		out := callHandler(t, WorkitemAttrsDelHandler, input, proj)
 
@@ -249,8 +248,8 @@ func TestItemAttrsDelHandler(t *testing.T) {
 
 	t.Run("ambiguous module resolution", func(t *testing.T) {
 		input := &ItemAttrsDelInput{
-			Seq:  1,
-			Keys: []string{"priority"},
+			WorkItemSeq: 1,
+			Keys:        []string{"priority"},
 		}
 		out := callHandler(t, WorkitemAttrsDelHandler, input, proj)
 
@@ -262,9 +261,9 @@ func TestItemAttrsDelHandler(t *testing.T) {
 
 	t.Run("delete non-existent key should still succeed", func(t *testing.T) {
 		input := &ItemAttrsDelInput{
-			Module: ptr("task"),
-			Seq:    1,
-			Keys:   []string{"nonexistent_key"},
+			Module:      ptr("task"),
+			WorkItemSeq: 1,
+			Keys:        []string{"nonexistent_key"},
 		}
 		out := callHandler(t, WorkitemAttrsDelHandler, input, proj)
 
@@ -280,9 +279,9 @@ func TestItemAttrsDelHandler(t *testing.T) {
 		testItem.AttributesSave(testItem.Attributes)
 
 		input := &ItemAttrsDelInput{
-			Module: ptr("task"),
-			Seq:    1,
-			Keys:   []string{"temp_attr"},
+			Module:      ptr("task"),
+			WorkItemSeq: 1,
+			Keys:        []string{"temp_attr"},
 		}
 		out := callHandler(t, WorkitemAttrsDelHandler, input, proj)
 

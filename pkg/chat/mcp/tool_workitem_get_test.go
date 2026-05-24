@@ -9,9 +9,7 @@ func TestChatWorkitemGet_NotFound(t *testing.T) {
 	store, mgr := newTestChatEnv(t)
 	proj := newTestProject(t)
 
-	_, out, err := ChatWorkitemGetHandler(context.Background(), nil, &ChatWorkitemGetInput{
-		WorkItemID: "nonexistent-id",
-	}, proj, store, mgr)
+	_, out, err := ChatWorkitemGetHandler(context.Background(), nil, &WorkitemInput{}, proj, store, mgr)
 	if err != nil {
 		t.Fatalf("get handler error: %v", err)
 	}
@@ -24,9 +22,7 @@ func TestChatWorkitemGet_MissingID(t *testing.T) {
 	store, mgr := newTestChatEnv(t)
 	proj := newTestProject(t)
 
-	_, out, err := ChatWorkitemGetHandler(context.Background(), nilReq(), &ChatWorkitemGetInput{
-		WorkItemID: "",
-	}, proj, store, mgr)
+	_, out, err := ChatWorkitemGetHandler(context.Background(), nilReq(), &WorkitemInput{}, proj, store, mgr)
 	if err != nil {
 		t.Fatalf("get handler error: %v", err)
 	}
@@ -38,9 +34,7 @@ func TestChatWorkitemGet_MissingID(t *testing.T) {
 func TestChatWorkitemGet_NilProject(t *testing.T) {
 	store, mgr := newTestChatEnv(t)
 
-	_, out, err := ChatWorkitemGetHandler(context.Background(), nilReq(), &ChatWorkitemGetInput{
-		WorkItemID: "some-id",
-	}, nil, store, mgr)
+	_, out, err := ChatWorkitemGetHandler(context.Background(), nilReq(), &WorkitemInput{}, nil, store, mgr)
 	if err != nil {
 		t.Fatalf("get handler error: %v", err)
 	}
@@ -54,9 +48,7 @@ func TestChatWorkitemGet_WithoutCacheInit(t *testing.T) {
 	proj := newTestProject(t)
 
 	// Without cache init, GetWorkItemById will return nil → handler returns "not found" error
-	_, getOut, err := ChatWorkitemGetHandler(context.Background(), nilReq(), &ChatWorkitemGetInput{
-		WorkItemID: "some-id",
-	}, proj, store, mgr)
+	_, getOut, err := ChatWorkitemGetHandler(context.Background(), nilReq(), &WorkitemInput{}, proj, store, mgr)
 	if err != nil {
 		t.Fatalf("get handler error: %v", err)
 	}

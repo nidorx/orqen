@@ -54,11 +54,11 @@ func shouldIgnoreIfDependency(item *WorkItem) bool {
 	return false
 }
 
-// dependencyParseReference parses a dependency reference which can be just "SEQUENCE" or "module.SEQUENCE"
+// dependencyParseReference parses a dependency reference which can be just "SEQUENCE" or "MODULE.SEQUENCE"
 func dependencyParseReference(ref string) (moduleName string, workitemSeq int) {
 
 	// "${SEQ}"
-	// "module.${SEQ}"
+	// "${MODULE}.${SEQ}"
 
 	parts := strings.SplitN(ref, ".", 3)
 	if len(parts) == 2 {

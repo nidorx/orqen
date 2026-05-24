@@ -5,33 +5,38 @@ import (
 	"fmt"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/nidorx/orqen/pkg/chat/memory"
 	"github.com/nidorx/orqen/pkg/engine"
 )
-
-// Returns the current work item, lane, module, and project context
-// for the running agent job. Requires workItemID.
 
 type WorkitemInput struct {
 	Module      *string `json:"module,omitempty" jsonschema:"module name (omit if the project only has one module)"`
 	WorkitemSeq int     `json:"workitem_seq" jsonschema:"sequential ID of the work item to move"`
 }
 
-type WorkitemOutput struct {
+type ChatWorkitemGetOutput struct {
 	Found bool                  `json:"found"`
 	Item  *engine.WorkItemAlias `json:"item,omitempty"`
 	Error string                `json:"error,omitempty"`
 }
 
-const tnWorkitem = "item"
+const tnChatWorkitemGet = "chat_workitem_get"
 
 func init() {
-	tools[tnWorkitem] = &mcp.Tool{
-		Description: "Returns the current work item, lane, module, and project context for the running agent job. Use this to understand what you are working on.",
+	chatTools[tnChatWorkitemGet] = &mcp.Tool{
+		Description: "Get details of a specific workitem including its files and attributes.",
 	}
 }
 
-func WorkitemHandler(ctx context.Context, req *mcp.CallToolRequest, input *WorkitemInput, proj *engine.Project) (*mcp.CallToolResult, WorkitemOutput, error) {
-	out := WorkitemOutput{}
+func ChatWorkitemGetHandler(
+	ctx context.Context,
+	req *mcp.CallToolRequest,
+	input *WorkitemInput,
+	proj *engine.Project,
+	chatStore *memory.ChatStore,
+	sessionMgr *memory.SessionManager,
+) (*mcp.CallToolResult, ChatWorkitemGetOutput, error) {
+	out := ChatWorkitemGetOutput{}
 
 	if proj == nil {
 		out.Error = "project not available"

@@ -29,8 +29,7 @@ func TestStatusHandler(t *testing.T) {
 			t.Fatal("item1 not found")
 		}
 
-		workItemID := item1.ID
-		input := &ItemStatusInput{WorkItemID: &workItemID}
+		input := &WorkitemInput{}
 		out := callHandler(t, WorkitemHandler, input, proj)
 
 		if !out.Found {
@@ -38,7 +37,7 @@ func TestStatusHandler(t *testing.T) {
 		}
 
 		if out.Item.Seq != 1 {
-			t.Errorf("workitem_id = %d, want 1", out.Item.Seq)
+			t.Errorf("workitem_seq = %d, want 1", out.Item.Seq)
 		}
 
 		if out.Item.Lane != "backlog" {
@@ -52,8 +51,7 @@ func TestStatusHandler(t *testing.T) {
 
 	t.Run("unknown id", func(t *testing.T) {
 		// Use a hash that doesn't exist
-		workItemID := "nonexistent-id-12345"
-		input := &ItemStatusInput{WorkItemID: &workItemID}
+		input := &WorkitemInput{}
 		out := callHandler(t, WorkitemHandler, input, proj)
 
 		if out.Found {
@@ -65,7 +63,7 @@ func TestStatusHandler(t *testing.T) {
 	})
 
 	t.Run("no id", func(t *testing.T) {
-		input := &ItemStatusInput{}
+		input := &WorkitemInput{}
 		out := callHandler(t, WorkitemHandler, input, proj)
 
 		if out.Error == "" {
@@ -74,8 +72,7 @@ func TestStatusHandler(t *testing.T) {
 	})
 
 	t.Run("nil project", func(t *testing.T) {
-		workItemID := "some-id"
-		input := &ItemStatusInput{WorkItemID: &workItemID}
+		input := &WorkitemInput{}
 		out := callHandler(t, WorkitemHandler, input, nil)
 
 		if out.Error == "" {

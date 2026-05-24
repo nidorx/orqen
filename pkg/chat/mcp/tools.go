@@ -64,13 +64,6 @@ type SearchResultView struct {
 	Time      string  `json:"time"`
 }
 
-type WorkitemSummary struct {
-	ID    string `json:"id"`
-	Name  string `json:"name"`
-	Lane  string `json:"lane"`
-	Title string `json:"title"`
-}
-
 type FileEntry struct {
 	Path string `json:"path"`
 	Type string `json:"type"` // "file" or "directory"

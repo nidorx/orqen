@@ -1,7 +1,6 @@
 package engine
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -352,20 +351,6 @@ func initialize(proj *Project) error {
 
 		for _, promptFile := range defaultPrompts {
 			dstPromptFileLoc := path.Join(modPromptsDir, promptFile)
-			_, err := os.Stat(dstPromptFileLoc)
-
-			if err == nil {
-				// exists
-				prompt, err := os.ReadFile(dstPromptFileLoc)
-				if err != nil {
-					return err
-				}
-
-				mod.Prompt = string(prompt)
-				continue
-			} else if !errors.Is(err, os.ErrNotExist) {
-				return err
-			}
 
 			srcPromptFile, err := embedPromptsFS.Open("prompts/" + promptFile)
 			if err != nil {
@@ -461,20 +446,6 @@ func initialize(proj *Project) error {
 			if len(lane.AgentBehavior) > 0 {
 				promptFile := strings.ToUpper(lane.Dir) + ".md"
 				dstPromptFileLoc := path.Join(modPromptsDir, promptFile)
-				_, err := os.Stat(dstPromptFileLoc)
-
-				if err == nil {
-					// exists
-					prompt, err := os.ReadFile(dstPromptFileLoc)
-					if err != nil {
-						return err
-					}
-
-					lane.Prompt = string(prompt)
-					continue
-				} else if !errors.Is(err, os.ErrNotExist) {
-					return err
-				}
 
 				promptLines := []string{
 					"## Workflow Definition - Lanes",

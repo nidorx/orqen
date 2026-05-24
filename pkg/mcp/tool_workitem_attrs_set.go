@@ -11,14 +11,9 @@ import (
 // into the work item's existing attributes and persists them to disk.
 
 type ItemAttrsSetInput struct {
-	WorkItemID *string           `json:"workitem_id,omitempty" jsonschema:"Work Item ID (auto-injected)"`
-	Module     *string           `json:"module,omitempty" jsonschema:"module name (omit for current module)"`
-	Seq        int               `json:"seq" jsonschema:"work item sequence number"`
-	Attributes engine.Attributes `json:"attributes" jsonschema:"key-value pairs of attributes to set or update"`
-}
-
-func (i *ItemAttrsSetInput) SetWorkItemID(workItemID string) {
-	i.WorkItemID = &workItemID
+	Module      *string           `json:"module,omitempty" jsonschema:"module name (omit if the project only has one module)"`
+	WorkItemSeq int               `json:"workitem_seq" jsonschema:"work item sequence number"`
+	Attributes  engine.Attributes `json:"attributes" jsonschema:"key-value pairs of attributes to set or update"`
 }
 
 type ItemAttrsSetOutput struct {
@@ -42,8 +37,8 @@ func WorkitemAttrsSetHandler(ctx context.Context, req *mcp.CallToolRequest, inpu
 		return nil, out, nil
 	}
 
-	if input.Seq <= 0 {
-		out.Error = "seq is required and must be greater than 0"
+	if input.WorkItemSeq <= 0 {
+		out.Error = "workitem_seq is required and must be greater than 0"
 		return nil, out, nil
 	}
 
@@ -52,19 +47,19 @@ func WorkitemAttrsSetHandler(ctx context.Context, req *mcp.CallToolRequest, inpu
 		return nil, out, nil
 	}
 
-	targetModule, err := findTargetModuleBy(proj, input.Module, input.WorkItemID)
+	targetModule, err := proj.FindModule(input.Module)
 	if err != nil {
 		out.Error = err.Error()
 		return nil, out, nil
 	}
 	if targetModule == nil {
-		out.Error = "could not resolve target module — specify module parameter or ensure workitem_id is set"
+		out.Error = "could not resolve target module — specify module parameter"
 		return nil, out, nil
 	}
 
-	item := targetModule.GetWorkItemBySeq(input.Seq)
+	item := targetModule.GetWorkItemBySeq(input.WorkItemSeq)
 	if item == nil {
-		out.Error = "work item not found with seq: " + string(rune(input.Seq))
+		out.Error = "work item not found with seq: " + string(rune(input.WorkItemSeq))
 		return nil, out, nil
 	}
 

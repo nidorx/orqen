@@ -12,14 +12,9 @@ import (
 )
 
 type FsDiffInput struct {
-	WorkItemID *string `json:"workitem_id,omitempty" jsonschema:"Work Item ID (auto-injected)"`
-	File1      string  `json:"file1" jsonschema:"first file path"`
-	File2      string  `json:"file2" jsonschema:"second file path"`
-	Context    *int    `json:"context,omitempty" jsonschema:"number of context lines (default: 3)"`
-}
-
-func (i *FsDiffInput) SetWorkItemID(workItemID string) {
-	i.WorkItemID = &workItemID
+	File1   string `json:"file1" jsonschema:"first file path"`
+	File2   string `json:"file2" jsonschema:"second file path"`
+	Context *int   `json:"context,omitempty" jsonschema:"number of context lines (default: 3)"`
 }
 
 type FsDiffOutput struct {

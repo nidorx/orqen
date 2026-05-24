@@ -10,14 +10,9 @@ import (
 )
 
 type ItemCreateInput struct {
-	WorkItemID *string `json:"workitem_id,omitempty" jsonschema:"Work Item ID (auto-injected)"`
 	Module     *string `json:"module" jsonschema:"module name (e.g., task, adr, learning)"`
 	Lane       string  `json:"lane" jsonschema:"destination lane name"`
 	SimpleName string  `json:"simple_name" jsonschema:"kebab-case descriptive name for the item"`
-}
-
-func (i *ItemCreateInput) SetWorkItemID(workItemID string) {
-	i.WorkItemID = &workItemID
 }
 
 type ItemCreateOutput struct {
@@ -52,13 +47,13 @@ func WorkitemCreateHandler(ctx context.Context, req *mcp.CallToolRequest, input 
 		return nil, out, nil
 	}
 
-	targetModule, err := findTargetModuleBy(proj, input.Module, input.WorkItemID)
+	targetModule, err := proj.FindModule(input.Module)
 	if err != nil {
 		out.Error = err.Error()
 		return nil, out, nil
 	}
 	if targetModule == nil {
-		out.Error = "could not resolve target module — specify module parameter or ensure workitem_id is set"
+		out.Error = "could not resolve target module — specify module parameter"
 		return nil, out, nil
 	}
 

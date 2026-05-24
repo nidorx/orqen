@@ -25,8 +25,8 @@ func TestItemAttrsSetHandler(t *testing.T) {
 
 	t.Run("set new attribute on work item", func(t *testing.T) {
 		input := &ItemAttrsSetInput{
-			Module: ptr("task"),
-			Seq:    1,
+			Module:      ptr("task"),
+			WorkItemSeq: 1,
 			Attributes: engine.Attributes{
 				"priority":    2,
 				"assignee":    "john",
@@ -53,8 +53,8 @@ func TestItemAttrsSetHandler(t *testing.T) {
 
 	t.Run("update existing attribute", func(t *testing.T) {
 		input := &ItemAttrsSetInput{
-			Module: ptr("task"),
-			Seq:    1,
+			Module:      ptr("task"),
+			WorkItemSeq: 1,
 			Attributes: engine.Attributes{
 				"priority": 5,
 			},
@@ -76,14 +76,12 @@ func TestItemAttrsSetHandler(t *testing.T) {
 
 	t.Run("set attributes using workitem_id resolution", func(t *testing.T) {
 		// Set WorkItemID to resolve module
-		workItemID := testItem.ID
 		input := &ItemAttrsSetInput{
-			Seq: 1,
+			WorkItemSeq: 1,
 			Attributes: engine.Attributes{
 				"status": "in-progress",
 			},
 		}
-		input.WorkItemID = &workItemID
 		out := callHandler(t, WorkitemAttrsSetHandler, input, proj)
 
 		if !out.Success {
@@ -108,8 +106,8 @@ func TestItemAttrsSetHandler(t *testing.T) {
 		}
 
 		input := &ItemAttrsSetInput{
-			Module: ptr("adr"),
-			Seq:    adrItem.Seq,
+			Module:      ptr("adr"),
+			WorkItemSeq: adrItem.Seq,
 			Attributes: engine.Attributes{
 				"reviewed_by": "alice",
 				"approved":    true,
@@ -130,7 +128,7 @@ func TestItemAttrsSetHandler(t *testing.T) {
 
 	t.Run("nil project", func(t *testing.T) {
 		input := &ItemAttrsSetInput{
-			Seq: 1,
+			WorkItemSeq: 1,
 			Attributes: engine.Attributes{
 				"key": "value",
 			},
@@ -144,8 +142,8 @@ func TestItemAttrsSetHandler(t *testing.T) {
 
 	t.Run("invalid seq zero", func(t *testing.T) {
 		input := &ItemAttrsSetInput{
-			Module: ptr("task"),
-			Seq:    0,
+			Module:      ptr("task"),
+			WorkItemSeq: 0,
 			Attributes: engine.Attributes{
 				"key": "value",
 			},
@@ -159,8 +157,8 @@ func TestItemAttrsSetHandler(t *testing.T) {
 
 	t.Run("invalid seq negative", func(t *testing.T) {
 		input := &ItemAttrsSetInput{
-			Module: ptr("task"),
-			Seq:    -1,
+			Module:      ptr("task"),
+			WorkItemSeq: -1,
 			Attributes: engine.Attributes{
 				"key": "value",
 			},
@@ -174,9 +172,9 @@ func TestItemAttrsSetHandler(t *testing.T) {
 
 	t.Run("empty attributes", func(t *testing.T) {
 		input := &ItemAttrsSetInput{
-			Module:     ptr("task"),
-			Seq:        1,
-			Attributes: engine.Attributes{},
+			Module:      ptr("task"),
+			WorkItemSeq: 1,
+			Attributes:  engine.Attributes{},
 		}
 		out := callHandler(t, WorkitemAttrsSetHandler, input, proj)
 
@@ -187,8 +185,8 @@ func TestItemAttrsSetHandler(t *testing.T) {
 
 	t.Run("module not found", func(t *testing.T) {
 		input := &ItemAttrsSetInput{
-			Module: ptr("nonexistent"),
-			Seq:    1,
+			Module:      ptr("nonexistent"),
+			WorkItemSeq: 1,
 			Attributes: engine.Attributes{
 				"key": "value",
 			},
@@ -202,8 +200,8 @@ func TestItemAttrsSetHandler(t *testing.T) {
 
 	t.Run("item not found", func(t *testing.T) {
 		input := &ItemAttrsSetInput{
-			Module: ptr("task"),
-			Seq:    9999,
+			Module:      ptr("task"),
+			WorkItemSeq: 9999,
 			Attributes: engine.Attributes{
 				"key": "value",
 			},
@@ -217,7 +215,7 @@ func TestItemAttrsSetHandler(t *testing.T) {
 
 	t.Run("ambiguous module resolution", func(t *testing.T) {
 		input := &ItemAttrsSetInput{
-			Seq: 1,
+			WorkItemSeq: 1,
 			Attributes: engine.Attributes{
 				"key": "value",
 			},
@@ -232,8 +230,8 @@ func TestItemAttrsSetHandler(t *testing.T) {
 
 	t.Run("set complex attributes with nested structures", func(t *testing.T) {
 		input := &ItemAttrsSetInput{
-			Module: ptr("task"),
-			Seq:    1,
+			Module:      ptr("task"),
+			WorkItemSeq: 1,
 			Attributes: engine.Attributes{
 				"tags":    []string{"backend", "auth", "security"},
 				"metrics": map[string]any{"complexity": "high", "lines": 150},
@@ -257,8 +255,8 @@ func TestItemAttrsSetHandler(t *testing.T) {
 
 	t.Run("verify yaml file is created", func(t *testing.T) {
 		input := &ItemAttrsSetInput{
-			Module: ptr("task"),
-			Seq:    1,
+			Module:      ptr("task"),
+			WorkItemSeq: 1,
 			Attributes: engine.Attributes{
 				"test_key": "test_value",
 			},

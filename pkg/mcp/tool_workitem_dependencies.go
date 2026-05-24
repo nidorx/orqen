@@ -11,11 +11,8 @@ import (
 )
 
 type DependenciesInput struct {
-	WorkItemID *string `json:"workitem_id,omitempty" jsonschema:"Work Item ID (auto-injected)"`
-}
-
-func (i *DependenciesInput) SetWorkItemID(workItemID string) {
-	i.WorkItemID = &workItemID
+	Module      *string `json:"module,omitempty" jsonschema:"module name (omit if the project only has one module)"`
+	WorkitemSeq int     `json:"workitem_seq" jsonschema:"sequential ID of the work item to move"`
 }
 
 type DependenciesOutput struct {
@@ -41,31 +38,30 @@ func WorkitemDependenciesHandler(ctx context.Context, req *mcp.CallToolRequest, 
 		return nil, out, nil
 	}
 
-	if input.WorkItemID == nil || *input.WorkItemID == "" {
-		out.Error = "no Work Item ID provided"
+	targetModule, err := proj.FindModule(input.Module)
+	if err != nil {
+		out.Error = err.Error()
+		return nil, out, nil
+	}
+	if targetModule == nil {
+		out.Error = "could not resolve target module — specify module parameter"
 		return nil, out, nil
 	}
 
-	workItemID := *input.WorkItemID
-
-	// Find the current work item by WorkItemID
-	var currentItem *engine.WorkItem
-
-	for _, mod := range proj.Modules {
-		if item := mod.GetWorkItemById(workItemID); item != nil {
-			currentItem = item
-			break
-		}
+	// Find the work item
+	var item *engine.WorkItem
+	if input.WorkitemSeq > 0 {
+		item = targetModule.GetWorkItemBySeq(input.WorkitemSeq)
 	}
 
-	if currentItem == nil {
-		out.Error = fmt.Sprintf("work item with ID %q not found", workItemID)
+	if item == nil {
+		out.Error = fmt.Sprintf("work item not found (workitem_seq=%d)", input.WorkitemSeq)
 		return nil, out, nil
 	}
 
-	out.Item = currentItem.Alias()
-	out.Dependents = utils.Map(slices.Collect(currentItem.Dependents()), workItem2Alias)
-	out.Dependencies = utils.Map(slices.Collect(currentItem.Dependencies()), workItem2Alias)
+	out.Item = item.Alias()
+	out.Dependents = utils.Map(slices.Collect(item.Dependents()), workItem2Alias)
+	out.Dependencies = utils.Map(slices.Collect(item.Dependencies()), workItem2Alias)
 	return nil, out, nil
 }
 

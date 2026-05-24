@@ -147,11 +147,9 @@ func TestItemSearchHandler(t *testing.T) {
 	})
 
 	t.Run("search using workitem_id resolution", func(t *testing.T) {
-		workItemID := item1.ID
 		input := &ItemSearchInput{
 			Lane: "backlog",
 		}
-		input.WorkItemID = &workItemID
 		out := callHandler(t, WorkitemSearchHandler, input, proj)
 
 		if len(out.Items) != 2 {

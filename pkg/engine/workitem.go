@@ -11,7 +11,7 @@ import (
 
 // WorkItem representa uma tarefa que está disponível em uma Lane
 type WorkItem struct {
-	ID         string     `json:"id,omitempty" jsonschema:"unique identifier for this work item hash(Seq+Name)"`
+	ID         string     `json:"-" jsonschema:"unique identifier for this work item hash(Seq+Name)"`
 	Seq        int        `json:"seq,omitempty" jsonschema:"unique sequential id for this work item"`
 	Name       string     `json:"name,omitempty" jsonschema:"directory/file name (e.g., WI-001-create-project)"`
 	Files      []string   `json:"files,omitempty" jsonschema:"files in directory (e.g., WI-001.md, WI-001-SUmMARY.md)"`
@@ -174,6 +174,11 @@ func (item *WorkItem) MoveTo(laneName string) error {
 
 	if fromLane == toLane {
 		return nil
+	}
+
+	// Validate lane transition against allowed_next or default next-lane logic
+	if err := fromLane.validateMoveTo(toLane.Name); err != nil {
+		return err
 	}
 
 	// Build source and destination paths

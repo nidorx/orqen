@@ -8,12 +8,7 @@ import (
 )
 
 type LaneListInput struct {
-	WorkItemID *string `json:"workitem_id,omitempty" jsonschema:"Work Item ID (auto-injected)"`
-	Module     *string `json:"module,omitempty" jsonschema:"module name (omit for current module)"`
-}
-
-func (i *LaneListInput) SetWorkItemID(workItemID string) {
-	i.WorkItemID = &workItemID
+	Module *string `json:"module,omitempty" jsonschema:"module name (omit if the project only has one module)"`
 }
 
 type LaneDetail struct {
@@ -45,13 +40,13 @@ func LaneListHandler(ctx context.Context, req *mcp.CallToolRequest, input *LaneL
 		return nil, out, nil
 	}
 
-	targetModule, err := findTargetModuleBy(proj, input.Module, input.WorkItemID)
+	targetModule, err := proj.FindModule(input.Module)
 	if err != nil {
 		out.Error = err.Error()
 		return nil, out, nil
 	}
 	if targetModule == nil {
-		out.Error = "could not resolve target module — specify module parameter or ensure workitem_id is set"
+		out.Error = "could not resolve target module — specify module parameter"
 		return nil, out, nil
 	}
 

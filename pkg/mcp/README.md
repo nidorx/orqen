@@ -16,39 +16,53 @@ The package does **not** manage project state — it delegates to `pkg/engine`. 
 
 | File | Responsibility |
 |------|----------------|
-| `server.go` | Server creation (`createServer`), tool registration map (`tools`), and handler adapter (`projectHandler2MCP`) |
+| `server.go` | Server creation (`createServer`), shared tool map (`tools`), and handler adapter (`projectHandler2MCP`) |
 | `server_stdio.go` | Entry point for the stdio subprocess (`StartStdio`). Creates an MCP client that connects to the host's Streamable HTTP endpoint and registers all tools as proxies |
 | `server_http.go` | Entry point for the host's HTTP server (`ServerHttp`). Creates an `http.Handler` using `mcp.NewStreamableHTTPHandler` with all tools registered directly |
-| `tool_*.go` | Individual tool implementations — each defines `Input`/`Output` structs, a tool name constant, an `init()` registration, and a handler function |
-| `utils.go` | Shared utilities (e.g., `findTargetModuleBy` for module resolution) |
+| `tool_workitem*.go` | Work item operations: get, create, move, search, attributes (set/del/schema), dependencies |
+| `tool_lane_list.go` | Lane listing operation |
+| `tool_project_info.go` | Project structure inspection |
+| `tool_fs_*.go` | Filesystem operations: copy, move, list, tree, find, grep, diff |
 | `*_test.go` | Comprehensive test coverage for all tools with shared test helpers (`test_helpers_test.go`) |
 
 ## Tools
 
-The package exposes **11 MCP tools** for work item and project management:
+The package exposes **17 MCP tools** across three categories:
 
 ### Work Item Operations
 
 | Tool Constant | Tool Name | Handler | Description |
 |---------------|-----------|---------|-------------|
-| `tnItem` | `item` | `ItemHandler` | Returns the current work item, lane, module, and project context for a running agent job. Requires `workitem_id`. |
-| `tnItemMove` | `workitem_move` | `ItemMoveHandler` | Moves a work item directory from one lane to another within a module. Updates internal state to reflect the new lane position. |
-| `tnItemCreate` | `workitem_create` | `ItemCreateHandler` | Creates a new work item in a specific lane of a module. Creates the directory following naming conventions (MOD_TYPE-NNNN-name) and an empty `.yaml` file. |
-| `tnItemSearch` | `workitem_search` | `ItemSearchHandler` | Searches for work items in a module or lane, optionally filtered by a condition SQL-like DSL string. Returns full WorkItem objects. |
+| `tnWorkitem` | `item` | `WorkitemHandler` | Returns the current work item, lane, module, and project context for a running agent job. |
+| `tnWorkitemMove` | `workitem_move` | `WorkitemMoveHandler` | Moves a work item directory from one lane to another within a module. Updates internal state to reflect the new lane position. |
+| `tnWorkitemCreate` | `workitem_create` | `WorkitemCreateHandler` | Creates a new work item in a specific lane of a module. Creates the directory following naming conventions (MOD_TYPE-NNNN-name) and an empty `.yaml` file. |
+| `tnWorkitemSearch` | `workitem_search` | `WorkitemSearchHandler` | Searches for work items in a module or lane, optionally filtered by a condition SQL-like DSL string. Returns full WorkItem objects. |
 
 ### Work Item Attribute Operations
 
 | Tool Constant | Tool Name | Handler | Description |
 |---------------|-----------|---------|-------------|
-| `tnItemAttrsSet` | `workitem_attrs_set` | `ItemAttrsSetHandler` | Updates attributes on a work item. Merges the provided attributes into the work item's existing attributes and persists them to disk. |
-| `tnItemAttrsDel` | `workitem_attrs_del` | `ItemAttrsDelHandler` | Removes specified attribute keys from a work item and persists the changes to disk. The "dependencies" key cannot be removed. |
-| `tnItemAttrsSchema` | `workitem_attrs_schema` | `ItemAttrSchemaHandler` | Returns all observed workitem attributes and their unique values (domains) across all workitems in a module. Use this to understand what metadata fields exist. |
+| `tnWorkitemAttrsSet` | `workitem_attrs_set` | `WorkitemAttrsSetHandler` | Updates attributes on a work item. Merges the provided attributes into the work item's existing attributes and persists them to disk. |
+| `tnWorkitemAttrsDel` | `workitem_attrs_del` | `WorkitemAttrsDelHandler` | Removes specified attribute keys from a work item and persists the changes to disk. The "dependencies" key cannot be removed. |
+| `tnWorkitemAttrsSchema` | `workitem_attrs_schema` | `WorkitemAttrSchemaHandler` | Returns all observed workitem attributes and their unique values (domains) across all workitems in a module. Use this to understand what metadata fields exist. |
 
 ### Work Item Dependencies
 
 | Tool Constant | Tool Name | Handler | Description |
 |---------------|-----------|---------|-------------|
-| `tnItemDependencies` | `workitem_dependencies` | `ItemDependenciesHandler` | Checks dependency status for the current work item. Resolves them to actual work items with their status. |
+| `tnWorkitemDependencies` | `workitem_dependencies` | `WorkitemDependenciesHandler` | Checks dependency status for the current work item. Resolves them to actual work items with their status. |
+
+### Filesystem Operations
+
+| Tool Constant | Tool Name | Handler | Description |
+|---------------|-----------|---------|-------------|
+| `tnFsCopy` | `fs_copy` | `FsCopyHandler` | Copies a file or directory within a module. |
+| `tnFsMove` | `fs_move` | `FsMoveHandler` | Moves or renames a file or directory within a module. |
+| `tnFsList` | `fs_list` | `FsListHandler` | Lists the contents of a directory within a module. |
+| `tnFsTree` | `fs_tree` | `FsTreeHandler` | Displays a recursive tree view of a directory within a module. |
+| `tnFsFind` | `fs_find` | `FsFindHandler` | Finds files by name or glob pattern within a module. |
+| `tnFsGrep` | `fs_grep` | `FsGrepHandler` | Searches file contents by regex pattern within a module. |
+| `tnFsDiff` | `fs_diff` | `FsDiffHandler` | Shows the diff between the current and committed state of a file. |
 
 ### Project & Lane Operations
 
@@ -91,19 +105,28 @@ The main Orqen process starts an HTTP server that registers the MCP endpoint:
 ```go
 func ServerHttp(proj *engine.Project) http.Handler {
     server := createServer()
-    
-    // Register all 11 tools directly with project reference
-    addTool(server, tnItemStatus, ItemStatusHandler, proj)
-    addTool(server, tnItemMove, ItemMoveHandler, proj)
-    addTool(server, tnItemCreate, ItemCreateHandler, proj)
-    addTool(server, tnItemSearch, ItemSearchHandler, proj)
-    addTool(server, tnItemAttrsSet, ItemAttrsSetHandler, proj)
-    addTool(server, tnItemAttrsDel, ItemAttrsDelHandler, proj)
-    addTool(server, tnItemAttrsSchema, ItemAttrSchemaHandler, proj)
-    addTool(server, tnItemDependencies, ItemDependenciesHandler, proj)
+
+    // Register all 17 tools directly with project reference
+    addTool(server, tnWorkitem, WorkitemHandler, proj)
+    addTool(server, tnWorkitemMove, WorkitemMoveHandler, proj)
+    addTool(server, tnWorkitemCreate, WorkitemCreateHandler, proj)
+    addTool(server, tnWorkitemSearch, WorkitemSearchHandler, proj)
+    addTool(server, tnWorkitemAttrsSet, WorkitemAttrsSetHandler, proj)
+    addTool(server, tnWorkitemAttrsDel, WorkitemAttrsDelHandler, proj)
+    addTool(server, tnWorkitemAttrsSchema, WorkitemAttrSchemaHandler, proj)
+    addTool(server, tnWorkitemDependencies, WorkitemDependenciesHandler, proj)
     addTool(server, tnLaneList, LaneListHandler, proj)
     addTool(server, tnProjectInfo, ProjectInfoHandler, proj)
-    
+
+    // Filesystem tools
+    addTool(server, tnFsMove, FsMoveHandler, proj)
+    addTool(server, tnFsCopy, FsCopyHandler, proj)
+    addTool(server, tnFsList, FsListHandler, proj)
+    addTool(server, tnFsTree, FsTreeHandler, proj)
+    addTool(server, tnFsFind, FsFindHandler, proj)
+    addTool(server, tnFsGrep, FsGrepHandler, proj)
+    addTool(server, tnFsDiff, FsDiffHandler, proj)
+
     return mcp.NewStreamableHTTPHandler(func(request *http.Request) *mcp.Server {
         return server
     }, nil)
@@ -135,19 +158,16 @@ The subprocess enters `StartStdio()`:
 1. Create a new mcp.Server (empty, no project reference)
 2. Create an mcp.Client
 3. Connect to the host's Streamable HTTP endpoint via StreamableClientTransport
-4. Register all tools as PROXIES — each proxy calls cs.CallTool() on the shared session
+4. Register all 17 tools as PROXIES — each proxy calls cs.CallTool() on the shared session
 5. Run the server over StdioTransport (stdin/stdout)
 ```
 
 The `*mcp.ClientSession` from step 3 is **shared across all tool proxies**. Each proxy function follows the same pattern:
 
 ```go
-func sseProxy[In InputWithWorkItemID, Out any](
-    tool string, _ mcp.ToolHandlerFor[In, Out], cs *mcp.ClientSession, workItemID string,
-) mcp.ToolHandlerFor[In, Out] {
-    return func(ctx, req, input) (result, output, err) {
-        input.SetWorkItemID(workItemID)                // auto-inject workitem_id
-        result, err = cs.CallTool(ctx, &CallToolParams{Name: tool, Arguments: input})
+func sseProxy[In any, Out any](tool string, _ mcp.ToolHandlerFor[In, Out], cs *mcp.ClientSession) mcp.ToolHandlerFor[In, Out] {
+    return func(ctx context.Context, req *mcp.CallToolRequest, input In) (result *mcp.CallToolResult, output Out, err error) {
+        result, err = cs.CallTool(ctx, &mcp.CallToolParams{Name: tool, Arguments: input})
         return
     }
 }
@@ -168,7 +188,7 @@ The agent's view:
 6. Agent receives tool result, continues execution
 ```
 
-The agent is **unaware of the proxy**. From its perspective, it calls `move_item` and gets a result. The transport layer (stdio → HTTP → stdio) is transparent.
+The agent is **unaware of the proxy**. From its perspective, it calls `workitem_move` and gets a result. The transport layer (stdio → HTTP → stdio) is transparent.
 
 ### Full Call Sequence
 
@@ -180,10 +200,10 @@ Step  Agent (ACP)              Stdio Subprocess           Host Process
 
  2                             ── POST /mcp/http ───────▶
                                   {method: "tools/call",
-                                   name: "move_item",
+                                   name: "workitem_move",
                                    args: {workitem_seq: 1, ...}}
 
- 3                                                          ItemMoveHandler()
+ 3                                                          WorkitemMoveHandler()
                                                               → item.MoveTo("doing")
                                                               → ItemMoveOutput{Success: true}
 
@@ -222,7 +242,7 @@ Tools are registered in two ways depending on the role:
 ### Direct Registration (Host — `server_http.go`)
 
 ```go
-addTool(server, tnMoveItem, ItemMoveHandler, proj)
+addTool(server, tnWorkitemMove, WorkitemMoveHandler, proj)
 ```
 
 The handler receives the real `*engine.Project` reference and operates on it directly.
@@ -230,46 +250,25 @@ The handler receives the real `*engine.Project` reference and operates on it dir
 ### Proxy Registration (Stdio — `server_stdio.go`)
 
 ```go
-addToolProxy(server, tnItemMove, ItemMoveHandler, session, workItemID)
+addToolProxy(server, tnWorkitemMove, WorkitemMoveHandler, session)
 ```
 
 The handler is wrapped by `sseProxy`, which:
-1. Auto-injects the `workItemID` into the input via `input.SetWorkItemID(workItemID)`
-2. Forwards the call to the host via `cs.CallTool()`
-3. Returns the result (or error) back to the agent
+1. Forwards the call to the host via `cs.CallTool()`
+2. Returns the result (or error) back to the agent
 
 ### Generic Pattern
 
 All tools follow the same registration pattern in both host and proxy modes. The `addTool` and `addToolProxy` functions are generic wrappers that adapt the project handlers to the MCP SDK's `ToolHandlerFor` interface.
 
-## WorkItemID Auto-Injection
-
-Most tools accept an optional `module` parameter, but when called from an agent subprocess, the module should be inferred from the agent's current job. The `InputWithWorkItemID` interface enables this:
-
-```go
-type InputWithWorkItemID interface {
-    SetWorkItemID(workItemID string)
-}
-```
-
-Tool input structs that need auto-injection implement this method:
-
-```go
-func (i *MoveItemInput) SetWorkItemID(workItemID string) {
-    i.WorkItemID = &workItemID
-}
-```
-
-The proxy wrapper calls `SetWorkItemID(workItemID)` before forwarding, so the agent never needs to pass `workitem_id` explicitly.
 
 ## Module Resolution
 
 Tools use `findTargetModuleBy()` to resolve the target module:
 
 1. **Explicit module parameter** — If `module` is provided, use it directly
-2. **WorkItemID resolution** — If `workitem_id` is provided, scan all modules/lanes to find the item's module
-3. **Single module fallback** — If there's only one module in the project, use it
-4. **Ambiguous** — If none of the above succeed, return `nil` (handler reports error)
+2. **Single module fallback** — If there's only one module in the project, use it
+3. **Ambiguous** — If none of the above succeed, return `nil` (handler reports error)
 
 This allows agents to call tools without explicitly specifying the module when the context is clear.
 
@@ -296,7 +295,7 @@ All tools have comprehensive test coverage in `*_test.go` files. The test suite 
 - **`ptr(v)`** — Helper to create pointer values for optional fields
 
 Tests cover:
-- Happy path operations (create, move, search, attribute management)
+- Happy path operations (create, move, search, attribute management, filesystem operations)
 - Error scenarios (nil project, missing parameters, invalid values)
 - Edge cases (ambiguous module resolution, invalid conditions, kebab-case validation)
 - File system verification (directory creation, file existence, YAML content)

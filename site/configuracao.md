@@ -99,6 +99,110 @@ modules:
 | `ignore_if_exists` | Não | Pula lane se houver itens nessas outras lanes |
 | `ignore_if_dependency` | Não | Pula item se depender de itens nessas lanes |
 | `extra_prompt` | Não | Contexto adicional injetado no prompt |
+| `schedule` | Não | Janela de execução agendada para a lane |
+
+### Agendamento de Lanes
+
+O atributo `schedule` permite definir quando uma lane está elegível para execução. O motor verifica o horário atual e só executa a lane se estiver dentro da janela configurada (com tolerância de **2 minutos**).
+
+```yaml
+lanes:
+  - name: "review"
+    purpose: "Revisão automática noturna"
+    schedule:
+      frequency: daily
+      time: "02:00"
+```
+
+#### Tipos de Frequência
+
+| Frequência | Descrição | Campos Obrigatórios |
+|------------|-----------|---------------------|
+| `daily` | Executa todos os dias no(s) horário(s) configurado(s) | `time` |
+| `weekly` | Executa em dias específicos da semana | `time`, `daysOfWeek` |
+| `monthly` | Executa em dias específicos do mês | `time`, `daysOfMonth` |
+| `cron` | Executa conforme expressão cron de 5 campos | `cronExpression` |
+
+#### Daily — Execução Diária
+
+Executa todos os dias no horário configurado. Suporta múltiplos horários.
+
+```yaml
+schedule:
+  frequency: daily
+  time: "14:30"
+```
+
+Múltiplos horários:
+
+```yaml
+schedule:
+  frequency: daily
+  time:
+    - "09:00"
+    - "14:00"
+    - "18:00"
+```
+
+#### Weekly — Execução Semanal
+
+Executa em dias específicos da semana nos horários configurados.
+
+```yaml
+schedule:
+  frequency: weekly
+  time: "10:00"
+  daysOfWeek: ["Monday", "Wednesday", "Friday"]
+```
+
+Dias válidos: `Monday`, `Tuesday`, `Wednesday`, `Thursday`, `Friday`, `Saturday`, `Sunday`.
+
+#### Monthly — Execução Mensal
+
+Executa em dias específicos do mês nos horários configurados.
+
+```yaml
+schedule:
+  frequency: monthly
+  time: "03:00"
+  daysOfMonth: [1, 15]
+```
+
+Dias válidos: números de 1 a 31.
+
+#### Cron — Expressão Cron Personalizada
+
+Usa uma expressão cron padrão de 5 campos para controle total.
+
+```yaml
+schedule:
+  frequency: cron
+  cronExpression: "0 2 * * *"
+```
+
+Formato: `minuto hora dia-do-mês mês dia-da-semana`
+
+Exemplos comuns:
+
+| Expressão | Significado |
+|-----------|-------------|
+| `0 2 * * *` | Todo dia às 02:00 |
+| `30 8 * * 1` | Toda segunda-feira às 08:30 |
+| `0 0 1 * *` | Todo dia 1 do mês à meia-noite |
+| `*/15 * * * *` | A cada 15 minutos |
+
+#### Tolerância de Execução
+
+O motor verifica o agendamento em intervalos configurados em `sleep_interval_seconds`. Se o tick do executor cair dentro de **2 minutos** do horário configurado, a lane é considerada elegível.
+
+Por exemplo, se `time: "14:00"` e o motor verifica às 14:01, a lane será executada. Se verificar às 14:03, não será.
+
+#### Notas Importantes
+
+- **Apenas um modo de frequência é ativo por vez** — definido pelo campo `frequency`
+- **Campos conflitantes são rejeitados** — ex: `time` não é permitido para `cron`
+- **Formato de horário** — deve ser `HH:MM` (ex: `"09:00"`, `"23:30"`)
+- **Validação rigorosa** — o sistema rejeita configurações inválidas na carga do `orqen.yaml`
 
 ### Regras de Ignorar (Ignore Rules)
 

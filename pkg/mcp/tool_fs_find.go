@@ -11,16 +11,11 @@ import (
 )
 
 type FsFindInput struct {
-	WorkItemID *string `json:"workitem_id,omitempty" jsonschema:"Work Item ID (auto-injected)"`
 	Pattern    string  `json:"pattern" jsonschema:"glob pattern to match (e.g., *.go)"`
 	Dir        string  `json:"dir,omitempty" jsonschema:"directory to search in (defaults to project root)"`
 	MaxResults *int    `json:"max_results,omitempty" jsonschema:"maximum number of results (default: 50)"`
 	MaxDepth   *int    `json:"max_depth,omitempty" jsonschema:"maximum depth to traverse"`
 	FileType   *string `json:"file_type,omitempty" jsonschema:"filter by type: 'f' for files, 'd' for directories"`
-}
-
-func (i *FsFindInput) SetWorkItemID(workItemID string) {
-	i.WorkItemID = &workItemID
 }
 
 type FsFindOutput struct {

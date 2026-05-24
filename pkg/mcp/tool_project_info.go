@@ -12,12 +12,7 @@ import (
 // behaviors, critical rules, and configuration.
 
 type ProjectInfoInput struct {
-	WorkItemID *string `json:"workitem_id,omitempty" jsonschema:"Work Item ID (auto-injected)"`
-	Verbose    bool    `json:"verbose,omitempty" jsonschema:"include full prompts and agent behavior details"`
-}
-
-func (i *ProjectInfoInput) SetWorkItemID(workItemID string) {
-	i.WorkItemID = &workItemID
+	Verbose bool `json:"verbose,omitempty" jsonschema:"include full prompts and agent behavior details"`
 }
 
 type LaneSummary struct {

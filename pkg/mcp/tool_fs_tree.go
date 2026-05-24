@@ -11,13 +11,8 @@ import (
 )
 
 type FsTreeInput struct {
-	WorkItemID *string `json:"workitem_id,omitempty" jsonschema:"Work Item ID (auto-injected)"`
-	Dir        string  `json:"dir" jsonschema:"directory path to tree"`
-	MaxDepth   *int    `json:"max_depth,omitempty" jsonschema:"maximum depth to traverse (default: 3)"`
-}
-
-func (i *FsTreeInput) SetWorkItemID(workItemID string) {
-	i.WorkItemID = &workItemID
+	Dir      string `json:"dir" jsonschema:"directory path to tree"`
+	MaxDepth *int   `json:"max_depth,omitempty" jsonschema:"maximum depth to traverse (default: 3)"`
 }
 
 type FsTreeOutput struct {

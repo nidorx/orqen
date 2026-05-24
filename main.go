@@ -54,12 +54,11 @@ func main() {
 	isMCP := flag.Bool("mcp", false, "Run as a MCP Stdio")
 	mcpPort := flag.String("port", "8080", "Orqen port (MCP Stdio)")
 	mcpProjectId := flag.String("project", "", "Orqen project id (MCP Stdio)")
-	mcpWorkItemID := flag.String("workitem", "", "Current Work Item ID (MCP Stdio)")
 	flag.Parse()
 
 	if *isMCP {
 		// mcp.DEBUG_STDIO = true
-		mcp.StartStdio(*mcpPort, *mcpProjectId, *mcpWorkItemID)
+		mcp.StartStdio(*mcpPort, *mcpProjectId)
 		return
 	}
 

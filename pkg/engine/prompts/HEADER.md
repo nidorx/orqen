@@ -163,6 +163,22 @@ Use shell commands only when filesystem tools are insufficient (e.g., complex pi
 
 **Security:** All filesystem tools validate paths against `.orqen/` and `.git/` blocked prefixes and prevent path traversal attacks.
 
+### Work Item Dependencies
+
+Use the `workitem_attrs_set` tool to register dependencies for a work item. To define dependencies, send an object containing the `dependencies` key with an array of string identifiers.
+
+Supported formats:
+
+- `"${SEQ}"` — dependency within the current module
+- `"${MODULE}.${SEQ}"` — dependency from another module
+
+Example:
+
+```json
+{"dependencies": ["0123", "AUTH.0042", "CORE.0101"]}
+````
+
+To retrieve all resolved dependencies of a work item, use the `workitem_dependencies` tool.
 
 # Module _$_MOD_TYPE_$_ Instructions
 

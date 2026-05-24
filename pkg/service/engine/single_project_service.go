@@ -64,7 +64,7 @@ func (s *Service) OnStart() error {
 		// @TODO: sent context item.Files
 
 		// Build MCP servers list for this lane
-		mcpServers := buildMcpServers(proj, lane, orqenExec, orqenPort, item.ID)
+		mcpServers := buildMcpServers(proj, lane, orqenExec, orqenPort)
 
 		// Read prior session ID from work item attributes
 		priorSessionID := item.Attributes.String("session_id")
@@ -108,7 +108,7 @@ func New() *Service {
 
 // buildMcpServers resolves lane MCP server references and builds the []acp.McpServer list.
 // The Orqen MCP is always prepended as the first server in the list.
-func buildMcpServers(proj *engine.Project, lane *engine.Lane, orqenExec string, orqenPort int, workItemID string) []acp.McpServer {
+func buildMcpServers(proj *engine.Project, lane *engine.Lane, orqenExec string, orqenPort int) []acp.McpServer {
 	var mcpServers []acp.McpServer
 
 	// Always prepend Orqen MCP
@@ -120,7 +120,6 @@ func buildMcpServers(proj *engine.Project, lane *engine.Lane, orqenExec string, 
 				"--mcp",
 				"--port=" + strconv.Itoa(orqenPort),
 				"--project=" + proj.Id,
-				"--workitem=" + workItemID,
 			},
 			Env: make([]acp.EnvVariable, 0),
 		},

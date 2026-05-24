@@ -65,18 +65,10 @@ type Lane struct {
 	Module             *Module       `yaml:"-"`                    // reference to parent module
 	Hooks              *HookBindings `yaml:"hooks,omitempty"`      // pre/post hook bindings for this lane (can exclude module-level hooks)
 	Schedule           *LaneSchedule `yaml:"schedule,omitempty"`   // optional schedule configuration for execution windows
+	AllowedNext        []string      `yaml:"allowed_next"`         // restricts which lanes items can move to from this lane (default: next lane in order)
 
 	// Runtime state
 	workItemsByID *tinylfu.SyncCacheT[*WorkItem]
-}
-
-// GetWorkItemByID returns a work item by its ID, or nil if not found.
-func (l *Lane) GetWorkItemByID(workItemID string) *WorkItem {
-	if item, exists := l.workItemsByID.Get(workItemID); exists {
-		return item
-	} else {
-		return nil
-	}
 }
 
 // WorkItems returns an iterator over all work items in this lane.
@@ -136,6 +128,54 @@ func (l *Lane) HasAvailableSlot() bool {
 		return true
 	}
 	return l.CountActiveWorkItems() < l.MaxAgents
+}
+
+// validateMoveTo validates whether a work item can be moved from this lane to the target lane.
+// If AllowedNext is explicitly configured, only those lanes are allowed.
+// If AllowedNext is not configured, only the next lane in Module.Order is allowed.
+// Special value "*" in AllowedNext allows moves to any lane.
+func (l *Lane) validateMoveTo(targetLaneName string) error {
+	if l.Module == nil {
+		return nil // can't validate without module reference
+	}
+
+	// Case 1: allowed_next is explicitly configured
+	if len(l.AllowedNext) > 0 {
+		// Check for wildcard - allows moves to any lane
+		for _, allowed := range l.AllowedNext {
+			if allowed == "*" {
+				return nil
+			}
+		}
+
+		// Check if target lane is in the allowed list
+		for _, allowed := range l.AllowedNext {
+			if allowed == targetLaneName {
+				return nil
+			}
+		}
+		return fmt.Errorf("move not allowed: from lane '%s' only allows moves to %v", l.Name, l.AllowedNext)
+	}
+
+	// Case 2: Default behavior - allow next lane in Module.Order
+	order := l.Module.Order
+	for i, laneName := range order {
+		if laneName == l.Name || laneName == l.Dir {
+			// Found current lane in order
+			if i+1 < len(order) {
+				nextLane := order[i+1]
+				if nextLane == targetLaneName {
+					return nil
+				}
+				return fmt.Errorf("move not allowed: from lane '%s' only allows moves to ['%s'] (next lane in order)", l.Name, nextLane)
+			}
+			// Current lane is last in order - no moves allowed
+			return fmt.Errorf("move not allowed: lane '%s' is the last lane in order, no moves allowed", l.Name)
+		}
+	}
+
+	// Current lane not found in Order - allow all (fallback for backward compatibility)
+	return nil
 }
 
 // kebabCasePattern validates kebab-case names (lowercase, numbers, hyphens).

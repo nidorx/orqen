@@ -59,6 +59,23 @@ Exemplo de pipeline Kanban mostrando o fluxo de um item de trabalho.
 
 **Estado** = diretórios no filesystem
 
+### Agendamento de Lanes
+
+Cada lane pode ter uma configuração de `schedule` que define janelas de execução. O motor verifica se a lane está elegível para execução com base na data e hora atuais.
+
+```yaml
+lanes:
+  - name: "review"
+    purpose: "Revisão automática noturna"
+    schedule:
+      frequency: daily
+      time: "02:00"
+```
+
+Isso significa que a lane só será executada quando o relógio estiver próximo do horário configurado (com tolerância de 2 minutos). Útil para lanes que devem rodar apenas em horários específicos, como revisões noturnas, relatórios ou tarefas de manutenção.
+
+Para detalhes completos de configuração, consulte a seção [Agendamento de Lanes](configuracao.md#agendamento-de-lanes) em Configuração.
+
 ## Módulos
 
 Um **módulo** agrupa lanes relacionadas em um diretório dedicado. Um projeto pode ter múltiplos módulos.

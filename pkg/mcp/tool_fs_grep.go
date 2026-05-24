@@ -12,15 +12,10 @@ import (
 )
 
 type FsGrepInput struct {
-	WorkItemID *string `json:"workitem_id,omitempty" jsonschema:"Work Item ID (auto-injected)"`
-	Pattern    string  `json:"pattern" jsonschema:"regex pattern to search for"`
-	Filepath   string  `json:"filepath" jsonschema:"path to file to search"`
-	IgnoreCase *bool   `json:"ignore_case,omitempty" jsonschema:"perform case-insensitive matching (default: false)"`
-	MaxResults *int    `json:"max_results,omitempty" jsonschema:"maximum number of matching lines (default: 1000)"`
-}
-
-func (i *FsGrepInput) SetWorkItemID(workItemID string) {
-	i.WorkItemID = &workItemID
+	Pattern    string `json:"pattern" jsonschema:"regex pattern to search for"`
+	Filepath   string `json:"filepath" jsonschema:"path to file to search"`
+	IgnoreCase *bool  `json:"ignore_case,omitempty" jsonschema:"perform case-insensitive matching (default: false)"`
+	MaxResults *int   `json:"max_results,omitempty" jsonschema:"maximum number of matching lines (default: 1000)"`
 }
 
 type GrepMatch struct {

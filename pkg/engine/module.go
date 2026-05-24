@@ -161,16 +161,6 @@ func (m *Module) GetWorkItemBySeq(seq int) *WorkItem {
 	}
 }
 
-// GetWorkItemById finds a work item by its ID across all lanes.
-func (m *Module) GetWorkItemById(workItemID string) *WorkItem {
-	for _, lane := range m.Lanes {
-		if item := lane.GetWorkItemByID(workItemID); item != nil {
-			return item
-		}
-	}
-	return nil
-}
-
 // ActiveItemCount returns the total number of items being processed.
 func (m *Module) ActiveItemCount() int {
 	count := 0

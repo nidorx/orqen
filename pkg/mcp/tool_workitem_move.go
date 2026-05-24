@@ -9,14 +9,9 @@ import (
 )
 
 type ItemMoveInput struct {
-	WorkItemID *string `json:"workitem_id,omitempty" jsonschema:"Work Item ID (auto-injected)"`
-	Module     *string `json:"module,omitempty" jsonschema:"module name (omit for current module)"`
-	ItemSeq    int     `json:"workitem_seq" jsonschema:"sequential ID of the work item to move"`
-	ToLane     string  `json:"to_lane" jsonschema:"destination lane name"`
-}
-
-func (i *ItemMoveInput) SetWorkItemID(workItemID string) {
-	i.WorkItemID = &workItemID
+	Module      *string `json:"module,omitempty" jsonschema:"module name (omit if the project only has one module)"`
+	WorkitemSeq int     `json:"workitem_seq" jsonschema:"sequential ID of the work item to move"`
+	ToLane      string  `json:"to_lane" jsonschema:"destination lane name"`
 }
 
 type ItemMoveOutput struct {
@@ -47,29 +42,23 @@ func WorkitemMoveHandler(ctx context.Context, req *mcp.CallToolRequest, input *I
 		return nil, out, nil
 	}
 
-	targetModule, err := findTargetModuleBy(proj, input.Module, input.WorkItemID)
+	targetModule, err := proj.FindModule(input.Module)
 	if err != nil {
 		out.Error = err.Error()
 		return nil, out, nil
 	}
 	if targetModule == nil {
-		out.Error = "could not resolve target module — specify module parameter or ensure workitem_id is set"
+		out.Error = "could not resolve target module — specify module parameter"
 		return nil, out, nil
 	}
 
 	// Find the work item
 	var item *engine.WorkItem
-	if input.ItemSeq > 0 {
-		item = targetModule.GetWorkItemBySeq(input.ItemSeq)
+	if input.WorkitemSeq > 0 {
+		item = targetModule.GetWorkItemBySeq(input.WorkitemSeq)
 	}
-
-	// Fallback: try to find by WorkItemID
-	if item == nil && input.WorkItemID != nil && *input.WorkItemID != "" {
-		item = targetModule.GetWorkItemById(*input.WorkItemID)
-	}
-
 	if item == nil {
-		out.Error = fmt.Sprintf("work item not found (id=%d)", input.ItemSeq)
+		out.Error = fmt.Sprintf("work item not found (workitem_seq=%d)", input.WorkitemSeq)
 		return nil, out, nil
 	}
 

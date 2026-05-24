@@ -14,14 +14,9 @@ import (
 // a condition DSL string. Returns full WorkItem objects.
 
 type ItemSearchInput struct {
-	WorkItemID *string `json:"workitem_id,omitempty" jsonschema:"Work Item ID (auto-injected)"`
-	Module     *string `json:"module,omitempty" jsonschema:"module name (omit for current module)"`
-	Lane       string  `json:"lane,omitempty" jsonschema:"optional lane name to filter within the module"`
-	Condition  string  `json:"condition,omitempty" jsonschema:"optional condition SQL-like DSL string for filtering (e.g., \"priority > 3\")"`
-}
-
-func (i *ItemSearchInput) SetWorkItemID(workItemID string) {
-	i.WorkItemID = &workItemID
+	Module    *string `json:"module,omitempty" jsonschema:"module name (omit if the project only has one module)"`
+	Lane      string  `json:"lane,omitempty" jsonschema:"optional lane name to filter within the module"`
+	Condition string  `json:"condition,omitempty" jsonschema:"optional condition SQL-like DSL string for filtering (e.g., \"priority > 3\")"`
 }
 
 type ItemSearchOutput struct {
@@ -45,13 +40,13 @@ func WorkitemSearchHandler(ctx context.Context, req *mcp.CallToolRequest, input 
 		return nil, out, nil
 	}
 
-	targetModule, err := findTargetModuleBy(proj, input.Module, input.WorkItemID)
+	targetModule, err := proj.FindModule(input.Module)
 	if err != nil {
 		out.Error = err.Error()
 		return nil, out, nil
 	}
 	if targetModule == nil {
-		out.Error = "could not resolve target module — specify module parameter or ensure workitem_id is set"
+		out.Error = "could not resolve target module — specify module parameter"
 		return nil, out, nil
 	}
 
