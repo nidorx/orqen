@@ -42,6 +42,18 @@ func ClientSessionNew(logger Logger, onSessionUpdate func(ctx context.Context, p
 	}
 }
 
+// planEntryCheckbox returns the checkbox character for a plan entry status.
+func planEntryCheckbox(status acp.PlanEntryStatus) string {
+	switch status {
+	case acp.PlanEntryStatusCompleted:
+		return "x"
+	case acp.PlanEntryStatusInProgress:
+		return "*"
+	default:
+		return " "
+	}
+}
+
 // Client implements the ACP client interface, providing tool execution,
 // file operations, and terminal management capabilities.
 type ClientSession struct {
@@ -168,6 +180,15 @@ func (c *ClientSession) SessionUpdate(ctx context.Context, params acp.SessionNot
 		c.ThoughtChunk.stop()
 
 		c.logger.Log("Plan updated\n")
+
+		for _, entry := range u.Plan.Entries {
+			checkbox := planEntryCheckbox(entry.Status)
+			if entry.Status == acp.PlanEntryStatusCompleted {
+				c.logger.Log("\033[90m[%s] %s\033[0m\n", checkbox, entry.Content)
+			} else {
+				c.logger.Log("[%s] %s\n", checkbox, entry.Content)
+			}
+		}
 
 	case u.AvailableCommandsUpdate != nil:
 		// Available commands are ready or have changed
