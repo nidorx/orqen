@@ -239,6 +239,11 @@ func (l *Lane) onFsysUpdate(ev FsysEvent) {
 			return
 		}
 
+		// check if exists in this module
+		if _, err := os.Stat(path.Join(l.DirAbs, itemName)); err != nil {
+			return
+		}
+
 		// Reuse existing item if it exists to preserve InProgress state
 
 		if existingLaneItem, exists := l.workItemsByID.Get(id); exists {
