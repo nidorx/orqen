@@ -181,7 +181,7 @@ Step  Agent (ACP)              Stdio Subprocess           Host Process
  2                             ── POST /mcp/http ───────▶
                                   {method: "tools/call",
                                    name: "orqen_move_item",
-                                   args: {item_seq: 1, ...}}
+                                   args: {workitem_seq: 1, ...}}
 
  3                                                          ItemMoveHandler()
                                                               → item.MoveTo("doing")

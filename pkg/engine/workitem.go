@@ -187,7 +187,7 @@ func (item *WorkItem) MoveTo(laneName string) error {
 
 	ts := time.Now()
 	for {
-		time.Sleep(5 * time.Millisecond)
+		time.Sleep(50 * time.Millisecond)
 		if item.Lane != fromLane || ts.Add(2*time.Second).Before(time.Now()) {
 			break
 		}

@@ -11,7 +11,7 @@ import (
 type ItemMoveInput struct {
 	WorkItemID *string `json:"workitem_id" jsonschema:"Work Item ID (auto-injected)"`
 	Module     *string `json:"module,omitempty" jsonschema:"module name (omit for current module)"`
-	ItemSeq    int     `json:"item_seq" jsonschema:"sequential ID of the work item to move"`
+	ItemSeq    int     `json:"workitem_seq" jsonschema:"sequential ID of the work item to move"`
 	ToLane     string  `json:"to_lane" jsonschema:"destination lane name"`
 }
 

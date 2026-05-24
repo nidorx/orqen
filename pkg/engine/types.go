@@ -166,6 +166,73 @@ type SchemaField struct {
 	Values []any    `json:"values"` // unique observed values (up to schemaMaxValues)
 }
 
+// ScheduleFrequency defines the scheduling frequency type.
+type ScheduleFrequency string
+
+const (
+	ScheduleDaily   ScheduleFrequency = "daily"
+	ScheduleWeekly  ScheduleFrequency = "weekly"
+	ScheduleMonthly ScheduleFrequency = "monthly"
+	ScheduleCron    ScheduleFrequency = "cron"
+)
+
+// LaneSchedule defines a schedule configuration for lane execution windows.
+// Only one schedule mode is active at a time based on the Frequency field.
+type LaneSchedule struct {
+	Frequency      ScheduleFrequency `yaml:"frequency"`                // "daily", "weekly", "monthly", or "cron"
+	Time           []string          `yaml:"time"`                     // HH:MM time(s) — required for daily/weekly/monthly
+	DaysOfWeek     []string          `yaml:"daysOfWeek,omitempty"`     // Day names for weekly (Monday-Sunday)
+	DaysOfMonth    []int             `yaml:"daysOfMonth,omitempty"`    // Day numbers for monthly (1-31)
+	CronExpression string            `yaml:"cronExpression,omitempty"` // Standard cron expression for custom schedules
+}
+
+// laneScheduleYAML is used for custom YAML unmarshaling
+type laneScheduleYAML struct {
+	Frequency      ScheduleFrequency `yaml:"frequency"`
+	Time           interface{}       `yaml:"time"`
+	DaysOfWeek     []string          `yaml:"daysOfWeek,omitempty"`
+	DaysOfMonth    []int             `yaml:"daysOfMonth,omitempty"`
+	CronExpression string            `yaml:"cronExpression,omitempty"`
+}
+
+// UnmarshalYAML implements custom YAML parsing for LaneSchedule.
+// Supports both single string and array formats for the Time field:
+//   time: "02:00"        → []string{"02:00"}
+//   time: ["02:00"]      → []string{"02:00"}
+//   time: ["02:00", "06:00"] → []string{"02:00", "06:00"}
+func (ls *LaneSchedule) UnmarshalYAML(b []byte) error {
+	var aux laneScheduleYAML
+	if err := yaml.Unmarshal(b, &aux); err != nil {
+		return err
+	}
+
+	ls.Frequency = aux.Frequency
+	ls.DaysOfWeek = aux.DaysOfWeek
+	ls.DaysOfMonth = aux.DaysOfMonth
+	ls.CronExpression = aux.CronExpression
+
+	// Normalize Time field from interface{} to []string
+	switch v := aux.Time.(type) {
+	case string:
+		ls.Time = []string{v}
+	case []interface{}:
+		ls.Time = make([]string, len(v))
+		for i, item := range v {
+			if s, ok := item.(string); ok {
+				ls.Time[i] = s
+			} else {
+				return fmt.Errorf("schedule.time[%d]: expected string, got %T", i, item)
+			}
+		}
+	case nil:
+		ls.Time = []string{}
+	default:
+		return fmt.Errorf("schedule.time: expected string or array, got %T", v)
+	}
+
+	return nil
+}
+
 // HookResult holds the outcome of a hook execution.
 type HookResult struct {
 	HookName string

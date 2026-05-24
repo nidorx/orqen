@@ -38,7 +38,7 @@ func TestStatusHandler(t *testing.T) {
 		}
 
 		if out.Item.Seq != 1 {
-			t.Errorf("item_id = %d, want 1", out.Item.Seq)
+			t.Errorf("workitem_id = %d, want 1", out.Item.Seq)
 		}
 
 		if out.Item.Lane != "backlog" {

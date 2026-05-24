@@ -124,6 +124,10 @@ func (c *ClientSession) SessionUpdate(ctx context.Context, params acp.SessionNot
 			delete(c.toolCallById, uToolCall.ToolCallId)
 		}
 
+		if status == "failed" {
+			println("here")
+		}
+
 		statusP := fmt.Sprintf("%-11s", status)
 
 		if title != "" {
@@ -142,8 +146,14 @@ func (c *ClientSession) SessionUpdate(ctx context.Context, params acp.SessionNot
 			default:
 				if exists {
 					c.logger.Log("\033[90m(Tool call %s)\033[0m %s\n", statusP, sToolCall.Title)
-				} else {
+				} else if v != nil {
 					c.logger.Log("\033[90m(Tool call %s)\033[0m %s\n", statusP, v)
+				} else {
+					if len(uToolCall.Content) > 0 {
+						c.logger.Log("\033[90m(Tool call %s)\033[0m (%v) (%v)\n", statusP, uToolCall.Meta, uToolCall.Content[0])
+					} else {
+						c.logger.Log("\033[90m(Tool call %s)\033[0m (%v)\n", statusP, uToolCall.Meta)
+					}
 				}
 			}
 		}

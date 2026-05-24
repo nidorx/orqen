@@ -28,12 +28,12 @@ func TestCreateItemHandler(t *testing.T) {
 
 		// Item ID should be 4 (we have 0001, 0002, 0003)
 		if out.WorkItem.Seq != 4 {
-			t.Errorf("item_id = %d, want 4", out.WorkItem.Seq)
+			t.Errorf("workitem_id = %d, want 4", out.WorkItem.Seq)
 		}
 
 		// Directory name
 		if out.WorkItem.Name != "TASK-0004-implement-auth" {
-			t.Errorf("item_name = %q, want 'TASK-0004-implement-auth'", out.WorkItem.Name)
+			t.Errorf("workitem_name = %q, want 'TASK-0004-implement-auth'", out.WorkItem.Name)
 		}
 
 		// Verify directory exists
@@ -68,7 +68,7 @@ func TestCreateItemHandler(t *testing.T) {
 		}
 
 		if out.WorkItem.Name != "ADR-0003-use-redis-cache" {
-			t.Errorf("item_name = %q, want 'ADR-0003-use-redis-cache'", out.WorkItem.Name)
+			t.Errorf("workitem_name = %q, want 'ADR-0003-use-redis-cache'", out.WorkItem.Name)
 		}
 	})
 
@@ -125,13 +125,13 @@ func TestCreateItemHandler(t *testing.T) {
 
 		// The name should be lowercased (seq depends on existing items, just check the pattern)
 		if out.WorkItem.Seq <= 0 {
-			t.Errorf("item_seq = %d, want positive number", out.WorkItem.Seq)
+			t.Errorf("workitem_seq = %d, want positive number", out.WorkItem.Seq)
 		}
 		if !strings.Contains(out.WorkItem.Name, "my-feature") {
-			t.Errorf("item_name = %q, should contain 'my-feature'", out.WorkItem.Name)
+			t.Errorf("workitem_name = %q, should contain 'my-feature'", out.WorkItem.Name)
 		}
 		if !strings.HasPrefix(out.WorkItem.Name, "TASK-") {
-			t.Errorf("item_name = %q, should start with 'TASK-'", out.WorkItem.Name)
+			t.Errorf("workitem_name = %q, should start with 'TASK-'", out.WorkItem.Name)
 		}
 	})
 

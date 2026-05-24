@@ -7,6 +7,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -287,6 +288,13 @@ func validate(proj *Project) error {
 			for _, mcpName := range lane.McpServers {
 				if _, exists := proj.McpServers[mcpName]; !exists {
 					return fmt.Errorf("module %q lane %q references unknown MCP server: %q", mod.Name, lane.Name, mcpName)
+				}
+			}
+
+			// Validate lane schedule configuration
+			if lane.Schedule != nil {
+				if err := validateSchedule(lane.Schedule, mod.Name, lane.Name); err != nil {
+					return err
 				}
 			}
 		}
@@ -575,6 +583,112 @@ func initializeFsys(proj *Project) error {
 			}
 		}
 	}()
+
+	return nil
+}
+
+// validateSchedule validates a lane schedule configuration.
+// Returns an error with a clear, actionable message if validation fails.
+func validateSchedule(sched *LaneSchedule, moduleName, laneName string) error {
+	ctx := fmt.Sprintf("module %s lane %s", moduleName, laneName)
+
+	// Validate frequency
+	switch sched.Frequency {
+	case ScheduleDaily, ScheduleWeekly, ScheduleMonthly, ScheduleCron:
+		// valid
+	default:
+		return fmt.Errorf("%s: schedule.frequency invalid %q — expected one of: daily, weekly, monthly, cron", ctx, sched.Frequency)
+	}
+
+	// Validate cron frequency
+	if sched.Frequency == ScheduleCron {
+		if sched.CronExpression == "" {
+			return fmt.Errorf("%s: schedule.cronExpression is required for cron frequency", ctx)
+		}
+		// Basic validation: 5-6 space-separated fields
+		fields := strings.Fields(sched.CronExpression)
+		if len(fields) < 5 || len(fields) > 6 {
+			return fmt.Errorf("%s: schedule.cronExpression invalid %q — expected 5-6 space-separated fields", ctx, sched.CronExpression)
+		}
+		// Reject conflicting fields for cron
+		if len(sched.Time) > 0 {
+			return fmt.Errorf("%s: schedule.time not allowed for cron frequency", ctx)
+		}
+		if len(sched.DaysOfWeek) > 0 {
+			return fmt.Errorf("%s: schedule.daysOfWeek not allowed for cron frequency", ctx)
+		}
+		if len(sched.DaysOfMonth) > 0 {
+			return fmt.Errorf("%s: schedule.daysOfMonth not allowed for cron frequency", ctx)
+		}
+		return nil
+	}
+
+	// For daily/weekly/monthly: require at least one time entry
+	if len(sched.Time) == 0 {
+		return fmt.Errorf("%s: schedule.time is required for %s frequency", ctx, sched.Frequency)
+	}
+
+	// Validate each time entry
+	timeRegex := regexp.MustCompile(`^([01]\d|2[0-3]):[0-5]\d$`)
+	for i, t := range sched.Time {
+		if !timeRegex.MatchString(t) {
+			return fmt.Errorf("%s: schedule.time[%d] invalid format %q — expected HH:MM", ctx, i, t)
+		}
+	}
+
+	validDaysOfWeek := map[string]bool{
+		"monday": true, "tuesday": true, "wednesday": true,
+		"thursday": true, "friday": true, "saturday": true, "sunday": true,
+	}
+
+	// Validate weekly frequency
+	if sched.Frequency == ScheduleWeekly {
+		if len(sched.DaysOfWeek) == 0 {
+			return fmt.Errorf("%s: schedule.daysOfWeek is required for weekly frequency", ctx)
+		}
+		for i, day := range sched.DaysOfWeek {
+			if !validDaysOfWeek[strings.ToLower(day)] {
+				return fmt.Errorf("%s: schedule.daysOfWeek[%d] invalid day %q — expected Monday-Sunday", ctx, i, day)
+			}
+		}
+		if len(sched.DaysOfMonth) > 0 {
+			return fmt.Errorf("%s: schedule.daysOfMonth not allowed for weekly frequency", ctx)
+		}
+		if sched.CronExpression != "" {
+			return fmt.Errorf("%s: schedule.cronExpression not allowed for weekly frequency", ctx)
+		}
+	}
+
+	// Validate monthly frequency
+	if sched.Frequency == ScheduleMonthly {
+		if len(sched.DaysOfMonth) == 0 {
+			return fmt.Errorf("%s: schedule.daysOfMonth is required for monthly frequency", ctx)
+		}
+		for i, day := range sched.DaysOfMonth {
+			if day < 1 || day > 31 {
+				return fmt.Errorf("%s: schedule.daysOfMonth[%d] invalid day %d — expected 1-31", ctx, i, day)
+			}
+		}
+		if len(sched.DaysOfWeek) > 0 {
+			return fmt.Errorf("%s: schedule.daysOfWeek not allowed for monthly frequency", ctx)
+		}
+		if sched.CronExpression != "" {
+			return fmt.Errorf("%s: schedule.cronExpression not allowed for monthly frequency", ctx)
+		}
+	}
+
+	// Validate daily frequency: reject conflicting fields
+	if sched.Frequency == ScheduleDaily {
+		if len(sched.DaysOfWeek) > 0 {
+			return fmt.Errorf("%s: schedule.daysOfWeek not allowed for daily frequency", ctx)
+		}
+		if len(sched.DaysOfMonth) > 0 {
+			return fmt.Errorf("%s: schedule.daysOfMonth not allowed for daily frequency", ctx)
+		}
+		if sched.CronExpression != "" {
+			return fmt.Errorf("%s: schedule.cronExpression not allowed for daily frequency", ctx)
+		}
+	}
 
 	return nil
 }

@@ -64,6 +64,7 @@ type Lane struct {
 	McpServers         []string      `yaml:"mcpServers"`           // list of MCP server names to inject for this lane
 	Module             *Module       `yaml:"-"`                    // reference to parent module
 	Hooks              *HookBindings `yaml:"hooks,omitempty"`      // pre/post hook bindings for this lane (can exclude module-level hooks)
+	Schedule           *LaneSchedule `yaml:"schedule,omitempty"`   // optional schedule configuration for execution windows
 
 	// Runtime state
 	workItemsByID *tinylfu.SyncCacheT[*WorkItem]
@@ -421,6 +422,8 @@ func (l *Lane) onFsysUpdate(ev FsysEvent) {
 			item.ModTime = modTime
 		}
 	}
+
+	fmt.Printf(">>> SET workItemsByID  %s - %s", l.Name, item.Name)
 
 	l.workItemsByID.Set(item.ID, item)
 	if item.Seq > 0 {

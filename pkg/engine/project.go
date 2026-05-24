@@ -184,19 +184,20 @@ func agentInvoker(proj *Project, mod *Module, lane *Lane, item *WorkItem) (Invoc
 
 		prompt.WriteString("# EXECUTION CONTEXT (Auto-Gathered)\n")
 		prompt.WriteString("**REQUIRED ACTION:** Work on item bellow\n")
-		prompt.WriteString(fmt.Sprintf("- lane_name: %s\n", lane.Name))
-		prompt.WriteString(fmt.Sprintf("- lane_dir: %s\n", lane.Dir))
+		fmt.Fprintf(&prompt, "- lane_name: %s\n", lane.Name)
+		fmt.Fprintf(&prompt, "- lane_dir: %s\n", lane.Dir)
+		fmt.Fprintf(&prompt, "- workitem_id: %s\n", item.ID)
 		if item.Seq == 0 {
-			prompt.WriteString("- item_id: NOT CREATED (0), see tool orqen_item_create from orqen MCP Server\n")
+			prompt.WriteString("- workitem_seq: NOT CREATED (0), see tool orqen_item_create from orqen MCP Server\n")
 		} else {
-			prompt.WriteString(fmt.Sprintf("- item_id: %d\n", item.Seq))
+			fmt.Fprintf(&prompt, "- workitem_seq: %d\n", item.Seq)
 		}
-		prompt.WriteString(fmt.Sprintf("- item_name: %s\n", item.Name))
-		prompt.WriteString(fmt.Sprintf("- item_last_update: %v\n", item.ModTime))
+		fmt.Fprintf(&prompt, "- workitem_name: %s\n", item.Name)
+		fmt.Fprintf(&prompt, "- workitem_last_update: %v\n", item.ModTime)
 
-		prompt.WriteString("- item_files:\n")
+		prompt.WriteString("- workitem_files:\n")
 		for _, v := range item.Files {
-			prompt.WriteString(fmt.Sprintf("    - `%v`\n", v))
+			fmt.Fprintf(&prompt, "    - `%v`\n", v)
 		}
 
 		handle.err = proj.invoker(prompt.String(), item)

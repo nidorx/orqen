@@ -250,8 +250,9 @@ modules:
           If validation FAILS, create the FAIL.md artifact using the FAIL 
           template. Document all rejection 
           reasons with specific evidence - include expected vs actual results 
-          for each failure, severity, and recommended actions to fix.  Then 
-          use the orqen_move_item tool (Orqen MCP Server) to move the item from review to ready
+          for each failure, severity, and recommended actions to fix. Then 
+          use the orqen_move_item tool (Orqen MCP Server) to move the item from review to ready. 
+          Then Finalize execution.
 
       # ── 09_push ──────────────────────────────────────────────
       - name: "push"

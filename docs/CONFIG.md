@@ -243,6 +243,7 @@ lanes:
 | `ignore_if_not_exists` | array of string | No | - | Skip this lane if **no items or files exist** in the referenced lanes. Same reference format as `ignore_if_exists`. Useful for lanes that should only activate when a prerequisite file exists (e.g., `"metricas.md"`). |
 | `ignore_if_dependency` | array of string | No | - | Skip a work item if it has **dependencies** attribute pointing to items in the referenced lanes. Prevents the agent from working on items whose prerequisites are still in progress. |
 | `ignore_if_attr` | string | No | - | Skip work items whose **attributes** match the condition. Uses a SQL-like DSL (see [Condition Language](#condition-language-for-ignore_if_attr)). Evaluated against each work item's YAML attribute file. |
+| `schedule` | object | No | - | Schedule configuration that restricts when the lane executes (see [Lane Schedule Configuration](#lane-schedule-configuration)). Enables time-based workflows like automated publishing or scheduled operations. |
 
 ### Reference Format for Ignore Rules
 
@@ -356,6 +357,77 @@ ignore_if_attr: "dependencies HAS_LENGTH > 2"   # Note: uses array length compar
 ### Attribute Source
 
 Conditions are evaluated against the work item's YAML attribute file (e.g., `TASK-0001-my-task/TASK-0001.yaml`). Attributes defined in this file become the variables available in the condition language.
+
+---
+
+## Lane Schedule Configuration
+
+Lanes can optionally define a `schedule` configuration that restricts when the lane executes. This enables time-based workflows like automated publishing or scheduled operations.
+
+```yaml
+lanes:
+  - name: "publish"
+    schedule:
+      frequency: "weekly"
+      time: ["02:00", "04:00"]
+      daysOfWeek: ["Monday", "Wednesday", "Friday"]
+```
+
+### Schedule Properties
+
+| Attribute | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `frequency` | string | Yes | Scheduling mode: `"daily"`, `"weekly"`, `"monthly"`, or `"cron"` |
+| `time` | array of string | Yes (except cron) | Execution time(s) in HH:MM format (e.g., `["02:00", "04:00"]`) |
+| `daysOfWeek` | array of string | Yes (weekly) | Days of the week: `Monday`, `Tuesday`, `Wednesday`, `Thursday`, `Friday`, `Saturday`, `Sunday` (case-insensitive) |
+| `daysOfMonth` | array of int | Yes (monthly) | Days of the month (1-31) |
+| `cronExpression` | string | Yes (cron) | Standard cron expression (5-6 fields) |
+
+### Frequency Modes
+
+#### Daily
+Execute every day at the specified time(s):
+```yaml
+schedule:
+  frequency: "daily"
+  time: ["02:00", "06:00", "10:00", "14:00", "18:00", "22:00"]
+```
+
+#### Weekly
+Execute on specific days of the week at the specified time(s):
+```yaml
+schedule:
+  frequency: "weekly"
+  time: ["02:00", "04:00"]
+  daysOfWeek: ["Monday", "Wednesday", "Friday"]
+```
+
+#### Monthly
+Execute on specific days of the month at the specified time:
+```yaml
+schedule:
+  frequency: "monthly"
+  time: "00:00"
+  daysOfMonth: [1, 15]
+```
+
+#### Cron
+Use a standard cron expression for arbitrary scheduling:
+```yaml
+schedule:
+  frequency: "cron"
+  cronExpression: "0 2 * * 1,3,5"
+```
+
+### Validation
+
+Schedule configurations are validated at config load time. Invalid configurations produce clear error messages and prevent the project from starting:
+
+- `time` must be in HH:MM format (00:00 to 23:59)
+- `daysOfWeek` must contain valid day names (case-insensitive)
+- `daysOfMonth` must be between 1 and 31
+- `cronExpression` must have 5-6 space-separated fields
+- Conflicting fields for a frequency mode are rejected (e.g., `daysOfWeek` on a `daily` frequency)
 
 ---
 
@@ -517,6 +589,7 @@ modules:
 | | `ignore_if_not_exists` | []string | No |
 | | `ignore_if_dependency` | []string | No |
 | | `ignore_if_attr` | string | No |
+| | `schedule` | object | No |
 | | `extra_prompt` | string | No |
 
 ---
