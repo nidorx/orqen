@@ -51,6 +51,11 @@ func (item WorkItem) Alias() *WorkItemAlias {
 	}
 }
 
+// RelativePath returns the work item's relative path within the module (e.g., "04_prioritized/WI-0002-hooks-execution-engine").
+func (item *WorkItem) RelativePath() string {
+	return filepath.Join(item.Lane.Dir, item.Name)
+}
+
 func (item *WorkItem) AttributesLoad() {
 	if item.Seq <= 0 {
 		return

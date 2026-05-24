@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/goccy/go-yaml"
 )
@@ -165,6 +166,26 @@ type SchemaField struct {
 	Values []any    `json:"values"` // unique observed values (up to schemaMaxValues)
 }
 
+// HookResult holds the outcome of a hook execution.
+type HookResult struct {
+	HookName string
+	ExitCode int
+	Stdout   string
+	Stderr   string
+	Duration time.Duration
+	Err      error // non-nil if command failed
+}
+
+// HookTimeoutError represents a timeout during hook execution.
+type HookTimeoutError struct {
+	HookName string
+	Timeout  time.Duration
+}
+
+func (e *HookTimeoutError) Error() string {
+	return fmt.Sprintf("hook %s timed out after %v", e.HookName, e.Timeout)
+}
+
 // HookDefinition maps a hook name to its command array.
 // OS-specific variants use suffix: .windows, .darwin, .linux
 type HookDefinition struct {
@@ -172,6 +193,7 @@ type HookDefinition struct {
 	Windows []string `yaml:"-"` // .windows variant
 	Darwin  []string `yaml:"-"` // .darwin variant
 	Linux   []string `yaml:"-"` // .linux variant
+	Timeout time.Duration `yaml:"timeout,omitempty"` // default 5m
 }
 
 // GetCommandForOS resolves the command array for the given OS.
@@ -241,9 +263,75 @@ type HookBindings struct {
 // Requires custom unmarshaling to handle OS-specific suffixes (.windows, .darwin, .linux).
 type NamedHooks map[string]*HookDefinition
 
+// hookDefinitionRaw is used for unmarshaling hook definitions with timeout
+type hookDefinitionRaw struct {
+	Command []string       `yaml:"command,omitempty"`
+	Windows []string       `yaml:"windows,omitempty"`
+	Darwin  []string       `yaml:"darwin,omitempty"`
+	Linux   []string       `yaml:"linux,omitempty"`
+	Timeout *time.Duration `yaml:"timeout,omitempty"`
+}
+
 // UnmarshalYAML implements custom YAML parsing for NamedHooks.
 // Parses keys like "hook_name" (base), "hook_name.windows", "hook_name.darwin", "hook_name.linux".
 func (nh *NamedHooks) UnmarshalYAML(b []byte) error {
+	// First, try to parse as map[string]hookDefinitionRaw for timeout support
+	var rawMap map[string]hookDefinitionRaw
+	if err := yaml.Unmarshal(b, &rawMap); err == nil && len(rawMap) > 0 {
+		if *nh == nil {
+			*nh = make(NamedHooks)
+		}
+
+		for key, def := range rawMap {
+			var (
+				hookName string
+				osSuffix string
+			)
+
+			// Split on last dot to handle hook names with dots (though unlikely)
+			if idx := strings.LastIndex(key, "."); idx != -1 {
+				potentialSuffix := key[idx+1:]
+				if potentialSuffix == "windows" || potentialSuffix == "darwin" || potentialSuffix == "linux" {
+					hookName = key[:idx]
+					osSuffix = potentialSuffix
+				} else {
+					hookName = key
+				}
+			} else {
+				hookName = key
+			}
+
+			if hookName == "" {
+				return fmt.Errorf("hook name cannot be empty (key: %q)", key)
+			}
+
+			hook, exists := (*nh)[hookName]
+			if !exists {
+				hook = &HookDefinition{}
+				(*nh)[hookName] = hook
+			}
+
+			switch osSuffix {
+			case "windows":
+				hook.Windows = def.Windows
+			case "darwin":
+				hook.Darwin = def.Darwin
+			case "linux":
+				hook.Linux = def.Linux
+			default:
+				hook.Command = def.Command
+			}
+
+			// Apply timeout if present (only on base definition)
+			if def.Timeout != nil && osSuffix == "" {
+				hook.Timeout = *def.Timeout
+			}
+		}
+
+		return nil
+	}
+
+	// Fallback to legacy format: map[string][]string
 	var raw map[string][]string
 	if err := yaml.Unmarshal(b, &raw); err != nil {
 		return err

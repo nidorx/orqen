@@ -2,32 +2,37 @@ package engine
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"log"
 	"sync"
 	"time"
 )
 
 // Executor manages the execution loop for a project
 type Executor struct {
-	project *Project
-	invoker WorkItemInvoker
-	mu      sync.Mutex
-	active  map[string]InvocationHandle // track active invocations by handle ID
-	done    chan struct{}
-	ctx     context.Context
-	cancel  context.CancelFunc
-	wg      sync.WaitGroup
+	project      *Project
+	invoker      WorkItemInvoker
+	hookExecutor *HookExecutor
+	mu           sync.Mutex
+	active       map[string]InvocationHandle // track active invocations by handle ID
+	done         chan struct{}
+	ctx          context.Context
+	cancel       context.CancelFunc
+	wg           sync.WaitGroup
 }
 
 // NewExecutor creates a new executor for the given project
 func NewExecutor(project *Project, invoker WorkItemInvoker) *Executor {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &Executor{
-		project: project,
-		invoker: invoker,
-		active:  make(map[string]InvocationHandle),
-		done:    make(chan struct{}),
-		ctx:     ctx,
-		cancel:  cancel,
+		project:      project,
+		invoker:      invoker,
+		hookExecutor: NewHookExecutor(project.DirAbs),
+		active:       make(map[string]InvocationHandle),
+		done:         make(chan struct{}),
+		ctx:          ctx,
+		cancel:       cancel,
 	}
 }
 
@@ -130,10 +135,41 @@ func (e *Executor) processWorkItems() {
 	}
 }
 
-// invokeItem starts execution of a work item
+// invokeItem starts execution of a work item with pre/post hooks
 func (e *Executor) invokeItem(module *Module, lane *Lane, item *WorkItem) error {
 	// Mark item as in progress
 	item.InProgress = true
+
+	// Resolve hooks for this module/lane
+	preHooks, postHooks := e.project.ResolveHooksForLane(module, lane)
+
+	// Build wildcard variables
+	itemJSON, _ := json.Marshal(item.Alias())
+	
+	wildcardVars := map[string]string{
+		"WI":          item.RelativePath(),
+		"MODULE":      module.Name,
+		"LANE":        lane.Name,
+		"PROJECT_DIR": e.project.DirAbs,
+		"WI_JSON":     string(itemJSON),
+	}
+
+	// Execute pre-hooks
+	for _, hook := range preHooks {
+		result := e.hookExecutor.Execute(hook.Name, hook.Definition, wildcardVars)
+		if result.ExitCode != 0 {
+			// Pre-hook failed → abort, create HOOK-FAIL artifact
+			log.Printf("ERROR: pre-hook %s failed with exit code %d: %s", hook.Name, result.ExitCode, result.Stderr)
+			
+			// Create FAIL artifact
+			if err := CreateHookFailArtifact(item, hook, result); err != nil {
+				log.Printf("WARNING: failed to create HOOK-FAIL artifact: %v", err)
+			}
+
+			item.InProgress = false
+			return fmt.Errorf("pre-hook %s failed with exit code %d", hook.Name, result.ExitCode)
+		}
+	}
 
 	// Invoke the agent
 	handle, err := e.invoker(e.project, module, lane, item)
@@ -148,13 +184,22 @@ func (e *Executor) invokeItem(module *Module, lane *Lane, item *WorkItem) error 
 	e.active[item.ID] = handle
 	e.mu.Unlock()
 
-	// Start a goroutine to handle completion
+	// Start a goroutine to handle completion (agent + post-hooks)
 	e.wg.Add(1)
 	go func() {
 		defer e.wg.Done()
 
-		// Wait for completion
+		// Wait for agent completion
 		_ = handle.Wait()
+
+		// Execute post-hooks
+		for _, hook := range postHooks {
+			result := e.hookExecutor.Execute(hook.Name, hook.Definition, wildcardVars)
+			if result.ExitCode != 0 {
+				// Post-hook failed → log warning, continue
+				log.Printf("WARNING: post-hook %s failed with exit code %d: %s", hook.Name, result.ExitCode, result.Stderr)
+			}
+		}
 
 		// Clean up
 		e.mu.Lock()

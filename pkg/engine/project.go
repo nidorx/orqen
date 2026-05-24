@@ -38,6 +38,23 @@ type Project struct {
 	invoker  AgentInvoker
 }
 
+// ResolveHooksForLane resolves hooks for a given module/lane combination.
+func (p *Project) ResolveHooksForLane(mod *Module, lane *Lane) (preHooks, postHooks []*ResolvedHook) {
+	if p.NamedHooks == nil {
+		return nil, nil
+	}
+
+	var modHooks, laneHooks *HookBindings
+	if mod.Hooks != nil {
+		modHooks = mod.Hooks
+	}
+	if lane.Hooks != nil {
+		laneHooks = lane.Hooks
+	}
+
+	return ResolveHooks(modHooks, laneHooks, p.NamedHooks)
+}
+
 // GetModule returns a module by name, or nil if not found.
 func (p *Project) GetModule(name string) *Module {
 	for _, mod := range p.Modules {

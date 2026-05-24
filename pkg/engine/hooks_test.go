@@ -3,7 +3,10 @@ package engine
 import (
 	"os"
 	"path/filepath"
+	"runtime"
+	"strings"
 	"testing"
+	"time"
 )
 
 // ============================================================================
@@ -533,5 +536,475 @@ modules:
 	}
 	if !doingLane.Hooks.Pre[0].Negated || doingLane.Hooks.Pre[0].Name != "validate" {
 		t.Errorf("first doing pre hook should be !validate, got %v", doingLane.Hooks.Pre[0])
+	}
+}
+
+// ============================================================================
+// Wildcard Expansion Tests
+// ============================================================================
+
+func TestExpandWildcards(t *testing.T) {
+	tests := []struct {
+		name     string
+		args     []string
+		vars     map[string]string
+		expected []string
+	}{
+		{
+			name:     "single wildcard replaced",
+			args:     []string{"script.sh", "$WI"},
+			vars:     map[string]string{"WI": "04_prioritized/WI-0002-test"},
+			expected: []string{"script.sh", "04_prioritized/WI-0002-test"},
+		},
+		{
+			name:     "multiple wildcards replaced",
+			args:     []string{"script.sh", "$MODULE", "$LANE", "$WI"},
+			vars:     map[string]string{"MODULE": "task", "LANE": "ready", "WI": "06_ready/WI-0002"},
+			expected: []string{"script.sh", "task", "ready", "06_ready/WI-0002"},
+		},
+		{
+			name:     "unknown wildcard left as-is",
+			args:     []string{"script.sh", "$UNKNOWN"},
+			vars:     map[string]string{"WI": "04_prioritized/WI-0002"},
+			expected: []string{"script.sh", "$UNKNOWN"},
+		},
+		{
+			name:     "mixed known and unknown wildcards",
+			args:     []string{"script.sh", "$WI", "$UNKNOWN", "$MODULE"},
+			vars:     map[string]string{"WI": "04_prioritized/WI-0002", "MODULE": "task"},
+			expected: []string{"script.sh", "04_prioritized/WI-0002", "$UNKNOWN", "task"},
+		},
+		{
+			name:     "no wildcards",
+			args:     []string{"script.sh", "--arg1"},
+			vars:     map[string]string{"WI": "04_prioritized/WI-0002"},
+			expected: []string{"script.sh", "--arg1"},
+		},
+		{
+			name:     "wildcard in middle of argument",
+			args:     []string{"script.sh", "--path=/tmp/$WI/output"},
+			vars:     map[string]string{"WI": "04_prioritized/WI-0002"},
+			expected: []string{"script.sh", "--path=/tmp/04_prioritized/WI-0002/output"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := ExpandWildcards(tt.args, tt.vars)
+			if len(result) != len(tt.expected) {
+				t.Errorf("expected %v, got %v", tt.expected, result)
+				return
+			}
+			for i := range result {
+				if result[i] != tt.expected[i] {
+					t.Errorf("index %d: expected %q, got %q", i, tt.expected[i], result[i])
+				}
+			}
+		})
+	}
+}
+
+// ============================================================================
+// Hook Executor Tests
+// ============================================================================
+
+func TestHookExecutor_Execute_Success(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping on windows")
+	}
+
+	executor := NewHookExecutor(t.TempDir())
+	hookDef := &HookDefinition{
+		Command: []string{"echo", "hello"},
+	}
+
+	result := executor.Execute("test_hook", hookDef, nil)
+
+	if result.ExitCode != 0 {
+		t.Errorf("expected exit code 0, got %d", result.ExitCode)
+	}
+	if !strings.Contains(result.Stdout, "hello") {
+		t.Errorf("expected stdout to contain 'hello', got %q", result.Stdout)
+	}
+	if result.Err != nil {
+		t.Errorf("expected no error, got %v", result.Err)
+	}
+	if result.Duration == 0 {
+		t.Error("expected duration > 0")
+	}
+}
+
+func TestHookExecutor_Execute_NonZeroExit(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping on windows")
+	}
+
+	executor := NewHookExecutor(t.TempDir())
+	hookDef := &HookDefinition{
+		Command: []string{"sh", "-c", "exit 42"},
+	}
+
+	result := executor.Execute("failing_hook", hookDef, nil)
+
+	if result.ExitCode != 42 {
+		t.Errorf("expected exit code 42, got %d", result.ExitCode)
+	}
+	if result.Err == nil {
+		t.Error("expected error, got nil")
+	}
+}
+
+func TestHookExecutor_Execute_WildcardExpansion(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping on windows")
+	}
+
+	executor := NewHookExecutor(t.TempDir())
+	hookDef := &HookDefinition{
+		Command: []string{"echo", "$WI"},
+	}
+
+	vars := map[string]string{"WI": "04_prioritized/WI-0002-test"}
+	result := executor.Execute("wildcard_hook", hookDef, vars)
+
+	if result.ExitCode != 0 {
+		t.Errorf("expected exit code 0, got %d", result.ExitCode)
+	}
+	if !strings.Contains(result.Stdout, "04_prioritized/WI-0002-test") {
+		t.Errorf("expected stdout to contain expanded wildcard, got %q", result.Stdout)
+	}
+}
+
+func TestHookExecutor_Execute_Timeout(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping on windows")
+	}
+
+	executor := NewHookExecutor(t.TempDir())
+	hookDef := &HookDefinition{
+		Command: []string{"sh", "-c", "sleep 10"},
+		Timeout: 100 * time.Millisecond,
+	}
+
+	result := executor.Execute("timeout_hook", hookDef, nil)
+
+	if result.ExitCode != -1 {
+		t.Errorf("expected exit code -1 for timeout, got %d", result.ExitCode)
+	}
+	if result.Err == nil {
+		t.Error("expected timeout error, got nil")
+	}
+	if _, ok := result.Err.(*HookTimeoutError); !ok {
+		t.Errorf("expected HookTimeoutError, got %T", result.Err)
+	}
+}
+
+func TestHookExecutor_Execute_NoCommand(t *testing.T) {
+	executor := NewHookExecutor(t.TempDir())
+	hookDef := &HookDefinition{
+		Command: []string{},
+	}
+
+	result := executor.Execute("empty_hook", hookDef, nil)
+
+	if result.ExitCode != 1 {
+		t.Errorf("expected exit code 1, got %d", result.ExitCode)
+	}
+	if result.Err == nil {
+		t.Error("expected error for empty command, got nil")
+	}
+}
+
+// ============================================================================
+// Hook Resolution Tests
+// ============================================================================
+
+func TestResolveHooks_ModuleOnly(t *testing.T) {
+	namedHooks := NamedHooks{
+		"hook1": {Command: []string{"script1.sh"}},
+		"hook2": {Command: []string{"script2.sh"}},
+	}
+
+	moduleHooks := &HookBindings{
+		Pre:  []HookBinding{{Name: "hook1"}, {Name: "hook2"}},
+		Post: []HookBinding{{Name: "hook1"}},
+	}
+
+	preHooks, postHooks := ResolveHooks(moduleHooks, nil, namedHooks)
+
+	if len(preHooks) != 2 {
+		t.Errorf("expected 2 pre hooks, got %d", len(preHooks))
+	}
+	if len(postHooks) != 1 {
+		t.Errorf("expected 1 post hook, got %d", len(postHooks))
+	}
+	if preHooks[0].Name != "hook1" || preHooks[1].Name != "hook2" {
+		t.Errorf("pre hooks order unexpected: %v", preHooks)
+	}
+}
+
+func TestResolveHooks_LaneExclusions(t *testing.T) {
+	namedHooks := NamedHooks{
+		"hook1": {Command: []string{"script1.sh"}},
+		"hook2": {Command: []string{"script2.sh"}},
+		"hook3": {Command: []string{"script3.sh"}},
+	}
+
+	moduleHooks := &HookBindings{
+		Pre: []HookBinding{{Name: "hook1"}, {Name: "hook2"}},
+	}
+
+	laneHooks := &HookBindings{
+		Pre: []HookBinding{
+			{Name: "hook1", Negated: true}, // exclude hook1
+			{Name: "hook3"},                // add hook3
+		},
+	}
+
+	preHooks, _ := ResolveHooks(moduleHooks, laneHooks, namedHooks)
+
+	// Should have hook2 (from module) and hook3 (from lane), but not hook1 (excluded)
+	if len(preHooks) != 2 {
+		t.Errorf("expected 2 pre hooks, got %d", len(preHooks))
+	}
+
+	hasHook2 := false
+	hasHook3 := false
+	for _, hook := range preHooks {
+		if hook.Name == "hook2" {
+			hasHook2 = true
+		}
+		if hook.Name == "hook3" {
+			hasHook3 = true
+		}
+	}
+
+	if !hasHook2 {
+		t.Error("expected hook2 to be present")
+	}
+	if !hasHook3 {
+		t.Error("expected hook3 to be present")
+	}
+}
+
+func TestResolveHooks_Deduplication(t *testing.T) {
+	namedHooks := NamedHooks{
+		"hook1": {Command: []string{"script1.sh"}},
+	}
+
+	moduleHooks := &HookBindings{
+		Pre: []HookBinding{{Name: "hook1"}},
+	}
+
+	laneHooks := &HookBindings{
+		Pre: []HookBinding{{Name: "hook1"}}, // duplicate
+	}
+
+	preHooks, _ := ResolveHooks(moduleHooks, laneHooks, namedHooks)
+
+	if len(preHooks) != 1 {
+		t.Errorf("expected 1 pre hook (deduplicated), got %d", len(preHooks))
+	}
+}
+
+func TestResolveHooks_UnknownHookIgnored(t *testing.T) {
+	namedHooks := NamedHooks{
+		"hook1": {Command: []string{"script1.sh"}},
+	}
+
+	moduleHooks := &HookBindings{
+		Pre: []HookBinding{{Name: "hook1"}, {Name: "unknown_hook"}},
+	}
+
+	preHooks, _ := ResolveHooks(moduleHooks, nil, namedHooks)
+
+	if len(preHooks) != 1 {
+		t.Errorf("expected 1 pre hook (unknown ignored), got %d", len(preHooks))
+	}
+	if preHooks[0].Name != "hook1" {
+		t.Errorf("expected hook1, got %v", preHooks[0])
+	}
+}
+
+// ============================================================================
+// HOOK-FAIL Artifact Tests
+// ============================================================================
+
+func TestCreateHookFailArtifact(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping on windows")
+	}
+
+	tempDir := t.TempDir()
+	lane := &Lane{
+		DirAbs: tempDir,
+		Dir:    "06_ready",
+		Module: &Module{},
+	}
+	item := &WorkItem{
+		Seq:  2,
+		Name: "WI-0002-test",
+		Lane: lane,
+	}
+
+	hook := &ResolvedHook{
+		Name: "failing_hook",
+	}
+	result := HookResult{
+		HookName: "failing_hook",
+		ExitCode: 1,
+		Stdout:   "standard output",
+		Stderr:   "error message",
+		Duration: 100 * time.Millisecond,
+		Err:      nil,
+	}
+
+	err := CreateHookFailArtifact(item, hook, result)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Verify file exists
+	artifactPath := filepath.Join(tempDir, "WI-0002-test", "WI-0002-HOOK-FAIL.md")
+	if _, err := os.Stat(artifactPath); os.IsNotExist(err) {
+		t.Fatal("expected HOOK-FAIL artifact to be created")
+	}
+
+	// Verify content
+	content, err := os.ReadFile(artifactPath)
+	if err != nil {
+		t.Fatalf("failed to read artifact: %v", err)
+	}
+
+	contentStr := string(content)
+	if !strings.Contains(contentStr, "# HOOK-FAIL: failing_hook") {
+		t.Errorf("expected title, got: %s", contentStr[:100])
+	}
+	if !strings.Contains(contentStr, "**Exit Code:** 1") {
+		t.Errorf("expected exit code, got: %s", contentStr)
+	}
+	if !strings.Contains(contentStr, "standard output") {
+		t.Errorf("expected stdout in artifact, got: %s", contentStr)
+	}
+	if !strings.Contains(contentStr, "error message") {
+		t.Errorf("expected stderr in artifact, got: %s", contentStr)
+	}
+}
+
+func TestCreateHookFailArtifact_SequenceNumbering(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping on windows")
+	}
+
+	tempDir := t.TempDir()
+	lane := &Lane{
+		DirAbs: tempDir,
+		Dir:    "06_ready",
+		Module: &Module{},
+	}
+	item := &WorkItem{
+		Seq:  2,
+		Name: "WI-0002-test",
+		Lane: lane,
+	}
+
+	// Create first artifact manually
+	artifactDir := filepath.Join(tempDir, "WI-0002-test")
+	if err := os.MkdirAll(artifactDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	firstArtifact := filepath.Join(artifactDir, "WI-0002-HOOK-FAIL.md")
+	if err := os.WriteFile(firstArtifact, []byte("first"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create second artifact
+	err := CreateHookFailArtifact(item, &ResolvedHook{Name: "hook2"}, HookResult{ExitCode: 1})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Verify second file exists with sequence number
+	secondArtifact := filepath.Join(artifactDir, "WI-0002-HOOK-FAIL-02.md")
+	if _, err := os.Stat(secondArtifact); os.IsNotExist(err) {
+		t.Fatal("expected second HOOK-FAIL artifact with sequence number")
+	}
+}
+
+func TestCreateHookFailArtifact_ZeroSeq(t *testing.T) {
+	item := &WorkItem{
+		Seq:  0,
+		Name: "WI-0000-test",
+		Lane: &Lane{},
+	}
+
+	err := CreateHookFailArtifact(item, &ResolvedHook{Name: "hook"}, HookResult{})
+	if err == nil {
+		t.Error("expected error for zero sequence number")
+	}
+}
+
+// ============================================================================
+// Hook Definition Timeout Parsing Tests
+// ============================================================================
+
+func TestNamedHooks_UnmarshalYAML_WithTimeout(t *testing.T) {
+	input := `
+hook_01:
+  command: ["script.sh", "--arg1"]
+  timeout: 2m
+hook_02:
+  command: ["other.sh"]
+`
+
+	var hooks NamedHooks
+	err := hooks.UnmarshalYAML([]byte(input))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if h, ok := hooks["hook_01"]; !ok {
+		t.Fatal("hook_01 not found")
+	} else {
+		if len(h.Command) != 2 || h.Command[0] != "script.sh" {
+			t.Errorf("hook_01 command: expected [script.sh --arg1], got %v", h.Command)
+		}
+		if h.Timeout != 2*time.Minute {
+			t.Errorf("hook_01 timeout: expected 2m, got %v", h.Timeout)
+		}
+	}
+
+	if h, ok := hooks["hook_02"]; !ok {
+		t.Fatal("hook_02 not found")
+	} else {
+		if h.Timeout != 0 {
+			t.Errorf("hook_02 timeout: expected 0 (not set), got %v", h.Timeout)
+		}
+	}
+}
+
+func TestNamedHooks_UnmarshalYELLegacyFormat(t *testing.T) {
+	// Test legacy format (map[string][]string)
+	input := `
+hook_01: ["script.sh", "--arg1"]
+hook_02: ["other.sh"]
+`
+
+	var hooks NamedHooks
+	err := hooks.UnmarshalYAML([]byte(input))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(hooks) != 2 {
+		t.Errorf("expected 2 hooks, got %d", len(hooks))
+	}
+
+	if h, ok := hooks["hook_01"]; !ok {
+		t.Fatal("hook_01 not found")
+	} else {
+		if len(h.Command) != 2 || h.Command[0] != "script.sh" {
+			t.Errorf("hook_01 command: expected [script.sh --arg1], got %v", h.Command)
+		}
 	}
 }
