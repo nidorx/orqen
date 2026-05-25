@@ -86,21 +86,42 @@ func (e *Executor) cleanupCompleted() {
 	}
 }
 
+// tryClaimSlot atomically checks if both project and lane have available slots,
+// and if so, marks the item as in-progress. Returns true if the slot was claimed.
+func (e *Executor) tryClaimSlot(item *WorkItem) bool {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+
+	// Check project-level slot
+	if !e.project.HasAvailableSlot() {
+		return false
+	}
+
+	// Check lane-level slot
+	if !item.Lane.HasAvailableSlot() {
+		return false
+	}
+
+	// Claim the slot by marking item as in-progress
+	item.InProgress = true
+	return true
+}
+
 // processWorkItems scans all lanes and starts execution for eligible work items
 func (e *Executor) processWorkItems() {
 	for _, mod := range e.project.Modules {
-		// Get lanes in the configured order
-		lanes := mod.GetLanesInOrder()
+		if !e.project.HasAvailableSlot() {
+			return // If we've reached max agents, stop processing
+		}
 
-		for _, lane := range lanes {
+		// Get lanes in the configured order
+		for _, lane := range mod.GetLanesInOrder() {
+			if !e.project.HasAvailableSlot() {
+				return // If we've reached max agents, stop processing
+			}
 
 			// no agent actions
 			if len(lane.AgentBehavior) == 0 {
-				continue
-			}
-
-			// Check if this lane has available slots
-			if !lane.HasAvailableSlot() {
 				continue
 			}
 
@@ -108,11 +129,6 @@ func (e *Executor) processWorkItems() {
 			if lane.Schedule != nil && !lane.Schedule.IsDue(time.Now()) {
 				log.Printf("INFO: lane %s in module %s skipped — outside schedule window", lane.Name, mod.Name)
 				continue
-			}
-
-			// Check if project has available slots
-			if !e.project.HasAvailableSlot() {
-				return
 			}
 
 			// Try to execute each work item
@@ -126,15 +142,24 @@ func (e *Executor) processWorkItems() {
 					continue
 				}
 
-				// Start execution
-				if err := e.invokeItem(mod, lane, item); err != nil {
-					// Log error but continue with other items
+				// Atomically check slots and claim
+				if !e.tryClaimSlot(item) {
+					// No slots available at project or lane level
+					// If lane is full, break; if project is full, return
+					if !lane.HasAvailableSlot() {
+						break
+					}
+					if !e.project.HasAvailableSlot() {
+						return
+					}
 					continue
 				}
 
-				// If we've reached max agents, stop processing
-				if !e.project.HasAvailableSlot() {
-					return
+				// Slot claimed, proceed with invocation
+				if err := e.invokeItem(item); err != nil {
+					// Claim failed, roll back
+					item.InProgress = false
+					continue
 				}
 			}
 		}
@@ -142,20 +167,19 @@ func (e *Executor) processWorkItems() {
 }
 
 // invokeItem starts execution of a work item with pre/post hooks
-func (e *Executor) invokeItem(module *Module, lane *Lane, item *WorkItem) error {
-	// Mark item as in progress
-	item.InProgress = true
+func (e *Executor) invokeItem(item *WorkItem) error {
+	// InProgress already set by tryClaimSlot()
 
 	// Resolve hooks for this module/lane
-	preHooks, postHooks := e.project.ResolveHooksForLane(module, lane)
+	preHooks, postHooks := e.project.ResolveHooksForLane(item.Lane.Module, item.Lane)
 
 	// Build wildcard variables
 	itemJSON, _ := json.Marshal(item.Alias())
 
 	wildcardVars := map[string]string{
 		"WI":          item.RelativePath(),
-		"MODULE":      module.Name,
-		"LANE":        lane.Name,
+		"MODULE":      item.Lane.Module.Name,
+		"LANE":        item.Lane.Name,
 		"PROJECT_DIR": e.project.DirAbs,
 		"WI_JSON":     string(itemJSON),
 		"ITEM_SEQ":    fmt.Sprintf("%04d", item.Seq),
@@ -179,7 +203,7 @@ func (e *Executor) invokeItem(module *Module, lane *Lane, item *WorkItem) error 
 	}
 
 	// Invoke the agent
-	handle, err := e.invoker(e.project, module, lane, item)
+	handle, err := e.invoker(e.project, item.Lane.Module, item.Lane, item)
 	if err != nil {
 		item.InProgress = false
 		// fmt.Errorf("failed to invoke agent for item %s: %w", item.Name, err)
@@ -192,9 +216,7 @@ func (e *Executor) invokeItem(module *Module, lane *Lane, item *WorkItem) error 
 	e.mu.Unlock()
 
 	// Start a goroutine to handle completion (agent + post-hooks)
-	e.wg.Add(1)
-	go func() {
-		defer e.wg.Done()
+	e.wg.Go(func() {
 
 		// Wait for agent completion
 		_ = handle.Wait()
@@ -215,7 +237,7 @@ func (e *Executor) invokeItem(module *Module, lane *Lane, item *WorkItem) error 
 
 		// Mark item as no longer in progress
 		item.InProgress = false
-	}()
+	})
 
 	return nil
 }

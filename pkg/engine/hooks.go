@@ -116,7 +116,7 @@ func (e *HookExecutor) Execute(hookName string, def *HookDefinition, envVars map
 func buildEnvVars(vars map[string]string) []string {
 	env := os.Environ()
 	for key, value := range vars {
-		env = append(env, fmt.Sprintf("%s=%s", key, value))
+		env = append(env, fmt.Sprintf("ORQEN_%s=%s", key, value))
 	}
 	return env
 }

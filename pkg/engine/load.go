@@ -191,6 +191,10 @@ func applyDefaults(proj *Project) {
 			inbox.MaxAgents = 2
 		}
 
+		if strings.TrimSpace(strings.Join(inbox.AgentBehavior, "")) == "" {
+			inbox.AgentBehavior = nil
+		}
+
 		if len(inbox.AgentBehavior) == 0 {
 			inbox.AgentBehavior = []string{
 				"Read the inbox file to understand the idea",
@@ -215,6 +219,11 @@ func applyDefaults(proj *Project) {
 		mod.workItemsStashed = tinylfu.NewSyncCacheT[*WorkItem](10000, 100000, 30*time.Second)
 
 		for j, lane := range mod.Lanes {
+
+			if strings.TrimSpace(strings.Join(lane.AgentBehavior, "")) == "" {
+				lane.AgentBehavior = nil
+			}
+
 			if lane.MaxAgents <= 0 {
 				lane.MaxAgents = 1
 			}
