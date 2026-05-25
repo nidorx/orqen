@@ -19,6 +19,35 @@ type Telegram struct {
 	Token string `yaml:"token"`
 }
 
+// ToolDef represents a user-defined tool configuration from orqen.yaml.
+type ToolDef struct {
+	Command     []string            `yaml:"command,omitempty"`     // default command
+	Timeout     int                 `yaml:"timeout,omitempty"`     // timeout in seconds (default 30)
+	Description string              `yaml:"description,omitempty"` // tool description for MCP
+	OSCommands  map[string][]string `yaml:",inline"`               // os-specific commands (windows, darwin, linux)
+	Args        map[string]string   `yaml:"args,omitempty"`        // param_name -> description
+}
+
+// ValidOSKeys returns the set of valid OS keys for tool definitions.
+var ValidOSKeys = map[string]bool{
+	"windows": true,
+	"darwin":  true,
+	"linux":   true,
+}
+
+// GetCommandForOS returns the command array for the current OS, falling back to the default command.
+func (t *ToolDef) GetCommandForOS(goos string) ([]string, error) {
+	// Check OS-specific override
+	if cmd, ok := t.OSCommands[goos]; ok {
+		return cmd, nil
+	}
+	// Fall back to default
+	if len(t.Command) > 0 {
+		return t.Command, nil
+	}
+	return nil, fmt.Errorf("no command defined for tool (neither default nor %s-specific)", goos)
+}
+
 // Project represents the top-level project configuration (.orqen/orqen.yaml).
 type Project struct {
 	Id         string                     `yaml:"-"` // directory hash
@@ -29,6 +58,7 @@ type Project struct {
 	Execution  *Execution                 `yaml:"execution"`
 	Modules    []*Module                  `yaml:"modules"`
 	NamedHooks NamedHooks                 `yaml:"hooks,omitempty"` // named hook definitions
+	Tools      map[string]ToolDef         `yaml:"tools,omitempty"` // user-defined dynamic tools
 
 	// Runtime state (not serialized)
 	mu       sync.Mutex

@@ -52,6 +52,9 @@ func ServerHttp(proj *engine.Project) http.Handler {
 	addTool(server, tnFsGrep, FsGrepHandler, proj)
 	addTool(server, tnFsDiff, FsDiffHandler, proj)
 
+	// Dynamic tools from orqen.yaml
+	RegisterDynamicTools(server, proj)
+
 	return mcp.NewStreamableHTTPHandler(func(request *http.Request) *mcp.Server {
 		return server
 	}, nil)

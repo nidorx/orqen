@@ -21,11 +21,12 @@ The package does **not** manage project state — it delegates to `pkg/engine`. 
 | `tool_lane_list.go` | Lane listing operation |
 | `tool_project_info.go` | Project structure inspection |
 | `tool_fs_*.go` | Filesystem operations: copy, move, list, tree, find, grep, diff |
+| `tool_dynamic.go` | Dynamic user-defined tools from `orqen.yaml` configuration |
 | `*_test.go` | Comprehensive test coverage for all tools with shared test helpers (`test_helpers_test.go`) |
 
 ## Tools
 
-The package exposes **18 MCP tools** across five categories:
+The package exposes **18+ MCP tools** across five categories:
 
 ### Work Item Operations
 
@@ -68,6 +69,36 @@ The package exposes **18 MCP tools** across five categories:
 |---------------|-----------|---------|-------------|
 | `tnLaneList` | `lane_list` | `LaneListHandler` | Lists all lanes in a module with their configuration, purpose, item counts, and availability. Use this to understand lane structure before creating or moving items. |
 | `tnProjectInfo` | `project_info` | `ProjectInfoHandler` | Returns the full project structure: modules, lanes, item counts, and configuration. Use this to understand the overall project layout. |
+
+### Dynamic Tools (User-Defined)
+
+Dynamic tools are registered from the `tools` section in `orqen.yaml`. Each tool definition creates an MCP tool with a schema based on the `args` field. Tools execute shell commands with parameter injection via `$param_name` wildcards.
+
+**Configuration Example:**
+```yaml
+tools:
+  my_tool:
+    command: ["./script.sh", "--a", "$param_a", "--b", "$param_b"]
+    windows: ["script.bat", "--a", "$param_a", "--b", "$param_b"]
+    timeout: 30
+    description: "Runs my custom script"
+    args:
+      param_a: "First parameter"
+      param_b: "Second parameter"
+```
+
+**Fields:**
+- `command`: Default command array (executed when no OS-specific override matches)
+- `windows`/`darwin`/`linux`: OS-specific command overrides
+- `timeout`: Execution timeout in seconds (default: 30)
+- `description`: Tool description shown to MCP agents
+- `args`: Map of parameter names to descriptions (all treated as required strings)
+
+**Parameter Injection:**
+Parameters are injected via exact `$param_name` wildcard substitution in command arguments. Only exact tokens (e.g., `$param_a`) are replaced — partial matches like `prefix_$param_a` are NOT supported.
+
+**Registration:**
+Dynamic tools are registered via `RegisterDynamicTools()` in `server_http.go` after filesystem tools. Tool names that conflict with built-in tools are ignored with a warning.
 
 ## Invocation Flow
 
@@ -117,6 +148,9 @@ func ServerHttp(proj *engine.Project) http.Handler {
     addTool(server, tnFsFind, FsFindHandler, proj)
     addTool(server, tnFsGrep, FsGrepHandler, proj)
     addTool(server, tnFsDiff, FsDiffHandler, proj)
+
+    // Dynamic tools from orqen.yaml
+    RegisterDynamicTools(server, proj)
 
     return mcp.NewStreamableHTTPHandler(func(request *http.Request) *mcp.Server {
         return server

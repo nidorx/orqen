@@ -79,7 +79,8 @@ modules:
       # ── 04_prioritized ─────────────────────────────────────────
       - name: "prioritized"
         purpose: "Tasks explicitly selected by the user for deep technical refinement, architectural validation, and implementation planning before execution"
-        ignore_if_dependency: ["inbox", "backlog", "prioritized"]
+        # Finish-to-Start (FS) dependency
+        ignore_if_dependency: ["inbox", "backlog", "prioritized", "refined", "ready", "blocked", "review", "push"]
         artifacts: ["REFINEMENT"]
         max_agents: 1
         allowed_next: ["refined"]
