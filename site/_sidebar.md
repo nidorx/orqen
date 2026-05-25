@@ -3,6 +3,7 @@
 - [Instalação](/instalacao.md)
 - [Conceitos](/conceitos.md)
 - [Configuração](/configuracao.md)
+  - [Ferramentas Dinâmicas](/ferramentas-dinamicas.md)
 <!-- - [Agentes](/agentes.md) -->
 - [Recuperação de Sessão](/recuperacao-sessao.md)
 - [Telegram](/telegram.md)

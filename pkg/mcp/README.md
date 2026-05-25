@@ -74,7 +74,9 @@ The package exposes **18+ MCP tools** across five categories:
 
 Dynamic tools are registered from the `tools` section in `orqen.yaml`. Each tool definition creates an MCP tool with a schema based on the `args` field. Tools execute shell commands with parameter injection via `$param_name` wildcards.
 
-**Configuration Example:**
+For detailed usage examples, configuration syntax, and best practices, see the [Ferramentas Dinâmicas](../../site/ferramentas-dinamicas.md) documentation.
+
+**Quick Configuration Example:**
 ```yaml
 tools:
   my_tool:
