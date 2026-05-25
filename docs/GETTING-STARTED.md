@@ -59,7 +59,6 @@ orqen/
 │   │
 │   ├── mcp/                    # Model Context Protocol — tools & servers
 │   │   ├── server.go           # Server creation, tool registration
-│   │   ├── server_stdio.go     # Stdio MCP server (agent-side proxy)
 │   │   ├── server_http.go      # Streamable HTTP MCP server (host-side)
 │   │   ├── tool_*.go           # Individual tool implementations
 │   │   └── README.md           # Detailed MCP architecture
@@ -125,7 +124,6 @@ orqen/
 | File | Why it matters |
 |------|---------------|
 | `pkg/mcp/server.go` | Server creation and tool registration. |
-| `pkg/mcp/server_stdio.go` | Stdio subprocess entry — proxies agent tool calls to host HTTP server. |
 | `pkg/mcp/server_http.go` | Streamable HTTP server — exposes tools directly for remote agents. |
 | `pkg/mcp/tool_*.go` | Individual tool implementations (create, move, search, attributes, dependencies). |
 | `pkg/mcp/README.md` | Detailed MCP architecture with invocation flow diagrams. |
@@ -163,12 +161,11 @@ orqen/
 4. **Agent acts** — The agent receives a prompt, calls MCP tools (`workitem_create`, `workitem_move`, etc.), and modifies work items on disk.
 5. **Repeat** — The loop continues, picking up changes made by agents or users.
 
-### MCP Transport Modes
+### MCP Transport Mode
 
 | Mode | Purpose | Direction |
 |------|---------|-----------|
-| **Stdio** | Agent subprocess proxies tool calls to Orqen's HTTP server | Agent → Orqen |
-| **Streamable HTTP** | Orqen exposes tools over HTTP for remote agents | Orqen → Agent |
+| **Streamable HTTP** | Orqen exposes tools over HTTP; agents connect directly | Orqen ↔ Agent |
 
 ### Work Item Structure
 
@@ -202,5 +199,4 @@ go test ./pkg/mcp/...
 ## Debugging
 
 - Enable verbose logging by checking `pkg/engine/` and `pkg/mcp/` for log statements.
-- MCP stdio mode can be debugged by setting `mcp.DEBUG_STDIO = true` in `main.go`.
 - Work item state lives on disk — inspect `{module}/{lane}/` directories directly.

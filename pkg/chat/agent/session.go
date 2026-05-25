@@ -404,7 +404,7 @@ func buildProjectSummary(proj *engine.Project) string {
 		return sb.String()
 	}
 
-	sb.WriteString(fmt.Sprintf("Modules: %d\n", len(proj.Modules)))
+	fmt.Fprintf(&sb, "Modules: %d\n", len(proj.Modules))
 	for _, mod := range proj.Modules {
 		sb.WriteString(fmt.Sprintf("\n### Module: %s\n", mod.Name))
 

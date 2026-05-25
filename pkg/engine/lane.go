@@ -8,6 +8,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -142,39 +143,34 @@ func (l *Lane) validateMoveTo(targetLaneName string) error {
 	// Case 1: allowed_next is explicitly configured
 	if len(l.AllowedNext) > 0 {
 		// Check for wildcard - allows moves to any lane
-		for _, allowed := range l.AllowedNext {
-			if allowed == "*" {
-				return nil
-			}
+		if slices.Contains(l.AllowedNext, "*") {
+			return nil
 		}
 
 		// Check if target lane is in the allowed list
-		for _, allowed := range l.AllowedNext {
-			if allowed == targetLaneName {
-				return nil
-			}
+		if slices.Contains(l.AllowedNext, targetLaneName) {
+			return nil
 		}
 		return fmt.Errorf("move not allowed: from lane '%s' only allows moves to %v", l.Name, l.AllowedNext)
 	}
 
-	// Case 2: Default behavior - allow next lane in Module.Order
-	order := l.Module.Order
-	for i, laneName := range order {
-		if laneName == l.Name || laneName == l.Dir {
-			// Found current lane in order
-			if i+1 < len(order) {
-				nextLane := order[i+1]
-				if nextLane == targetLaneName {
+	// Case 2: Default behavior - allow next lane
+	for i, lane := range l.Module.Lanes {
+		if lane == l {
+			if len(l.Module.Lanes) > i+1 {
+				lnext := l.Module.Lanes[i+1]
+				if lnext.Name == targetLaneName {
 					return nil
 				}
-				return fmt.Errorf("move not allowed: from lane '%s' only allows moves to ['%s'] (next lane in order)", l.Name, nextLane)
+				return fmt.Errorf("move not allowed: from lane '%s' only allows moves to ['%s'] (next lane in order)", l.Name, lnext.Name)
 			}
-			// Current lane is last in order - no moves allowed
+
+			// Current lane is last - no moves allowed
 			return fmt.Errorf("move not allowed: lane '%s' is the last lane in order, no moves allowed", l.Name)
 		}
 	}
 
-	// Current lane not found in Order - allow all (fallback for backward compatibility)
+	// Current lane not found - allow all (fallback for backward compatibility)
 	return nil
 }
 

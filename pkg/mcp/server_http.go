@@ -1,15 +1,35 @@
 package mcp
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/nidorx/orqen/pkg/conf"
 	"github.com/nidorx/orqen/pkg/engine"
 )
 
+var (
+	tools = map[string]*mcp.Tool{}
+	impl  = &mcp.Implementation{
+		Name:  "orqen",
+		Title: "Orqen MCP Server",
+	}
+)
+
+type ToolProjectHandler[In, Out any] func(
+	_ context.Context, request *mcp.CallToolRequest, input In, proj *engine.Project,
+) (result *mcp.CallToolResult, output Out, _ error)
+
 func ServerHttp(proj *engine.Project) http.Handler {
 
-	server := createServer()
+	impl.Version = conf.GetInfo().Version
+	impl.WebsiteURL = conf.GetInfo().Website
+	server := mcp.NewServer(impl, nil)
+
+	for name, tool := range tools {
+		tool.Name = name
+	}
 
 	// Register real handlers with project reference
 	addTool(server, tnWorkitem, WorkitemHandler, proj)
@@ -35,14 +55,10 @@ func ServerHttp(proj *engine.Project) http.Handler {
 	return mcp.NewStreamableHTTPHandler(func(request *http.Request) *mcp.Server {
 		return server
 	}, nil)
-
-	// return func(ctx *chain.Context) {
-	// 	w := ctx.Writer.(*chain.ResponseWriterSpy).ResponseWriter
-	// 	req := ctx.Request
-	// 	mcpHandler.ServeHTTP(w, req)
-	// }
 }
 
-func addTool[In, Out any](s *mcp.Server, tool string, h ToolProjectHandler[In, Out], proj *engine.Project) {
-	mcp.AddTool(s, tools[tool], projectHandler2MCP(proj, h))
+func addTool[In, Out any](s *mcp.Server, tool string, handler ToolProjectHandler[In, Out], proj *engine.Project) {
+	mcp.AddTool(s, tools[tool], func(ctx context.Context, req *mcp.CallToolRequest, input In) (result *mcp.CallToolResult, output Out, err error) {
+		return handler(ctx, req, input, proj)
+	})
 }

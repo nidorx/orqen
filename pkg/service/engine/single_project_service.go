@@ -2,8 +2,8 @@ package engine
 
 import (
 	"bufio"
+	"fmt"
 	"os"
-	"strconv"
 	"strings"
 
 	"github.com/coder/acp-go-sdk"
@@ -52,7 +52,6 @@ func (s *Service) Name() string {
 
 func (s *Service) OnStart() error {
 
-	orqenExec := os.Args[0]
 	orqenPort := conf.GetHttpServer().Port
 
 	// Prompt user for proj directory and load configuration
@@ -64,13 +63,13 @@ func (s *Service) OnStart() error {
 		// @TODO: sent context item.Files
 
 		// Build MCP servers list for this lane
-		mcpServers := buildMcpServers(proj, lane, orqenExec, orqenPort)
+		mcpServers := buildMcpServers(proj, lane, orqenPort)
 
 		// Read prior session ID from work item attributes
 		priorSessionID := item.Attributes.String("session_id")
 
 		// initialize agent (ACP)
-		sessionID, err := agent.Exec(
+		err := agent.Exec(
 			proj.Id,
 			proj.Agents.GetName(lane.Agent),
 			lane.Name,
@@ -80,13 +79,17 @@ func (s *Service) OnStart() error {
 			proj.Agents.GetCommand(lane.Agent),
 			mcpServers,
 			priorSessionID,
+			func(sessionID string) {
+				// Persist session lifecycle: remove on success, save on error for reload
+				if sessionID != "" {
+					_ = item.AttributesSave(engine.Attributes{"session_id": sessionID})
+				}
+			},
 		)
 
-		// Persist session lifecycle: remove on success, save on error for reload
+		// remove on success
 		if err == nil {
 			_ = item.AttributesDel([]string{"session_id"})
-		} else if sessionID != "" {
-			_ = item.AttributesSave(engine.Attributes{"session_id": sessionID})
 		}
 
 		return err
@@ -108,20 +111,16 @@ func New() *Service {
 
 // buildMcpServers resolves lane MCP server references and builds the []acp.McpServer list.
 // The Orqen MCP is always prepended as the first server in the list.
-func buildMcpServers(proj *engine.Project, lane *engine.Lane, orqenExec string, orqenPort int) []acp.McpServer {
+func buildMcpServers(proj *engine.Project, lane *engine.Lane, orqenPort int) []acp.McpServer {
 	var mcpServers []acp.McpServer
 
 	// Always prepend Orqen MCP
 	orqenMcp := acp.McpServer{
-		Stdio: &acp.McpServerStdio{
+		Http: &acp.McpServerHttpInline{
 			Name:    "orqen",
-			Command: orqenExec,
-			Args: []string{
-				"--mcp",
-				"--port=" + strconv.Itoa(orqenPort),
-				"--project=" + proj.Id,
-			},
-			Env: make([]acp.EnvVariable, 0),
+			Headers: make([]acp.HttpHeader, 0),
+			Type:    "http",
+			Url:     fmt.Sprintf("http://127.0.0.1:%d/mcp/http/%s", orqenPort, proj.Id),
 		},
 	}
 	mcpServers = append(mcpServers, orqenMcp)

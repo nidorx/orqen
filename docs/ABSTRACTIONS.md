@@ -346,12 +346,11 @@ Orqen exposes workflow operations as MCP tools that agents can call during execu
 | `lane_list` | List all lanes in a module |
 | `project_info` | Get full project structure |
 
-### Transport Modes
+### Transport Mode
 
 | Mode | Purpose | Direction |
 |------|---------|-----------|
-| **Stdio** | Agent subprocess proxies tool calls to Orqen's HTTP server | Agent → Orqen |
-| **Streamable HTTP** | Orqen exposes tools over HTTP for remote agents | Orqen → Agent |
+| **Streamable HTTP** | Orqen exposes tools over HTTP; agents connect directly | Orqen ↔ Agent |
 
 Streamable HTTP was chosen over SSE because each tool call is an independent request/response pair — no long-lived connection that can be killed by `WriteTimeout`, and a failed tool call does not affect subsequent calls.
 

@@ -82,6 +82,7 @@ modules:
         ignore_if_dependency: ["inbox", "backlog", "prioritized"]
         artifacts: ["REFINEMENT"]
         max_agents: 1
+        allowed_next: ["refined"]
         agent_behavior:
           - "Read WI-${SEQUENCE}-TASK.md completely to understand the business goal, technical context, constraints, dependencies, and expected outcome"
           - "Read relevant architecture documents, quick links, existing ADRs, and surrounding implementation context before refining"
@@ -101,7 +102,18 @@ modules:
           - "Use the tool workitem_move (orqen MCP Server) to move the item from the prioritized lane to refined" 
           - "Finalize execution"
         critical_rules:
-          - "DO NOT implement production code in this lane"
+          - "THIS LANE DOES NOT IMPLEMENT ANYTHING"
+          - "THIS LANE EXISTS ONLY TO PRODUCE THE REFINEMENT DOCUMENT"
+          - "DO NOT modify source code"
+          - "DO NOT create, edit, delete, rename, or move production files"
+          - "DO NOT generate implementations, patches, commits, migrations, scripts, tests, infrastructure changes, or executable artifacts"
+          - "DO NOT update documentation outside the REFINEMENT artifact itself"
+          - "DO NOT create ADRs automatically"
+          - "DO NOT modify ADR files"
+          - "DO NOT execute commands that change the repository state"
+          - "DO NOT run formatters, linters, builds, migrations, package managers, or test suites unless strictly required for passive inspection"
+          - "Repository interaction in this lane is READ-ONLY"
+          - "The ONLY allowed output artifact is WI-${SEQUENCE}-REFINEMENT.md"        
           - "The refinement MUST reduce implementation ambiguity as much as possible"
           - "Prefer explicit decisions over open interpretation"
           - "Document assumptions whenever the codebase or task description is incomplete"
@@ -112,14 +124,17 @@ modules:
           - "If an accepted ADR conflicts with the task, surface the conflict explicitly instead of bypassing it"
           - "New ADRs must only be created for reusable architectural decisions, not local implementation details"
         extra_prompt: |
-          This lane is responsible for TECHNICAL REFINEMENT and IMPLEMENTATION PREPARATION.
+          THIS IS A NON-IMPLEMENTATION LANE.
 
-          The goal is not merely to summarize the task, but to transform the task into a
-          technically actionable implementation plan with sufficient architectural clarity,
-          implementation direction, and delivery constraints.
+          The ONLY responsibility of the agent in this lane is to produce
+          the WI-${SEQUENCE}-REFINEMENT.md document.
 
-          The agent must operate as a senior engineer performing architectural and technical
-          refinement before implementation begins.
+          The agent is NOT an implementation agent.
+          The agent is NOT a coding agent.
+          The agent is NOT a maintenance agent.
+          The agent is NOT a documentation agent.
+
+          The agent must behave as a technical analyst performing pre-implementation refinement only.
 
           The agent already has access to:
           - WI-${SEQUENCE}-TASK.md
@@ -195,6 +210,7 @@ modules:
         max_agents: 1
         ignore_if_exists: ["blocked", "review", "push"]
         ignore_if_dependency: ["ready", "blocked", "review", "push"]
+        allowed_next: ["blocked", "review"]
         agent_behavior:
           - "Read WI-${SEQUENCE}-TASK.md to understand the original task and context"
           - "Read WI-${SEQUENCE}-REFINEMENT.md to understand the approved implementation plan and technical decisions"
@@ -238,6 +254,7 @@ modules:
       - name: "review"
         purpose: "Completed implementations awaiting quality review by the agent"
         artifacts: ["FAIL"]
+        allowed_next: ["push", "ready"]
         agent_behavior:
           - Read the provided task document and its SUMMARY artifact
           - Validate ALL acceptance criteria are met

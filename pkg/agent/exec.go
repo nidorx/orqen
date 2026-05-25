@@ -16,13 +16,14 @@ func Exec(
 	cwd string,
 	prompt string,
 	command []string,
-	mcps []acp.McpServer,
+	mcpServers []acp.McpServer,
 	priorSessionID string,
-) (sessionID string, err error) {
+	onSessionId func(sessionID string),
+) (err error) {
 
 	agent, err := GetAgent(projectId, agentName, command)
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	logger := NewLogger(agentName, fmt.Sprintf(" [%s] [%s]", laneName, itemName))
@@ -38,7 +39,7 @@ func Exec(
 		_, loadErr := agent.LoadSession(ctx, acp.LoadSessionRequest{
 			SessionId:  acp.SessionId(priorSessionID),
 			Cwd:        cwd,
-			McpServers: mcps,
+			McpServers: mcpServers,
 		})
 		if loadErr == nil {
 			sessID = acp.SessionId(priorSessionID)
@@ -52,21 +53,22 @@ func Exec(
 	if sessID == "" {
 		sess, err := agent.NewSession(ctx, acp.NewSessionRequest{
 			Cwd:        cwd,
-			McpServers: mcps,
+			McpServers: mcpServers,
 		})
 		if err != nil {
 			if re, ok := err.(*acp.RequestError); ok {
 				if b, mErr := json.MarshalIndent(re, "", "  "); mErr == nil {
-					return "", fmt.Errorf("[%s] newSession error: %s", agentName, string(b))
+					return fmt.Errorf("[%s] newSession error: %s", agentName, string(b))
 				} else {
-					return "", fmt.Errorf("[%s] newSession error (%d): %s", agentName, re.Code, re.Message)
+					return fmt.Errorf("[%s] newSession error (%d): %s", agentName, re.Code, re.Message)
 				}
 			} else {
-				return "", fmt.Errorf("[%s] newSession error: %v", agentName, err)
+				return fmt.Errorf("[%s] newSession error: %v", agentName, err)
 			}
 		}
 		sessID = sess.SessionId
 		logger.Log("session created: %s\n", sessID)
+		onSessionId(string(sessID))
 	}
 
 	ClientSessionSet(sessID, ClientSessionNew(logger, nil))
@@ -82,16 +84,16 @@ func Exec(
 		// If it's a JSON-RPC RequestError, surface more detail for troubleshooting
 		if re, ok := err.(*acp.RequestError); ok {
 			if b, mErr := json.MarshalIndent(re, "", "  "); mErr == nil {
-				return string(sessID), fmt.Errorf("[%s] prompt error: %s", agentName, string(b))
+				return fmt.Errorf("[%s] prompt error: %s", agentName, string(b))
 			} else {
-				return string(sessID), fmt.Errorf("[%s] prompt error (%d): %s", agentName, re.Code, re.Message)
+				return fmt.Errorf("[%s] prompt error (%d): %s", agentName, re.Code, re.Message)
 			}
 		} else {
-			return string(sessID), fmt.Errorf("[%s] prompt error: %v", agentName, err)
+			return fmt.Errorf("[%s] prompt error: %v", agentName, err)
 		}
 	}
 
 	logger.Log("finished\n")
 
-	return string(sessID), nil
+	return nil
 }

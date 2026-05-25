@@ -7,8 +7,7 @@
 The `mcp` package is the **bridge between AI agents and Orqen's filesystem-backed project state**. It:
 
 1. **Exposes operations as MCP tools** — Each tool (create item, move item, search items, manage attributes, etc.) is a well-defined function with typed input/output, discoverable by any MCP-compatible agent.
-2. **Proxies agent-side calls to the host process** — When an agent runs in a subprocess, the stdio server forwards tool calls to the main process over HTTP.
-3. **Serves tools directly for remote agents** — When agents connect directly (e.g., running alongside Orqen), the Streamable HTTP handler dispatches tool calls without a proxy layer.
+2. **Serves tools directly for agents** — When agents connect via HTTP, the Streamable HTTP handler dispatches tool calls without a proxy layer.
 
 The package does **not** manage project state — it delegates to `pkg/engine`. It is purely a **protocol layer**: receive MCP tool calls, execute the corresponding project operation, return structured results.
 
@@ -17,7 +16,6 @@ The package does **not** manage project state — it delegates to `pkg/engine`. 
 | File | Responsibility |
 |------|----------------|
 | `server.go` | Server creation (`createServer`), shared tool map (`tools`), and handler adapter (`projectHandler2MCP`) |
-| `server_stdio.go` | Entry point for the stdio subprocess (`StartStdio`). Creates an MCP client that connects to the host's Streamable HTTP endpoint and registers all tools as proxies |
 | `server_http.go` | Entry point for the host's HTTP server (`ServerHttp`). Creates an `http.Handler` using `mcp.NewStreamableHTTPHandler` with all tools registered directly |
 | `tool_workitem*.go` | Work item operations: get, create, move, search, attributes (set/del/schema), dependencies |
 | `tool_lane_list.go` | Lane listing operation |
@@ -27,7 +25,7 @@ The package does **not** manage project state — it delegates to `pkg/engine`. 
 
 ## Tools
 
-The package exposes **17 MCP tools** across three categories:
+The package exposes **18 MCP tools** across five categories:
 
 ### Work Item Operations
 
@@ -73,32 +71,25 @@ The package exposes **17 MCP tools** across three categories:
 
 ## Invocation Flow
 
-### The Three Roles
+### The Host Role
 
-Orqen uses MCP in two distinct roles within a single process:
+Orqen's MCP server runs in a single role — the **Host**:
 
 ```
 ┌───────────────────────────────────────────────────────────────────┐
 │                    Orqen Main Process                             │
 │                                                                   │
 │  ┌─────────────────────────┐          ┌────────────────────────┐  │
-│  │  Streamable HTTP Server │◄─────────│  ACP Agent Subprocess  │  │
-│  │  (server_http.go)       │  HTTP    │  (server_stdio.go)     │  │
-│  │  /mcp/http endpoint     │  POST    │  stdin/stdout          │  │
-│  │  Real tool handlers     │          │  Proxy tool handlers   │  │
-│  └─────────────────────────┘          └───────────┬────────────┘  │
-│                                         ▲         │               │
-│                                         │         │               │
-│                            ┌────────────┴─────────┴───────────┐   │
-│                            │        ACP Agent                 │   │
-│                            │  (spawned by agent.Exec)         │   │
-│                            │  Reads/writes via stdin/stdout   │   │
-│                            └──────────────────────────────────┘   │
+│  │  Streamable HTTP Server │◄─────────│  ACP Agent (external)  │  │
+│  │  (server_http.go)       │  HTTP    │  (spawned by agent.Exec)│  │
+│  │  /mcp/http endpoint     │  POST    │  Connects via HTTP      │  │
+│  │  Real tool handlers     │          │  Calls tools directly   │  │
+│  └─────────────────────────┘          └────────────────────────┘  │
 │                                                                   │
 └───────────────────────────────────────────────────────────────────┘
 ```
 
-### Role 1: Host (Main Process) — `server_http.go`
+### Role: Host (Main Process) — `server_http.go`
 
 The main Orqen process starts an HTTP server that registers the MCP endpoint:
 
@@ -106,7 +97,7 @@ The main Orqen process starts an HTTP server that registers the MCP endpoint:
 func ServerHttp(proj *engine.Project) http.Handler {
     server := createServer()
 
-    // Register all 17 tools directly with project reference
+    // Register all 18 tools directly with project reference
     addTool(server, tnWorkitem, WorkitemHandler, proj)
     addTool(server, tnWorkitemMove, WorkitemMoveHandler, proj)
     addTool(server, tnWorkitemCreate, WorkitemCreateHandler, proj)
@@ -135,111 +126,44 @@ func ServerHttp(proj *engine.Project) http.Handler {
 
 Each HTTP request to `/mcp/http` creates an independent MCP session. The handler dispatches `tools/call` requests to the registered tool functions, which operate on the shared `*engine.Project`.
 
-### Role 2: Proxy (Stdio Subprocess) — `server_stdio.go`
+### Agent Invocation
 
-When the main process invokes an ACP agent, it spawns a **subprocess** of itself:
+When the main process invokes an ACP agent, it provides an HTTP MCP server configuration:
 
 ```go
-// main.go — agent invoker
-agent.Exec(cwd, prompt, command, []acp.McpServer{
-    {
-        Stdio: &acp.McpServerStdio{
-            Name:    "orqen",
-            Command: orqenExec,
-            Args:    []string{"--mcp", "--port=6180", "--workitem=TASK-0001-xxx"},
-        },
+// single_project_service.go — agent invoker
+orqenMcp := acp.McpServer{
+    Http: &acp.McpServerHttpInline{
+        Name:    "orqen",
+        Headers: make([]acp.HttpHeader, 0),
+        Type:    "http",
+        Url:     fmt.Sprintf("http://127.0.0.1:%d/mcp/http/%s", orqenPort, proj.Id),
     },
-})
-```
-
-The subprocess enters `StartStdio()`:
-
-```
-1. Create a new mcp.Server (empty, no project reference)
-2. Create an mcp.Client
-3. Connect to the host's Streamable HTTP endpoint via StreamableClientTransport
-4. Register all 17 tools as PROXIES — each proxy calls cs.CallTool() on the shared session
-5. Run the server over StdioTransport (stdin/stdout)
-```
-
-The `*mcp.ClientSession` from step 3 is **shared across all tool proxies**. Each proxy function follows the same pattern:
-
-```go
-func sseProxy[In any, Out any](tool string, _ mcp.ToolHandlerFor[In, Out], cs *mcp.ClientSession) mcp.ToolHandlerFor[In, Out] {
-    return func(ctx context.Context, req *mcp.CallToolRequest, input In) (result *mcp.CallToolResult, output Out, err error) {
-        result, err = cs.CallTool(ctx, &mcp.CallToolParams{Name: tool, Arguments: input})
-        return
-    }
 }
+agent.Exec(..., []acp.McpServer{orqenMcp}, ...)
 ```
 
-### Role 3: Agent (ACP Subprocess)
-
-The agent (e.g., Qwen Code, Claude, Gemini) runs as a child process of the stdio subprocess. It communicates via **stdin/stdout** using the MCP protocol over the stdio transport.
-
-The agent's view:
-
-```
-1. Agent starts, receives MCP server config via ACP initialization
-2. Agent sends tool call request → stdout (JSON-RPC over stdio)
-3. Stdio subprocess receives on stdin, proxies to host via HTTP POST
-4. Host executes tool, returns result via HTTP response
-5. Stdio subprocess writes result → stdout
-6. Agent receives tool result, continues execution
-```
-
-The agent is **unaware of the proxy**. From its perspective, it calls `workitem_move` and gets a result. The transport layer (stdio → HTTP → stdio) is transparent.
-
-### Full Call Sequence
-
-```
-Step  Agent (ACP)              Stdio Subprocess           Host Process
-────  ────────────────         ──────────────────         ────────────
- 1    ── tools/call ──────────▶
-      (stdout/stdin)
-
- 2                             ── POST /mcp/http ───────▶
-                                  {method: "tools/call",
-                                   name: "workitem_move",
-                                   args: {workitem_seq: 1, ...}}
-
- 3                                                          WorkitemMoveHandler()
-                                                              → item.MoveTo("doing")
-                                                              → ItemMoveOutput{Success: true}
-
- 4                             ◀── HTTP 200 ────────────────
-                                  {content: [...],
-                                   structuredContent: {success: true}}
-
- 5    ◀── tools/call result ──
-       (stdout/stdin)
-
- 6    Agent processes result, continues
-```
+The agent connects directly to Orqen's HTTP endpoint and calls tools without any proxy layer.
 
 ## Transport: Why Streamable HTTP (not SSE)
 
-The previous implementation used SSE (Server-Sent Events) transport, which has a fundamental flaw in the context of Orqen's architecture:
+The previous implementation used SSE (Server-Sent Events) transport, which has a fundamental flaw:
 
 **The problem with SSE:**
 - SSE requires a **hanging GET** connection that stays open for the session lifetime
 - Go's `http.Server` has a `WriteTimeout` (60s) that applies to the **entire response duration**
 - After 60s of inactivity on the SSE stream, the server kills the connection
-- If a tool call arrives after the SSE stream died, the tool **executes successfully** but the response **cannot be delivered** back to the proxy
-- The proxy receives `EOF` / `connection closed` and reports a tool failure to the agent
+- If a tool call arrives after the SSE stream died, the tool **executes successfully** but the response **cannot be delivered** back to the client
 
 **Why Streamable HTTP fixes it:**
 - Each tool call is an **independent** HTTP POST request → POST response pair
 - No long-lived streaming connection
 - `WriteTimeout` only applies to the actual response body write (milliseconds), not to idle time
 - A failed tool call does not affect subsequent calls — no shared connection state
-- The agent's subprocess lifecycle is naturally bounded (one turn = one stdio session)
 
 ## Tool Registration
 
-Tools are registered in two ways depending on the role:
-
-### Direct Registration (Host — `server_http.go`)
+Tools are registered via `addTool`:
 
 ```go
 addTool(server, tnWorkitemMove, WorkitemMoveHandler, proj)
@@ -247,19 +171,7 @@ addTool(server, tnWorkitemMove, WorkitemMoveHandler, proj)
 
 The handler receives the real `*engine.Project` reference and operates on it directly.
 
-### Proxy Registration (Stdio — `server_stdio.go`)
-
-```go
-addToolProxy(server, tnWorkitemMove, WorkitemMoveHandler, session)
-```
-
-The handler is wrapped by `sseProxy`, which:
-1. Forwards the call to the host via `cs.CallTool()`
-2. Returns the result (or error) back to the agent
-
-### Generic Pattern
-
-All tools follow the same registration pattern in both host and proxy modes. The `addTool` and `addToolProxy` functions are generic wrappers that adapt the project handlers to the MCP SDK's `ToolHandlerFor` interface.
+The `addTool` function is a generic wrapper that adapts project handlers to the MCP SDK's `ToolHandlerFor` interface.
 
 
 ## Module Resolution
@@ -276,7 +188,7 @@ This allows agents to call tools without explicitly specifying the module when t
 
 ### Transport Errors
 
-When the proxy's `cs.CallTool()` fails (e.g., HTTP connection error), the error is returned upstream. The SDK's `toolForErr` wrapper converts it into a `CallToolResult` with `IsError: true`, which the agent sees as a tool failure.
+When an HTTP request fails (e.g., connection error), the error is returned upstream. The SDK's `toolForErr` wrapper converts it into a `CallToolResult` with `IsError: true`, which the agent sees as a tool failure.
 
 ### Tool Execution Errors
 

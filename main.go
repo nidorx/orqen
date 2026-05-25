@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"net"
 	"os"
@@ -12,7 +11,6 @@ import (
 
 	"github.com/nidorx/orqen/pkg/cli"
 	"github.com/nidorx/orqen/pkg/conf"
-	"github.com/nidorx/orqen/pkg/mcp"
 	"github.com/nidorx/orqen/pkg/service"
 )
 
@@ -50,17 +48,6 @@ func main() {
 		Version: Version,
 		Website: "https://github.com/nidorx/orqen", // https://orqen.ai.br
 	})
-
-	isMCP := flag.Bool("mcp", false, "Run as a MCP Stdio")
-	mcpPort := flag.String("port", "8080", "Orqen port (MCP Stdio)")
-	mcpProjectId := flag.String("project", "", "Orqen project id (MCP Stdio)")
-	flag.Parse()
-
-	if *isMCP {
-		// mcp.DEBUG_STDIO = true
-		mcp.StartStdio(*mcpPort, *mcpProjectId)
-		return
-	}
 
 	if len(os.Args) > 1 {
 		panic("invalid args")
