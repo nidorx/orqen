@@ -99,7 +99,65 @@ modules:
 | `ignore_if_exists` | Não | Pula lane se houver itens nessas outras lanes |
 | `ignore_if_dependency` | Não | Pula item se depender de itens nessas lanes |
 | `extra_prompt` | Não | Contexto adicional injetado no prompt |
+| `allowed_next` | Não | Restringe para quais lanes o workitem pode ser movido a partir desta lane |
 | `schedule` | Não | Janela de execução agendada para a lane |
+
+### Validação de Movimentação (`allowed_next`)
+
+O atributo `allowed_next` controla para quais lanes um workitem pode ser movido ao usar a ferramenta MCP `workitem_move`. Isso adiciona guardrails para que o agente siga estritamente o workflow definido pelo usuário.
+
+#### Comportamento Padrão
+
+Quando `allowed_next` **não é especificado**, o motor permite movimentações apenas para a **próxima lane na ordem de declaração**. Por exemplo:
+
+```yaml
+modules:
+  - name: task
+    lanes:
+      - name: "prioritized"    # só pode mover para → "refined"
+      - name: "refined"        # só pode mover para → "ready"
+      - name: "ready"          # só pode mover para → "blocked"
+      - name: "blocked"        # só pode mover para → "done"
+      - name: "done"           # última lane — movimentações não permitidas
+```
+
+#### Configuração Explícita
+
+Quando `allowed_next` é configurado, **apenas** as lanes listadas são destinos válidos:
+
+```yaml
+modules:
+  - name: task
+    lanes:
+      - name: "prioritized"
+      - name: "refined"
+      - name: "ready"
+        allowed_next: ["blocked", "done"]   # de "ready" só pode mover para essas duas
+      - name: "blocked"
+      - name: "done"
+```
+
+Neste exemplo, quando um workitem está na lane `ready`, ele só pode ser movido para `blocked` ou `done`. Tentativas de mover para qualquer outra lane falharão com um erro.
+
+#### Wildcard (Curinga)
+
+Use `"*"` para permitir movimentações para **qualquer lane** no módulo:
+
+```yaml
+lanes:
+  - name: "flexivel"
+    allowed_next: ["*"]   # pode mover para qualquer lane
+```
+
+#### Erros de Validação
+
+Quando uma movimentação viola a restrição `allowed_next`, a ferramenta `workitem_move` retorna um erro no campo `Error`:
+
+- Com `allowed_next` configurado: `"move not allowed: from lane 'ready' only allows moves to [blocked done]"`
+- Com comportamento padrão: `"move not allowed: from lane 'prioritized' only allows moves to ['refined'] (next lane in order)"`
+- Última lane: `"move not allowed: lane 'done' is the last lane in order, no moves allowed"`
+
+O agente recebe esse erro imediatamente e pode ajustar sua execução de acordo.
 
 ### Agendamento de Lanes
 
