@@ -283,29 +283,29 @@ func CreateHookFailArtifact(item *WorkItem, hook *ResolvedHook, result HookResul
 
 	// Build artifact content
 	var content strings.Builder
-	content.WriteString(fmt.Sprintf("# HOOK-FAIL: %s\n\n", hook.Name))
-	content.WriteString(fmt.Sprintf("## Hook Execution Failure\n\n"))
-	content.WriteString(fmt.Sprintf("**Hook Name:** %s\n", hook.Name))
-	content.WriteString(fmt.Sprintf("**Exit Code:** %d\n", result.ExitCode))
-	content.WriteString(fmt.Sprintf("**Duration:** %v\n", result.Duration))
-	content.WriteString(fmt.Sprintf("**Timestamp:** %s\n\n", time.Now().Format("2006-01-02 15:04:05")))
+	fmt.Fprintf(&content, "# HOOK-FAIL: %s\n\n", hook.Name)
+	content.WriteString("## Hook Execution Failure\n\n")
+	fmt.Fprintf(&content, "**Hook Name:** %s\n", hook.Name)
+	fmt.Fprintf(&content, "**Exit Code:** %d\n", result.ExitCode)
+	fmt.Fprintf(&content, "**Duration:** %v\n", result.Duration)
+	fmt.Fprintf(&content, "**Timestamp:** %s\n\n", time.Now().Format("2006-01-02 15:04:05"))
 
 	content.WriteString("## Reason\n\n")
 	content.WriteString("Pre-hook execution failed. Task execution aborted.\n\n")
 
 	if result.Err != nil {
 		content.WriteString("## Error\n\n")
-		content.WriteString(fmt.Sprintf("```\n%s\n```\n\n", result.Err.Error()))
+		fmt.Fprintf(&content, "```\n%s\n```\n\n", result.Err.Error())
 	}
 
 	if result.Stdout != "" {
 		content.WriteString("## Standard Output\n\n")
-		content.WriteString(fmt.Sprintf("```\n%s```\n\n", result.Stdout))
+		fmt.Fprintf(&content, "```\n%s```\n\n", result.Stdout)
 	}
 
 	if result.Stderr != "" {
 		content.WriteString("## Standard Error\n\n")
-		content.WriteString(fmt.Sprintf("```\n%s```\n\n", result.Stderr))
+		fmt.Fprintf(&content, "```\n%s```\n\n", result.Stderr)
 	}
 
 	// Write artifact file

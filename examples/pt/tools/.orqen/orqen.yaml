@@ -3,7 +3,6 @@
 # Demonstrates dynamic MCP tools.
 #
 # Lanes:
-#   intake     — Entrada: lista de projetos para analisar
 #   inbox      — Lê o arquivo, roda code_stats em cada projeto, gera relatório
 #   report     — Relatórios gerados aguardam revisão
 
@@ -35,7 +34,7 @@ modules:
         agent_behavior:
           - "Leia o arquivo do item para obter a lista de projetos"
           - "Use o tool workitem_create (orqen MCP Server) para criar um novo item na lane report"          
-          - "Para cada projeto na lista, invoque code_stats(project_path=<caminho>)"
+          - "Para cada projeto na lista, invoque o tool code_stats (orqen MCP Server) para gerar o relatório do projeto"
           - "Consolide os resultados de todos os projetos em um único relatório, no diretório do item criado em report"                    
           - "Mova o arquivo do inbox para o diretório do item criado na lane report"
           - "Finalize a execução"
@@ -44,7 +43,6 @@ modules:
           - "Se code_stats falhar para um projeto, registre o erro no relatório mas continue com os demais"
           - "Se a lista de projetos estiver vazia, remova o arquivo e finalize a execução"
         extra_prompt: |
-          Para cada projeto, invoque code_stats(dir) e colete stdout.
           Produza um relatório consolidado com a soma de linhas por extensão.
 
       # ── Relatório ───────────────────────────────────────────────────
