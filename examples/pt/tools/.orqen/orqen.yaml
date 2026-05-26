@@ -1,6 +1,6 @@
-# Orqen Workflow — Dynamic MCP Tools Demo
+# Orqen Workflow — Tools MCP Dinamicos
 #
-# Demonstrates dynamic MCP tools.
+# Demostra o uso de tools dinamicos, registrados no MCP do Orqen do projeto.
 #
 # Lanes:
 #   inbox      — Lê o arquivo, roda code_stats em cada projeto, gera relatório
