@@ -14,7 +14,7 @@ import (
 )
 
 // helper: create a temporary project directory for testing
-func createTestProjectDir(t *testing.T, extraConfig map[string]interface{}) string {
+func createTestProjectDir(t *testing.T, extraConfig map[string]any) string {
 	t.Helper()
 
 	tmpDir := t.TempDir()
@@ -23,26 +23,26 @@ func createTestProjectDir(t *testing.T, extraConfig map[string]interface{}) stri
 		t.Fatalf("failed to create .orqen dir: %v", err)
 	}
 
-	cfgData := map[string]interface{}{
-		"execution": map[string]interface{}{
+	cfgData := map[string]any{
+		"execution": map[string]any{
 			"max_agents":             10,
 			"sleep_interval_seconds": 60,
 		},
-		"modules": []interface{}{
-			map[string]interface{}{
+		"modules": []any{
+			map[string]any{
 				"name":   "test-module",
 				"prefix": "TEST",
-				"lanes": []interface{}{
-					map[string]interface{}{
+				"lanes": []any{
+					map[string]any{
 						"name":    "inbox",
 						"purpose": "Test inbox",
 					},
 				},
 			},
 		},
-		"agents": map[string]interface{}{
-			"clients": map[string]interface{}{
-				"test-agent": map[string]interface{}{
+		"agents": map[string]any{
+			"clients": map[string]any{
+				"test-agent": map[string]any{
 					"command": []string{"echo", "test"},
 				},
 			},

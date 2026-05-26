@@ -383,7 +383,7 @@ func matchCronFieldDow(expr string, value, minVal, maxVal int) bool {
 // laneScheduleYAML is used for custom YAML unmarshaling
 type laneScheduleYAML struct {
 	Frequency      ScheduleFrequency `yaml:"frequency"`
-	Time           interface{}       `yaml:"time"`
+	Time           any               `yaml:"time"`
 	DaysOfWeek     []string          `yaml:"daysOfWeek,omitempty"`
 	DaysOfMonth    []int             `yaml:"daysOfMonth,omitempty"`
 	CronExpression string            `yaml:"cronExpression,omitempty"`
@@ -406,11 +406,11 @@ func (ls *LaneSchedule) UnmarshalYAML(b []byte) error {
 	ls.DaysOfMonth = aux.DaysOfMonth
 	ls.CronExpression = aux.CronExpression
 
-	// Normalize Time field from interface{} to []string
+	// Normalize Time field from any to []string
 	switch v := aux.Time.(type) {
 	case string:
 		ls.Time = []string{v}
-	case []interface{}:
+	case []any:
 		ls.Time = make([]string, len(v))
 		for i, item := range v {
 			if s, ok := item.(string); ok {

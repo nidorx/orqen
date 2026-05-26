@@ -136,6 +136,10 @@ func ValidateDir(projectDir string) error {
 // applyDefaults sets sensible defaults for zero-value fields in ProjectConfig.
 func applyDefaults(proj *Project) {
 
+	if proj.Execution == nil {
+		proj.Execution = &Execution{}
+	}
+
 	if proj.Execution.MaxAgents <= 0 {
 		proj.Execution.MaxAgents = 10
 	}

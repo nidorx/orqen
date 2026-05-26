@@ -10,11 +10,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/jsonschema-go/jsonschema"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/nidorx/orqen/pkg/engine"
 )
-
-const defaultTimeoutSeconds = 30
 
 // dynamicToolContext holds the metadata needed to execute a dynamic tool.
 type dynamicToolContext struct {
@@ -22,7 +21,7 @@ type dynamicToolContext struct {
 	inputProps     map[string]string // param_name -> description
 	requiredArgs   []string
 	timeoutSeconds int
-	proj           *engine.Project
+	project        *engine.Project
 }
 
 // DynamicInput is a flexible input type for dynamic tools.
@@ -45,14 +44,14 @@ func RegisterDynamicTools(server *mcp.Server, proj *engine.Project) {
 		}
 
 		toolDef := proj.Tools[toolName]
-		if err := validateToolDef(toolName, toolDef); err != nil {
+		if err := toolDef.Validate(); err != nil {
 			slog.Warn("skipping invalid tool definition", "tool", toolName, "error", err)
 			continue
 		}
 
 		timeout := toolDef.Timeout
 		if timeout <= 0 {
-			timeout = defaultTimeoutSeconds
+			timeout = 0
 		}
 
 		// Build input properties map
@@ -63,9 +62,33 @@ func RegisterDynamicTools(server *mcp.Server, proj *engine.Project) {
 			requiredArgs = append(requiredArgs, paramName)
 		}
 
+		// Build JSON Schema for input: {type: "object", properties: {param: {type: "string", description: ...}}, required: [...]}
+		inputSchema := &jsonschema.Schema{
+			Type:       "object",
+			Properties: make(map[string]*jsonschema.Schema, len(inputProps)),
+			Required:   append([]string(nil), requiredArgs...),
+		}
+		for paramName, paramDesc := range inputProps {
+			inputSchema.Properties[paramName] = &jsonschema.Schema{
+				Type:        "string",
+				Description: paramDesc,
+			}
+		}
+
+		// Build JSON Schema for output: {type: "object", properties: {stdout: {type: "string"}, stderr: {type: "string"}}}
+		outputSchema := &jsonschema.Schema{
+			Type: "object",
+			Properties: map[string]*jsonschema.Schema{
+				"stdout": {Type: "string", Description: "Standard output from command execution"},
+				"stderr": {Type: "string", Description: "Standard error output from command execution"},
+			},
+		}
+
 		mcpTool := &mcp.Tool{
-			Name:        toolName,
-			Description: toolDef.Description,
+			Name:         toolName,
+			Description:  toolDef.Description,
+			InputSchema:  inputSchema,
+			OutputSchema: outputSchema,
 		}
 
 		tools[toolName] = mcpTool
@@ -75,39 +98,13 @@ func RegisterDynamicTools(server *mcp.Server, proj *engine.Project) {
 			inputProps:     inputProps,
 			requiredArgs:   requiredArgs,
 			timeoutSeconds: timeout,
-			proj:           proj,
+			project:        proj,
 		}
 
 		// Use a raw message handler since we can't define dynamic struct types at runtime
 		// The SDK will pass the raw JSON which we parse ourselves
 		registerDynamicToolWithRawHandler(server, mcpTool, dtCtx)
 	}
-}
-
-// validateToolDef validates a tool definition for required fields and valid OS keys.
-func validateToolDef(toolName string, def engine.ToolDef) error {
-	if len(def.Command) == 0 {
-		// Check if there's at least one OS-specific command
-		hasOSCommand := false
-		for osKey := range def.OSCommands {
-			if engine.ValidOSKeys[osKey] && len(def.OSCommands[osKey]) > 0 {
-				hasOSCommand = true
-				break
-			}
-		}
-		if !hasOSCommand {
-			return fmt.Errorf("tool has no command and no valid OS-specific commands (windows/darwin/linux)")
-		}
-	}
-
-	// Validate OS keys
-	for osKey := range def.OSCommands {
-		if !engine.ValidOSKeys[osKey] {
-			return fmt.Errorf("invalid OS key %q: must be one of windows, darwin, linux", osKey)
-		}
-	}
-
-	return nil
 }
 
 // registerDynamicToolWithRawHandler registers a dynamic tool using a raw JSON handler.
@@ -117,7 +114,7 @@ func registerDynamicToolWithRawHandler(server *mcp.Server, mcpTool *mcp.Tool, dt
 
 	// For dynamic tools, we'll use a map[string]string as input type
 	// The SDK will unmarshal the JSON arguments into this map
-	handler := func(ctx context.Context, req *mcp.CallToolRequest, input map[string]string) (*mcp.CallToolResult, map[string]interface{}, error) {
+	handler := func(ctx context.Context, req *mcp.CallToolRequest, input map[string]string) (*mcp.CallToolResult, map[string]any, error) {
 		return handleDynamicTool(ctx, req, input, dtCtx)
 	}
 
@@ -130,7 +127,7 @@ func handleDynamicTool(
 	req *mcp.CallToolRequest,
 	input map[string]string,
 	dtCtx *dynamicToolContext,
-) (*mcp.CallToolResult, map[string]interface{}, error) {
+) (*mcp.CallToolResult, map[string]any, error) {
 	// Validate required arguments
 	for _, argName := range dtCtx.requiredArgs {
 		if _, ok := input[argName]; !ok {
@@ -144,7 +141,7 @@ func handleDynamicTool(
 	}
 
 	// Get tool definition
-	toolDef, ok := dtCtx.proj.Tools[dtCtx.toolName]
+	tool, ok := dtCtx.project.Tools[dtCtx.toolName]
 	if !ok {
 		return &mcp.CallToolResult{
 			Content: []mcp.Content{
@@ -155,7 +152,7 @@ func handleDynamicTool(
 	}
 
 	// Resolve command for current OS
-	command, err := toolDef.GetCommandForOS(runtime.GOOS)
+	command, err := tool.GetCommandForOS(runtime.GOOS)
 	if err != nil {
 		return &mcp.CallToolResult{
 			Content: []mcp.Content{
@@ -172,12 +169,15 @@ func handleDynamicTool(
 	}
 
 	// Create timeout context
-	timeoutCtx, cancel := context.WithTimeout(ctx, time.Duration(dtCtx.timeoutSeconds)*time.Second)
-	defer cancel()
+	if dtCtx.timeoutSeconds > 0 {
+		var cancel func()
+		ctx, cancel = context.WithTimeout(ctx, time.Duration(dtCtx.timeoutSeconds)*time.Second)
+		defer cancel()
+	}
 
 	// Execute command
-	cmd := exec.CommandContext(timeoutCtx, resolvedCommand[0], resolvedCommand[1:]...)
-	cmd.Dir = dtCtx.proj.DirAbs
+	cmd := exec.CommandContext(ctx, resolvedCommand[0], resolvedCommand[1:]...)
+	cmd.Dir = dtCtx.project.DirAbs
 
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
@@ -197,19 +197,21 @@ func handleDynamicTool(
 		output.WriteString(stderr.String())
 	}
 
-	outMap := map[string]interface{}{
+	outMap := map[string]any{
 		"stdout": stdout.String(),
 		"stderr": stderr.String(),
 	}
 
 	if err != nil {
-		if ctxErr := timeoutCtx.Err(); ctxErr != nil {
-			return &mcp.CallToolResult{
-				Content: []mcp.Content{
-					&mcp.TextContent{Text: fmt.Sprintf("command timed out after %d seconds", dtCtx.timeoutSeconds)},
-				},
-				IsError: true,
-			}, outMap, nil
+		if dtCtx.timeoutSeconds > 0 {
+			if ctxErr := ctx.Err(); ctxErr != nil {
+				return &mcp.CallToolResult{
+					Content: []mcp.Content{
+						&mcp.TextContent{Text: fmt.Sprintf("command timed out after %d seconds", dtCtx.timeoutSeconds)},
+					},
+					IsError: true,
+				}, outMap, nil
+			}
 		}
 
 		errorMsg := fmt.Sprintf("command failed: %v", err)
@@ -218,17 +220,13 @@ func handleDynamicTool(
 		}
 
 		return &mcp.CallToolResult{
-			Content: []mcp.Content{
-				&mcp.TextContent{Text: errorMsg},
-			},
+			Content: []mcp.Content{&mcp.TextContent{Text: errorMsg}},
 			IsError: true,
 		}, outMap, nil
 	}
 
 	return &mcp.CallToolResult{
-		Content: []mcp.Content{
-			&mcp.TextContent{Text: output.String()},
-		},
+		Content: []mcp.Content{&mcp.TextContent{Text: output.String()}},
 	}, outMap, nil
 }
 

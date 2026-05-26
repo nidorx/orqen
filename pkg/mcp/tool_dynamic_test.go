@@ -64,13 +64,13 @@ func TestValidateToolDef(t *testing.T) {
 	tests := []struct {
 		name        string
 		toolName    string
-		def         engine.ToolDef
+		def         engine.Tool
 		expectError bool
 	}{
 		{
 			name:     "valid tool with command",
 			toolName: "my_tool",
-			def: engine.ToolDef{
+			def: engine.Tool{
 				Command: []string{"echo", "hello"},
 				Args:    map[string]string{"msg": "message"},
 			},
@@ -79,31 +79,18 @@ func TestValidateToolDef(t *testing.T) {
 		{
 			name:     "valid tool with os-specific command",
 			toolName: "my_tool",
-			def: engine.ToolDef{
-				OSCommands: map[string][]string{
-					"windows": {"echo.bat"},
-					"linux":   {"echo.sh"},
-				},
-				Args: map[string]string{"msg": "message"},
+			def: engine.Tool{
+				Windows: []string{"echo.bat"},
+				Linux:   []string{"echo.sh"},
+				Args:    map[string]string{"msg": "message"},
 			},
 			expectError: false,
 		},
 		{
 			name:     "invalid: no command and no os commands",
 			toolName: "my_tool",
-			def: engine.ToolDef{
+			def: engine.Tool{
 				Args: map[string]string{"msg": "message"},
-			},
-			expectError: true,
-		},
-		{
-			name:     "invalid: bad os key",
-			toolName: "my_tool",
-			def: engine.ToolDef{
-				Command: []string{"echo"},
-				OSCommands: map[string][]string{
-					"solaris": {"echo.sh"},
-				},
 			},
 			expectError: true,
 		},
@@ -111,7 +98,7 @@ func TestValidateToolDef(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := validateToolDef(tt.toolName, tt.def)
+			err := tt.def.Validate()
 			if tt.expectError && err == nil {
 				t.Errorf("expected error, got nil")
 			}
@@ -125,14 +112,14 @@ func TestValidateToolDef(t *testing.T) {
 func TestToolDefGetCommandForOS(t *testing.T) {
 	tests := []struct {
 		name        string
-		def         engine.ToolDef
+		def         engine.Tool
 		goos        string
 		expectCmd   []string
 		expectError bool
 	}{
 		{
 			name: "default command when no os override",
-			def: engine.ToolDef{
+			def: engine.Tool{
 				Command: []string{"default.sh", "--arg"},
 			},
 			goos:      "linux",
@@ -140,21 +127,17 @@ func TestToolDefGetCommandForOS(t *testing.T) {
 		},
 		{
 			name: "os override takes precedence",
-			def: engine.ToolDef{
+			def: engine.Tool{
 				Command: []string{"default.sh"},
-				OSCommands: map[string][]string{
-					"windows": {"windows.bat"},
-				},
+				Windows: []string{"windows.bat"},
 			},
 			goos:      "windows",
 			expectCmd: []string{"windows.bat"},
 		},
 		{
 			name: "no command for os and no default",
-			def: engine.ToolDef{
-				OSCommands: map[string][]string{
-					"linux": {"linux.sh"},
-				},
+			def: engine.Tool{
+				Linux: []string{"linux.sh"},
 			},
 			goos:        "windows",
 			expectError: true,
@@ -204,7 +187,7 @@ func TestDynamicToolHandler_MissingRequiredArg(t *testing.T) {
 	tempDir := t.TempDir()
 	proj := &engine.Project{
 		DirAbs: tempDir,
-		Tools: map[string]engine.ToolDef{
+		Tools: map[string]engine.Tool{
 			"test_tool": {
 				Command: []string{"echo"},
 				Args:    map[string]string{"param_a": "first param", "param_b": "second param"},
@@ -217,7 +200,7 @@ func TestDynamicToolHandler_MissingRequiredArg(t *testing.T) {
 		inputProps:     proj.Tools["test_tool"].Args,
 		requiredArgs:   []string{"param_a", "param_b"},
 		timeoutSeconds: 30,
-		proj:           proj,
+		project:        proj,
 	}
 
 	// Missing param_b
@@ -255,7 +238,7 @@ func TestDynamicToolHandler_CommandExecution(t *testing.T) {
 
 	proj := &engine.Project{
 		DirAbs: tempDir,
-		Tools: map[string]engine.ToolDef{
+		Tools: map[string]engine.Tool{
 			"greet": {
 				Command: []string{scriptPath},
 				Args:    map[string]string{},
@@ -268,7 +251,7 @@ func TestDynamicToolHandler_CommandExecution(t *testing.T) {
 		inputProps:     proj.Tools["greet"].Args,
 		requiredArgs:   []string{},
 		timeoutSeconds: 30,
-		proj:           proj,
+		project:        proj,
 	}
 
 	input := map[string]string{}
@@ -305,7 +288,7 @@ func TestDynamicToolHandler_WildcardSubstitution(t *testing.T) {
 
 	proj := &engine.Project{
 		DirAbs: tempDir,
-		Tools: map[string]engine.ToolDef{
+		Tools: map[string]engine.Tool{
 			"echo_tool": {
 				Command: []string{scriptPath, "$arg1", "$arg2"},
 				Args: map[string]string{
@@ -321,7 +304,7 @@ func TestDynamicToolHandler_WildcardSubstitution(t *testing.T) {
 		inputProps:     proj.Tools["echo_tool"].Args,
 		requiredArgs:   []string{"arg1", "arg2"},
 		timeoutSeconds: 30,
-		proj:           proj,
+		project:        proj,
 	}
 
 	input := map[string]string{
@@ -346,7 +329,7 @@ func TestDynamicToolHandler_NonExistentCommand(t *testing.T) {
 
 	proj := &engine.Project{
 		DirAbs: tempDir,
-		Tools: map[string]engine.ToolDef{
+		Tools: map[string]engine.Tool{
 			"bad_tool": {
 				Command: []string{"nonexistent-command-that-does-not-exist"},
 				Args:    map[string]string{},
@@ -359,7 +342,7 @@ func TestDynamicToolHandler_NonExistentCommand(t *testing.T) {
 		inputProps:     proj.Tools["bad_tool"].Args,
 		requiredArgs:   []string{},
 		timeoutSeconds: 5,
-		proj:           proj,
+		project:        proj,
 	}
 
 	input := map[string]string{}
@@ -380,14 +363,12 @@ func TestDynamicToolHandler_OSCommandResolution(t *testing.T) {
 
 	proj := &engine.Project{
 		DirAbs: tempDir,
-		Tools: map[string]engine.ToolDef{
+		Tools: map[string]engine.Tool{
 			"os_tool": {
-				OSCommands: map[string][]string{
-					"linux":   {"echo", "linux"},
-					"darwin":  {"echo", "darwin"},
-					"windows": {"echo", "windows"},
-				},
-				Args: map[string]string{},
+				Linux:   []string{"echo", "linux"},
+				Darwin:  []string{"echo", "darwin"},
+				Windows: []string{"echo", "windows"},
+				Args:    map[string]string{},
 			},
 		},
 	}
@@ -397,7 +378,7 @@ func TestDynamicToolHandler_OSCommandResolution(t *testing.T) {
 		inputProps:     proj.Tools["os_tool"].Args,
 		requiredArgs:   []string{},
 		timeoutSeconds: 30,
-		proj:           proj,
+		project:        proj,
 	}
 
 	input := map[string]string{}

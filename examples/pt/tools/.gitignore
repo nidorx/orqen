@@ -1,0 +1,6 @@
+
+
+*.txt
+tasks/
+**/generated/
+.claude
