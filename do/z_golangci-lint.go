@@ -1,6 +1,14 @@
 package main
 
+import (
+	"os"
+)
+
 func runGolangCILint() {
+
+	osArgs := os.Args[2:]
+	args := append([]string{"golangci-lint", "run"}, osArgs...)
+
 	lintCACHE := Must2(TempDir("cache-golangci-lint"))
 	Must(RunContainer(
 		"golangci/golangci-lint:v2.12.2",
@@ -8,6 +16,6 @@ func runGolangCILint() {
 			"-v", lintCACHE + ":/.cache/golangci-lint", "-e", "GOLANGCI_LINT_CACHE=/.cache/golangci-lint",
 		},
 		map[string]string{},
-		"golangci-lint", "run",
+		args...,
 	))
 }

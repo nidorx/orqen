@@ -47,7 +47,7 @@ func Get(projectId string) *ChatService {
 // New creates a new ChatService with the given project and configuration.
 // Dependencies are NOT initialized here - they are deferred to OnStart().
 func New(proj *engine.Project) *ChatService {
-	if proj.Chat == nil {
+	if proj.Chat == nil || proj.Chat.Disabled {
 		return nil
 	}
 	chatsMu.Lock()

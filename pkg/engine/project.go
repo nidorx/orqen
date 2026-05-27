@@ -10,8 +10,10 @@ import (
 // Chat holds the top-level chat configuration, parsed from orqen.yaml
 // under the "chat:" key.
 type Chat struct {
-	Agent    string   `yaml:"agent"`
-	Telegram Telegram `yaml:"telegram"`
+	Agent    string         `yaml:"agent"`
+	Disabled bool           `yaml:"disabled"`
+	Channels map[string]any `yaml:"channels"`
+	Telegram Telegram       `yaml:"telegram"`
 }
 
 // Telegram holds the Telegram bot token configuration.

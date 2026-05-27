@@ -83,7 +83,6 @@ modules:
         ignore_if_dependency: ["inbox", "backlog", "prioritized", "refined", "ready", "blocked", "review", "push"]
         artifacts: ["REFINEMENT"]
         max_agents: 1
-        allowed_next: ["refined"]
         agent_behavior:
           - "Read WI-${SEQUENCE}-TASK.md completely to understand the business goal, technical context, constraints, dependencies, and expected outcome"
           - "Read relevant architecture documents, quick links, existing ADRs, and surrounding implementation context before refining"
@@ -255,7 +254,6 @@ modules:
       - name: "review"
         purpose: "Completed implementations awaiting quality review by the agent"
         artifacts: ["FAIL"]
-        allowed_next: ["push", "ready"]
         agent_behavior:
           - Read the provided task document and its SUMMARY artifact
           - Validate ALL acceptance criteria are met

@@ -21,6 +21,12 @@ const onProgressTimeMsg = 5 * time.Second
 
 var md = markdown.New()
 
+// Telegram holds the Telegram bot configuration.
+type Config struct {
+	Enabled bool
+	Token   string
+}
+
 // Connector holds the bot configuration and project references.
 // Exported fields are accessed by command handlers (cmd_*.go).
 type Connector struct {
